@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Users can read and update their own user document
+    match /users/{userId} {
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      // Allow creation during signup
+      allow create: if request.auth != null;
+    }
+    
+    // User wallets are highly sensitive and should only be read by the owner.
+    // All writes/updates are handled by the secure backend (admin SDK).
+    match /userWallets/{userId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false; // Disallow client-side writes
+    }
+    
+    // Proposals can be read by buyer or seller.
+    // Buyer can create. Seller can update (accept/decline).
+    match /proposals/{proposalId} {
+       allow read: if request.auth != null && (request.auth.uid == resource.data.buyerId || request.auth.token.email == resource.data.sellerEmail);
+       allow create: if request.auth != null && request.resource.data.buyerId == request.auth.uid;
+       allow update: if request.auth != null && request.auth.token.email == resource.data.sellerEmail;
+    }
+    
+    // Deals can be read by buyer or seller.
+    // Updates are handled by the backend, but we'll allow client updates for status changes if they are the authorized party.
+    match /deals/{dealId} {
+       allow read: if request.auth != null && (request.auth.uid == resource.data.buyerId || request.auth.token.email == resource.data.sellerEmail);
+       // Allow buyer/seller to update milestones (e.g., submit work, request revision)
+       allow update: if request.auth != null && (request.auth.uid == resource.data.buyerId || request.auth.token.email == resource.data.sellerEmail);
+    }
+    
+    // Transactions are append-only and created by the backend.
+    // Users can read their own transactions.
+    match /transactions/{transactionId} {
+        allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+        allow write: if false;
+    }
+
+    // Logs are write-only from the backend. Disallow all client access.
+    match /logs/{logId} {
+        allow read, write: if false;
+    }
+    
+    // Config is read-only from the backend. Disallow all client access.
+    match /config/{configId} {
+        allow read, write: if false;
+    }
+    
+    // Disputes can be read by involved parties, created by authenticated users
+    match /disputes/{disputeId} {
+        allow read: if request.auth != null && (request.auth.uid == resource.data.disputedBy || request.auth.token.email == resource.data.disputedAgainst);
+        allow create: if request.auth != null && request.resource.data.disputedBy == request.auth.uid;
+        // Updates are handled by admin backend only
+        allow update: if false;
+    }
+  }
+}
