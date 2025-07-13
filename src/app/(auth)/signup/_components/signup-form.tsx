@@ -25,7 +25,6 @@ import {
   User,
 } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { createWalletForUser } from "@/services/fcmb.service";
 import { doc, setDoc } from "firebase/firestore";
 
 const formSchema = z.object({
@@ -34,19 +33,6 @@ const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
   phone: z.string().min(10, "Please enter a valid phone number."),
-  bvn: z.string().length(11, "BVN must be 11 digits."),
-  dob: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Date of birth must be in YYYY-MM-DD format.")
-    .refine((dateStr) => {
-      const date = new Date(dateStr);
-      const today = new Date();
-      if (isNaN(date.getTime())) return false;
-      if (date > today) return false;
-      const ageDifMs = Date.now() - date.getTime();
-      const ageDate = new Date(ageDifMs);
-      return Math.abs(ageDate.getUTCFullYear() - 1970) >= 18;
-    }, "You must be at least 18 years old and date cannot be in the future."),
 });
 
 export function SignUpForm() {
@@ -63,8 +49,6 @@ export function SignUpForm() {
       email: "",
       password: "",
       phone: "",
-      bvn: "",
-      dob: "",
     },
   });
 
@@ -98,15 +82,7 @@ export function SignUpForm() {
         displayName: displayName,
         phone: cleanPhone,
         createdAt: new Date(),
-      });
-
-      // 3. Create FCMB Wallet (This is our KYC step)
-      await createWalletForUser(user.uid, {
-        bvn: values.bvn,
-        firstName: values.firstName.trim(),
-        lastName: values.lastName.trim(),
-        phone: cleanPhone,
-        dob: values.dob,
+        kycStatus: "pending", // User needs to complete KYC later
       });
 
       // 4. Send verification email
@@ -123,6 +99,7 @@ export function SignUpForm() {
     } catch (error: any) {
       console.error("Signup error:", error);
 
+      // If user was created in Firebase but subsequent steps failed, delete them
       if (user) {
         await deleteUser(user).catch((deleteError) => {
           console.error(
@@ -134,34 +111,19 @@ export function SignUpForm() {
 
       let errorMessage =
         "An unknown error occurred. Please check your details and try again.";
-      if (error.message) {
-        try {
-          // Try parsing FCMB API error
-          const apiError = JSON.parse(
-            error.message.substring(error.message.indexOf("{"))
-          );
+
+      // Handle Firebase Auth errors
+      switch (error.code) {
+        case "auth/email-already-in-use":
           errorMessage =
-            (apiError.messages &&
-              Array.isArray(apiError.messages) &&
-              apiError.messages.join(", ")) ||
-            apiError.message || // Fallback for single message
-            apiError.error_description ||
-            "A bank service error occurred. Please verify your details or try again later.";
-        } catch (e) {
-          // Handle Firebase or other errors
-          switch (error.code) {
-            case "auth/email-already-in-use":
-              errorMessage =
-                "This email is already registered. Please use a different email or try logging in.";
-              break;
-            case "auth/weak-password":
-              errorMessage =
-                "Password is too weak. Please choose a stronger password.";
-              break;
-            default:
-              errorMessage = error.message;
-          }
-        }
+            "This email is already registered. Please use a different email or try logging in.";
+          break;
+        case "auth/weak-password":
+          errorMessage =
+            "Password is too weak. Please choose a stronger password.";
+          break;
+        default:
+          errorMessage = error.message || errorMessage;
       }
 
       toast({
@@ -261,36 +223,6 @@ export function SignUpForm() {
                   placeholder="+2348012345678 or 08012345678"
                   {...field}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div>
-          <p className="">KYC Requirements - For secured transactions</p>
-          <div className=" h-0.5 w-full bg-gray-100"></div>
-        </div>
-        <FormField
-          control={form.control}
-          name="bvn"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Bank Verification Number (BVN)</FormLabel>
-              <FormControl>
-                <Input type="text" placeholder="11-digit BVN" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="dob"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Date of Birth</FormLabel>
-              <FormControl>
-                <Input type="text" placeholder="YYYY-MM-DD" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

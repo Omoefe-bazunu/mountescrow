@@ -1,17 +1,16 @@
-
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, sendEmailVerification } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAF7xAv3FOpOXTfBrPfKihvtTPwkSE3NBs",
-  authDomain: "mountescrow-1ac4f.firebaseapp.com",
-  projectId: "mountescrow-1ac4f",
-  storageBucket: "mountescrow-1ac4f.firebasestorage.app",
-  messagingSenderId: "609393830873",
-  appId: "1:609393830873:web:6a61f2e6574691fbf3c7c8",
-  measurementId: "G-X4NBJLFVBQ"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();

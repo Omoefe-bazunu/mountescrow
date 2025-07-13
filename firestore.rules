@@ -6,7 +6,7 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if false;
     }
-
+    
     // Users can read and update their own user document
     match /users/{userId} {
       allow read, update: if request.auth != null && request.auth.uid == userId;
@@ -37,13 +37,21 @@ service cloud.firestore {
        allow update: if request.auth != null && (request.auth.uid == resource.data.buyerId || request.auth.token.email == resource.data.sellerEmail);
     }
     
+    // Disputes can be read and created by the user who filed them.
+    // Updates are typically handled by admins/support, but allow users to update their own disputes.
+   match /proposals/{proposalId} {
+  allow read: if request.auth != null && (request.auth.uid == resource.data.buyerId || request.auth.token.email == resource.data.sellerEmail);
+  allow create: if request.auth != null && request.resource.data.buyerId == request.auth.uid;
+  allow update: if request.auth != null && (request.auth.uid == resource.data.buyerId || request.auth.token.email == resource.data.sellerEmail);
+}
+    
     // Transactions are append-only and created by the backend.
     // Users can read their own transactions.
     match /transactions/{transactionId} {
         allow read: if request.auth != null && request.auth.uid == resource.data.userId;
         allow write: if false;
     }
-
+    
     // Logs are write-only from the backend. Disallow all client access.
     match /logs/{logId} {
         allow read, write: if false;
@@ -52,14 +60,6 @@ service cloud.firestore {
     // Config is read-only from the backend. Disallow all client access.
     match /config/{configId} {
         allow read, write: if false;
-    }
-    
-    // Disputes can be read by involved parties, created by authenticated users
-    match /disputes/{disputeId} {
-        allow read: if request.auth != null && (request.auth.uid == resource.data.disputedBy || request.auth.token.email == resource.data.disputedAgainst);
-        allow create: if request.auth != null && request.resource.data.disputedBy == request.auth.uid;
-        // Updates are handled by admin backend only
-        allow update: if false;
     }
   }
 }
