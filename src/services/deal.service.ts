@@ -74,7 +74,7 @@ async function checkUserPermissions(): Promise<string> {
 }
 
 export async function createDealFromProposal(
-  proposal: { id: string } & Omit<ProposalData, "id">
+  proposal: { id: string } & ProposalData
 ): Promise<string> {
   await checkUserPermissions();
 
@@ -92,13 +92,16 @@ export async function createDealFromProposal(
   try {
     const initialMilestones: Milestone[] = proposal.milestones.map((m) => ({
       ...m,
-      status: "Pending",
+      status: "Pending" as const,
     }));
 
-    const dealData: Omit<DealData, "id" | "createdAt" | "updatedAt"> = {
-      ...proposal,
+    // Create deal data excluding the proposal-specific fields
+    const { id, createdAt, updatedAt, ...proposalDataForDeal } = proposal;
+
+    const dealData: Omit<DealData, "createdAt" | "updatedAt"> = {
+      ...proposalDataForDeal,
       proposalId: proposal.id,
-      status: "Awaiting Funding",
+      status: "Awaiting Funding" as const,
       milestones: initialMilestones,
     };
 
@@ -130,7 +133,10 @@ export async function createDealFromProposal(
     return docRef.id;
   } catch (error) {
     console.error("Error creating deal from proposal:", error);
-    throw error;
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("Failed to create deal from proposal. Please try again.");
   }
 }
 
@@ -225,8 +231,10 @@ export async function fundDeal(
     throw new Error("Only the buyer can fund this deal");
   }
 
-  // Verify amount matches expected total
-  const expectedAmount = dealData.totalAmount + dealData.escrowFee;
+  // Buyer only pays project amount + half of escrow fee
+  const buyerEscrowFee = dealData.escrowFee / 2;
+  const expectedAmount = dealData.totalAmount + buyerEscrowFee;
+
   if (Math.abs(amount - expectedAmount) > 0.01) {
     throw new Error(
       `Amount mismatch. Expected: $${expectedAmount.toFixed(
@@ -301,8 +309,14 @@ export async function approveAndReleaseMilestone(
   if (sellerUserQuery.empty) throw new Error("Seller user account not found.");
   const sellerId = sellerUserQuery.docs[0].id;
 
-  // Release payment to seller
-  await releaseFromEscrow(sellerId, dealId, milestone.title, milestone.amount);
+  // Calculate seller's portion after deducting their half of escrow fee
+  const sellerEscrowFee = dealData.escrowFee / 2;
+  const milestoneEscrowFee =
+    (milestone.amount / dealData.totalAmount) * sellerEscrowFee;
+  const sellerReceives = milestone.amount - milestoneEscrowFee;
+
+  // Release payment to seller (minus their portion of escrow fee)
+  await releaseFromEscrow(sellerId, dealId, milestone.title, sellerReceives);
 
   // Update milestone status
   const milestones = [...dealData.milestones];
@@ -372,7 +386,7 @@ export async function submitMilestoneWork(
   dealId: string,
   milestoneIndex: number,
   message: string,
-  files: FileList | null
+  files: File[] | null
 ) {
   if (!dealId?.trim()) {
     throw new Error("Deal ID is required");
@@ -410,7 +424,22 @@ export async function submitMilestoneWork(
   let uploadedFiles: UploadedFile[] = [];
   if (files && files.length > 0) {
     try {
-      uploadedFiles = await uploadMultipleFiles(dealId, milestoneIndex, files);
+      // Convert File[] to FileList for storage service compatibility
+      const fileList = {
+        length: files.length,
+        item: (index: number) => files[index] || null,
+        [Symbol.iterator]: function* () {
+          for (let i = 0; i < files.length; i++) {
+            yield files[i];
+          }
+        },
+      } as FileList;
+
+      uploadedFiles = await uploadMultipleFiles(
+        dealId,
+        milestoneIndex,
+        fileList
+      );
     } catch (error) {
       throw new Error(`File upload failed: ${(error as Error).message}`);
     }

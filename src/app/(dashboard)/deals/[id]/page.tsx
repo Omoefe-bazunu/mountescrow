@@ -74,7 +74,9 @@ export default function DealDetailPage() {
     if (!deal || !user) return;
     setIsProcessing(true);
     try {
-      const totalToFund = deal.totalAmount + deal.escrowFee;
+      // Buyer only pays project amount + half of escrow fee
+      const buyerEscrowFee = deal.escrowFee / 2;
+      const totalToFund = deal.totalAmount + buyerEscrowFee;
       await fundDeal(deal.id, user.uid, totalToFund);
       toast({
         title: "Deal Funded!",
@@ -201,7 +203,8 @@ export default function DealDetailPage() {
               ) : (
                 <Wallet className="mr-2 h-4 w-4" />
               )}
-              Fund Deal Now (${(deal.totalAmount + deal.escrowFee).toFixed(2)})
+              Fund Deal Now ($
+              {(deal.totalAmount + deal.escrowFee / 2).toFixed(2)})
             </Button>
           </CardFooter>
         )}
@@ -235,12 +238,24 @@ export default function DealDetailPage() {
             <span className="font-medium">${deal.totalAmount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Escrow Fee</span>
+            <span className="text-muted-foreground">Escrow Fee (Total)</span>
             <span className="font-medium">${deal.escrowFee.toFixed(2)}</span>
           </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground ml-4">• Buyer pays</span>
+            <span className="font-medium">
+              ${(deal.escrowFee / 2).toFixed(2)}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground ml-4">• Seller pays</span>
+            <span className="font-medium">
+              ${(deal.escrowFee / 2).toFixed(2)}
+            </span>
+          </div>
           <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
-            <span>Total to be Funded</span>
-            <span>${(deal.totalAmount + deal.escrowFee).toFixed(2)}</span>
+            <span>Buyer Funds</span>
+            <span>${(deal.totalAmount + deal.escrowFee / 2).toFixed(2)}</span>
           </div>
         </CardContent>
       </Card>

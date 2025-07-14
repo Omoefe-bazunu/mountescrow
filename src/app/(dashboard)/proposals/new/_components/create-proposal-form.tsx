@@ -451,14 +451,22 @@ export function CreateProposalForm() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">
-                Escrow Fee (
+                Escrow Fee - Total (
                 {(getEscrowFeePercentage(totalAmount) * 100).toFixed(1)}%)
               </span>
               <span>${escrowFee.toFixed(2)}</span>
             </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground ml-4">• Buyer pays</span>
+              <span>${(escrowFee / 2).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground ml-4">• Seller pays</span>
+              <span>${(escrowFee / 2).toFixed(2)}</span>
+            </div>
             <div className="flex justify-between pt-2 border-t font-medium">
-              <span>Total</span>
-              <span>${(totalAmount + escrowFee).toFixed(2)}</span>
+              <span>Project Value</span>
+              <span>${totalAmount.toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>

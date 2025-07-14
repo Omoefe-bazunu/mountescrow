@@ -21,7 +21,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
@@ -38,7 +37,6 @@ interface SubmitWorkDialogProps {
 
 const formSchema = z.object({
   message: z.string().min(1, "A submission message is required."),
-  files: z.any().optional(),
 });
 
 export function SubmitWorkDialog({
@@ -49,13 +47,17 @@ export function SubmitWorkDialog({
   onSuccess,
 }: SubmitWorkDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { message: "" },
   });
+
+  const handleFilesChange = (files: File[]) => {
+    setSelectedFiles(files);
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
@@ -64,7 +66,7 @@ export function SubmitWorkDialog({
         dealId,
         milestoneIndex,
         values.message,
-        selectedFiles
+        selectedFiles.length > 0 ? selectedFiles : null
       );
       toast({
         title: "Work Submitted!",
@@ -72,6 +74,8 @@ export function SubmitWorkDialog({
       });
       onSuccess();
       onClose();
+      form.reset();
+      setSelectedFiles([]);
     } catch (error) {
       console.error("Error submitting work:", error);
       toast({
@@ -84,8 +88,16 @@ export function SubmitWorkDialog({
     }
   }
 
+  const handleClose = () => {
+    if (!loading) {
+      form.reset();
+      setSelectedFiles([]);
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Submit Milestone for Approval</DialogTitle>
@@ -116,16 +128,22 @@ export function SubmitWorkDialog({
             <div className="space-y-2">
               <FormLabel>Attach Files (Optional)</FormLabel>
               <FileUpload
-                onFilesChange={setSelectedFiles}
+                onFilesChange={handleFilesChange}
                 maxFiles={5}
+                maxSize={10 * 1024 * 1024} // 10MB
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip,.rar"
                 disabled={loading}
               />
+              <p className="text-sm text-muted-foreground">
+                Upload deliverables, screenshots, or documentation (max 5 files,
+                10MB each)
+              </p>
             </div>
             <DialogFooter>
               <Button
                 type="button"
                 variant="ghost"
-                onClick={onClose}
+                onClick={handleClose}
                 disabled={loading}
               >
                 Cancel

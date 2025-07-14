@@ -84,8 +84,18 @@ export default function ProposalDetailPage() {
     if (!proposal) return;
     setIsProcessing(true);
     try {
+      // Update proposal status first
       await updateProposalStatus(proposal.id, "Accepted");
-      await createDealFromProposal(proposal);
+
+      // Create updated proposal object with accepted status for deal creation
+      const updatedProposal = {
+        ...proposal,
+        status: "Accepted" as const,
+      };
+
+      // Create deal from the updated proposal
+      await createDealFromProposal(updatedProposal);
+
       toast({
         title: "Proposal Accepted!",
         description:
@@ -94,10 +104,14 @@ export default function ProposalDetailPage() {
       router.push("/deals");
     } catch (error) {
       console.error("Error accepting proposal:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Could not accept the proposal. Please try again.";
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Could not accept the proposal. Please try again.",
+        description: errorMessage,
       });
     } finally {
       setIsProcessing(false);
