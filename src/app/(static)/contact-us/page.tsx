@@ -14,7 +14,7 @@ export default function ContactUsPage() {
         >
             <div className="absolute inset-0 bg-primary/90"></div>
              <Image
-                src="https://placehold.co/600x800.png"
+                src="https://firebasestorage.googleapis.com/v0/b/mountescrow-1ac4f.firebasestorage.app/o/staticImages%2FcontactpageImage.jpg?alt=media&token=30c8f24c-893a-46fb-80bc-de2fce353b2a"
                 alt="Man on a phone call in an office"
                 layout="fill"
                 objectFit="cover"
