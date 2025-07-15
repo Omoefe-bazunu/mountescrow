@@ -1,3 +1,4 @@
+// src/services/fcmb.service.ts
 "use server";
 
 import { fcmbConfig } from "@/lib/config";
@@ -30,17 +31,14 @@ let accessToken: string | null = null;
 let tokenExpiry: number | null = null;
 
 async function getAccessToken(): Promise<string> {
-  // Return cached token if valid
   if (accessToken && tokenExpiry && Date.now() < tokenExpiry) {
     return accessToken;
   }
 
-  // Validate configuration
   if (!fcmbConfig.clientId || !fcmbConfig.clientSecret || !fcmbConfig.authUrl) {
-    const errorMsg =
-      "FCMB configuration is incomplete. Please check environment variables.";
-    await logEvent("ERROR", "FCMB_AUTH", errorMsg);
-    throw new Error(errorMsg);
+    throw new Error(
+      "FCMB configuration is incomplete. Please check environment variables."
+    );
   }
 
   try {
@@ -92,11 +90,6 @@ async function getAccessToken(): Promise<string> {
       "FCMB_AUTH",
       "Successfully obtained FCMB access token."
     );
-
-    if (!accessToken) {
-      throw new Error("Access token was not properly set");
-    }
-
     return accessToken;
   } catch (error) {
     console.error("FCMB Auth Error:", error);
@@ -164,8 +157,6 @@ async function fcmbApiRequest(endpoint: string, options: RequestInit = {}) {
   return responseData;
 }
 
-// [Rest of your existing code remains exactly the same...]
-
 // --- WALLET & USER MANAGEMENT ---
 
 export interface UserWallet {
@@ -181,6 +172,13 @@ export interface UserWallet {
   updatedAt: any;
 }
 
+// New interface for structured service responses
+export interface ServiceResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
 export async function createWalletForUser(
   userId: string,
   userDetails: {
@@ -190,7 +188,8 @@ export async function createWalletForUser(
     phone: string;
     dob: string;
   }
-): Promise<UserWallet> {
+): Promise<ServiceResponse<UserWallet>> {
+  // Changed return type
   try {
     console.log("Starting wallet creation for user:", userId);
 
@@ -316,7 +315,7 @@ export async function createWalletForUser(
       { userId }
     );
 
-    return newWallet;
+    return { success: true, data: newWallet }; // Return success response
   } catch (error: any) {
     // Update user's KYC status to rejected on failure
     try {
@@ -337,7 +336,10 @@ export async function createWalletForUser(
       "Failed to create wallet for user",
       { userId, error: error.message }
     );
-    throw error;
+    return {
+      success: false,
+      error: error.message || "An unknown error occurred.",
+    }; // Return error response
   }
 }
 

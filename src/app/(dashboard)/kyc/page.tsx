@@ -1,3 +1,4 @@
+// src/pages/(dashboard)/kyc/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -31,7 +32,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { User } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
-import { createWalletForUser } from "@/services/fcmb.service";
+import { createWalletForUser } from "@/services/fcmb.service"; // Ensure ServiceResponse is imported or defined in fcmb.service.ts
 
 const kycFormSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
@@ -138,72 +139,39 @@ export default function KycPage() {
         dob: data.dob,
       };
 
-      await createWalletForUser(user.uid, userDetails);
+      // Call the server action and get the structured response
+      const result = await createWalletForUser(user.uid, userDetails);
 
-      toast({
-        title: "KYC Completed Successfully!",
-        description:
-          "Your wallet has been created and KYC approved. You can now access your wallet.",
-      });
+      if (result.success) {
+        toast({
+          title: "KYC Completed Successfully!",
+          description:
+            "Your wallet has been created and KYC approved. You can now access your wallet.",
+        });
 
-      // Refresh user data to show updated status
-      await fetchUserData(user);
+        // Refresh user data to show updated status
+        await fetchUserData(user);
+      } else {
+        // Handle the error returned from the server function
+        let toastDescription = "Please check your details and try again.";
+        if (result.error) {
+          // The error from fcmb.service.ts is now a clean string, no need for complex JSON parsing here
+          toastDescription = result.error;
+        }
+
+        toast({
+          variant: "destructive",
+          title: "KYC Submission Failed",
+          description: toastDescription,
+        });
+      }
     } catch (error: any) {
-      console.error("KYC submission error:", error);
-
-      let toastDescription = "Please check your details and try again.";
-      let specificErrorMessage = null;
-
-      // Attempt to parse the JSON part of the error message
-      if (error.message && typeof error.message === "string") {
-        const jsonStartIndex = error.message.indexOf("{");
-        if (jsonStartIndex !== -1) {
-          const jsonString = error.message.substring(jsonStartIndex);
-          try {
-            const errorJson = JSON.parse(jsonString);
-            if (
-              errorJson.messages &&
-              Array.isArray(errorJson.messages) &&
-              errorJson.messages.length > 0
-            ) {
-              specificErrorMessage = errorJson.messages[0];
-            }
-          } catch (parseError) {
-            // JSON parsing failed, fall through to check for known string patterns
-            console.warn("Failed to parse error message JSON:", parseError);
-          }
-        }
-      }
-
-      if (specificErrorMessage) {
-        toastDescription = specificErrorMessage;
-      } else if (error.message && typeof error.message === "string") {
-        // Fallback to checking for known string patterns if JSON parsing didn't yield a specific message
-        if (
-          error.message.includes(
-            "names provided do not match the ones on the BVN record"
-          )
-        ) {
-          toastDescription =
-            "The names provided do not match your BVN record. Please ensure your first and last names are exact matches.";
-        } else if (error.message.includes("Invalid phone number format")) {
-          toastDescription =
-            "Invalid phone number format. It must resolve to 10 digits (e.g., 08012345678).";
-        } else if (error.message.includes("BVN must be exactly 11 digits")) {
-          toastDescription = "BVN must be exactly 11 digits.";
-        } else if (
-          error.message.includes("Date of birth must be in YYYY-MM-DD format")
-        ) {
-          toastDescription = "Date of birth must be in YYYY-MM-DD format.";
-        } else {
-          toastDescription = error.message; // Final fallback to the raw error message
-        }
-      }
-
+      // This catch block should ideally only be hit for unexpected client-side errors
+      console.error("Unexpected KYC submission error:", error);
       toast({
         variant: "destructive",
         title: "KYC Submission Failed",
-        description: toastDescription,
+        description: "An unexpected error occurred. Please try again.",
       });
     } finally {
       setSubmitting(false);
