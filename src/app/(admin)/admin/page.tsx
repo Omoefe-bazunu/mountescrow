@@ -1,15 +1,32 @@
 "use client";
 
-"use client";
-
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, Users, DollarSign, FileText, TrendingUp } from 'lucide-react';
-import Link from 'next/link';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  AlertTriangle,
+  Users,
+  DollarSign,
+  FileText,
+  TrendingUp,
+} from "lucide-react";
+import Link from "next/link";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  orderBy,
+  limit,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface AdminStats {
   totalUsers: number;
@@ -36,35 +53,35 @@ export default function AdminDashboard() {
   const fetchAdminStats = async () => {
     try {
       // Get total users
-      const usersSnapshot = await getDocs(collection(db, 'users'));
+      const usersSnapshot = await getDocs(collection(db, "users"));
       const totalUsers = usersSnapshot.size;
 
       // Get active deals
       const activeDealsQuery = query(
-        collection(db, 'deals'),
-        where('status', 'in', ['Awaiting Funding', 'In Progress'])
+        collection(db, "deals"),
+        where("status", "in", ["Awaiting Funding", "In Progress"])
       );
       const activeDealsSnapshot = await getDocs(activeDealsQuery);
       const activeDeals = activeDealsSnapshot.size;
 
       // Get open disputes
       const openDisputesQuery = query(
-        collection(db, 'disputes'),
-        where('status', '==', 'open')
+        collection(db, "disputes"),
+        where("status", "==", "open")
       );
       const openDisputesSnapshot = await getDocs(openDisputesQuery);
       const openDisputes = openDisputesSnapshot.size;
 
       // Get recent disputes
       const recentDisputesQuery = query(
-        collection(db, 'disputes'),
-        orderBy('createdAt', 'desc'),
+        collection(db, "disputes"),
+        orderBy("createdAt", "desc"),
         limit(5)
       );
       const recentDisputesSnapshot = await getDocs(recentDisputesQuery);
-      const recentDisputes = recentDisputesSnapshot.docs.map(doc => ({
+      const recentDisputes = recentDisputesSnapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       }));
 
       // Calculate total volume (this would need more complex aggregation in production)
@@ -78,7 +95,7 @@ export default function AdminDashboard() {
         recentDisputes,
       });
     } catch (error) {
-      console.error('Error fetching admin stats:', error);
+      console.error("Error fetching admin stats:", error);
     } finally {
       setLoading(false);
     }
@@ -86,20 +103,29 @@ export default function AdminDashboard() {
 
   const getStatusVariant = (status: string) => {
     switch (status) {
-      case 'open': return 'destructive';
-      case 'investigating': return 'secondary';
-      case 'resolved': return 'default';
-      case 'closed': return 'outline';
-      default: return 'outline';
+      case "open":
+        return "destructive";
+      case "investigating":
+        return "secondary";
+      case "resolved":
+        return "default";
+      case "closed":
+        return "outline";
+      default:
+        return "outline";
     }
   };
 
   const getPriorityVariant = (priority: string) => {
     switch (priority) {
-      case 'high': return 'destructive';
-      case 'medium': return 'secondary';
-      case 'low': return 'outline';
-      default: return 'outline';
+      case "high":
+        return "destructive";
+      case "medium":
+        return "secondary";
+      case "low":
+        return "outline";
+      default:
+        return "outline";
     }
   };
 
@@ -107,7 +133,9 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Monitor platform activity and manage disputes</p>
+        <p className="text-muted-foreground">
+          Monitor platform activity and manage disputes
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -138,7 +166,9 @@ export default function AdminDashboard() {
             <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">{stats.openDisputes}</div>
+            <div className="text-2xl font-bold text-destructive">
+              {stats.openDisputes}
+            </div>
           </CardContent>
         </Card>
 
@@ -148,7 +178,9 @@ export default function AdminDashboard() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.totalVolume.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              ${stats.totalVolume.toLocaleString()}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -186,34 +218,45 @@ export default function AdminDashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Recent Disputes</CardTitle>
-            <CardDescription>Latest dispute filings requiring attention</CardDescription>
+            <CardDescription>
+              Latest dispute filings requiring attention
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {stats.recentDisputes.length > 0 ? (
               <div className="space-y-3">
                 {stats.recentDisputes.map((dispute) => (
-                  <div key={dispute.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div
+                    key={dispute.id}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
                     <div className="space-y-1">
                       <p className="text-sm font-medium">{dispute.subject}</p>
                       <div className="flex items-center gap-2">
-                        <Badge variant={getPriorityVariant(dispute.priority)} className="text-xs">
+                        <Badge
+                          variant={getPriorityVariant(dispute.priority)}
+                          className="text-xs"
+                        >
                           {dispute.priority}
                         </Badge>
-                        <Badge variant={getStatusVariant(dispute.status)} className="text-xs">
+                        <Badge
+                          variant={getStatusVariant(dispute.status)}
+                          className="text-xs"
+                        >
                           {dispute.status}
                         </Badge>
                       </div>
                     </div>
                     <Button asChild size="sm" variant="ghost">
-                      <Link href={`/admin/disputes/${dispute.id}`}>
-                        View
-                      </Link>
+                      <Link href={`/admin/disputes/${dispute.id}`}>View</Link>
                     </Button>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No recent disputes</p>
+              <p className="text-sm text-muted-foreground">
+                No recent disputes
+              </p>
             )}
           </CardContent>
         </Card>

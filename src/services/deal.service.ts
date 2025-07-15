@@ -302,29 +302,63 @@ export async function approveAndReleaseMilestone(
     );
   }
 
-  // Find seller's user ID
-  const sellerUserQuery = await getDocs(
-    query(collection(db, "users"), where("email", "==", dealData.sellerEmail))
-  );
-  if (sellerUserQuery.empty) throw new Error("Seller user account not found.");
-  const sellerId = sellerUserQuery.docs[0].id;
+  try {
+    // Find seller's user ID
+    const sellerUserQuery = await getDocs(
+      query(collection(db, "users"), where("email", "==", dealData.sellerEmail))
+    );
+    if (sellerUserQuery.empty)
+      throw new Error("Seller user account not found.");
+    const sellerId = sellerUserQuery.docs[0].id;
 
-  // Calculate seller's portion after deducting their half of escrow fee
-  const sellerEscrowFee = dealData.escrowFee / 2;
-  const milestoneEscrowFee =
-    (milestone.amount / dealData.totalAmount) * sellerEscrowFee;
-  const sellerReceives = milestone.amount - milestoneEscrowFee;
+    // Calculate seller's portion after deducting their half of escrow fee
+    const sellerEscrowFee = dealData.escrowFee / 2;
+    const milestoneEscrowFee =
+      (milestone.amount / dealData.totalAmount) * sellerEscrowFee;
+    const sellerReceives = milestone.amount - milestoneEscrowFee;
 
-  // Release payment to seller (minus their portion of escrow fee)
-  await releaseFromEscrow(sellerId, dealId, milestone.title, sellerReceives);
+    // Ensure seller receives a positive amount
+    if (sellerReceives <= 0) {
+      throw new Error(
+        "Milestone amount is too small after escrow fee deduction"
+      );
+    }
 
-  // Update milestone status
-  const milestones = [...dealData.milestones];
-  milestones[milestoneIndex].status = "Completed";
-  await updateDoc(dealDocRef, { milestones, updatedAt: serverTimestamp() });
+    // Release payment to seller (minus their portion of escrow fee)
+    await releaseFromEscrow(sellerId, dealId, milestone.title, sellerReceives);
 
-  // Fund next milestone or complete deal
-  await fundNextMilestone(dealId, milestoneIndex);
+    // Update milestone status
+    const milestones = [...dealData.milestones];
+    milestones[milestoneIndex].status = "Completed";
+    await updateDoc(dealDocRef, { milestones, updatedAt: serverTimestamp() });
+
+    // Fund next milestone or complete deal
+    await fundNextMilestone(dealId, milestoneIndex);
+
+    // Send notification email to seller (non-blocking)
+    try {
+      await sendEmail({
+        to_email: dealData.sellerEmail,
+        to_name: "Seller",
+        subject: `Milestone Approved: ${dealData.projectTitle}`,
+        message: `Your milestone "${
+          milestone.title
+        }" has been approved and payment of $${sellerReceives.toFixed(
+          2
+        )} has been released to your wallet.`,
+        deal_title: dealData.projectTitle,
+        deal_url: `https://www.mountescrow.com/deals/${dealId}`,
+      });
+    } catch (emailError) {
+      console.error(
+        "Failed to send milestone approval notification email:",
+        emailError
+      );
+    }
+  } catch (error) {
+    console.error("Error in approveAndReleaseMilestone:", error);
+    throw error;
+  }
 }
 
 export async function fundNextMilestone(
@@ -346,6 +380,23 @@ export async function fundNextMilestone(
   if (nextMilestoneIndex < milestones.length) {
     milestones[nextMilestoneIndex].status = "Funded";
     await updateDoc(dealDocRef, { milestones, updatedAt: serverTimestamp() });
+
+    // Send notification to seller about next milestone being funded
+    try {
+      await sendEmail({
+        to_email: dealData.sellerEmail,
+        to_name: "Seller",
+        subject: `Next Milestone Funded: ${dealData.projectTitle}`,
+        message: `The next milestone "${milestones[nextMilestoneIndex].title}" has been funded and is ready for you to start work.`,
+        deal_title: dealData.projectTitle,
+        deal_url: `https://www.mountescrow.com/deals/${dealId}`,
+      });
+    } catch (emailError) {
+      console.error(
+        "Failed to send next milestone funding notification email:",
+        emailError
+      );
+    }
   } else {
     // All milestones completed
     await updateDoc(dealDocRef, {
@@ -360,7 +411,7 @@ export async function fundNextMilestone(
           to_email: dealData.buyerEmail,
           to_name: "Buyer",
           subject: `Deal Completed: ${dealData.projectTitle}`,
-          message: `Congratulations! The deal "${dealData.projectTitle}" has been successfully completed.`,
+          message: `Congratulations! The deal "${dealData.projectTitle}" has been successfully completed. All milestones have been delivered and approved.`,
           deal_title: dealData.projectTitle,
           deal_url: `https://www.mountescrow.com/deals/${dealId}`,
         });
@@ -369,7 +420,7 @@ export async function fundNextMilestone(
         to_email: dealData.sellerEmail,
         to_name: "Seller",
         subject: `Deal Completed: ${dealData.projectTitle}`,
-        message: `Congratulations! The deal "${dealData.projectTitle}" has been successfully completed.`,
+        message: `Congratulations! The deal "${dealData.projectTitle}" has been successfully completed. All payments have been released to your wallet.`,
         deal_title: dealData.projectTitle,
         deal_url: `https://www.mountescrow.com/deals/${dealId}`,
       });
@@ -463,7 +514,7 @@ export async function submitMilestoneWork(
         to_email: dealData.buyerEmail,
         to_name: "Buyer",
         subject: `Milestone Submitted for: ${dealData.projectTitle}`,
-        message: `The seller has submitted work for milestone "${milestones[milestoneIndex].title}". Please review and approve it.`,
+        message: `The seller has submitted work for milestone "${milestones[milestoneIndex].title}". Please review and approve it in your dashboard.`,
         deal_title: dealData.projectTitle,
         deal_url: `https://www.mountescrow.com/deals/${dealId}`,
       });

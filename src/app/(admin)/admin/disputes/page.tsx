@@ -1,20 +1,37 @@
 "use client";
 
-"use client";
-
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowRight, Search, Filter } from 'lucide-react';
-import Link from 'next/link';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { format } from 'date-fns';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ArrowRight, Search, Filter } from "lucide-react";
+import Link from "next/link";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { format } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DisputeData {
   id: string;
@@ -32,9 +49,9 @@ export default function AdminDisputesPage() {
   const [disputes, setDisputes] = useState<DisputeData[]>([]);
   const [filteredDisputes, setFilteredDisputes] = useState<DisputeData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
 
   useEffect(() => {
     fetchAllDisputes();
@@ -47,18 +64,18 @@ export default function AdminDisputesPage() {
   const fetchAllDisputes = async () => {
     try {
       const disputesQuery = query(
-        collection(db, 'disputes'),
-        orderBy('createdAt', 'desc')
+        collection(db, "disputes"),
+        orderBy("createdAt", "desc")
       );
       const snapshot = await getDocs(disputesQuery);
-      const disputesData = snapshot.docs.map(doc => ({
+      const disputesData = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       })) as DisputeData[];
-      
+
       setDisputes(disputesData);
     } catch (error) {
-      console.error('Error fetching disputes:', error);
+      console.error("Error fetching disputes:", error);
     } finally {
       setLoading(false);
     }
@@ -68,19 +85,24 @@ export default function AdminDisputesPage() {
     let filtered = disputes;
 
     if (searchTerm) {
-      filtered = filtered.filter(dispute =>
-        dispute.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        dispute.dealTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        dispute.disputedByEmail.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (dispute) =>
+          dispute.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          dispute.dealTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          dispute.disputedByEmail
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
       );
     }
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(dispute => dispute.status === statusFilter);
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((dispute) => dispute.status === statusFilter);
     }
 
-    if (priorityFilter !== 'all') {
-      filtered = filtered.filter(dispute => dispute.priority === priorityFilter);
+    if (priorityFilter !== "all") {
+      filtered = filtered.filter(
+        (dispute) => dispute.priority === priorityFilter
+      );
     }
 
     setFilteredDisputes(filtered);
@@ -88,30 +110,44 @@ export default function AdminDisputesPage() {
 
   const getStatusVariant = (status: string) => {
     switch (status) {
-      case 'open': return 'destructive';
-      case 'investigating': return 'secondary';
-      case 'resolved': return 'default';
-      case 'closed': return 'outline';
-      default: return 'outline';
+      case "open":
+        return "destructive";
+      case "investigating":
+        return "secondary";
+      case "resolved":
+        return "default";
+      case "closed":
+        return "outline";
+      default:
+        return "outline";
     }
   };
 
   const getPriorityVariant = (priority: string) => {
     switch (priority) {
-      case 'high': return 'destructive';
-      case 'medium': return 'secondary';
-      case 'low': return 'outline';
-      default: return 'outline';
+      case "high":
+        return "destructive";
+      case "medium":
+        return "secondary";
+      case "low":
+        return "outline";
+      default:
+        return "outline";
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'open': return 'Open';
-      case 'investigating': return 'Investigating';
-      case 'resolved': return 'Resolved';
-      case 'closed': return 'Closed';
-      default: return status;
+      case "open":
+        return "Open";
+      case "investigating":
+        return "Investigating";
+      case "resolved":
+        return "Resolved";
+      case "closed":
+        return "Closed";
+      default:
+        return status;
     }
   };
 
@@ -124,7 +160,9 @@ export default function AdminDisputesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Dispute Management</h1>
-        <p className="text-muted-foreground">Review and resolve user disputes</p>
+        <p className="text-muted-foreground">
+          Review and resolve user disputes
+        </p>
       </div>
 
       <Card>
@@ -193,17 +231,22 @@ export default function AdminDisputesPage() {
               <TableBody>
                 {filteredDisputes.map((dispute) => (
                   <TableRow key={dispute.id}>
-                    <TableCell className="font-medium">{dispute.subject}</TableCell>
+                    <TableCell className="font-medium">
+                      {dispute.subject}
+                    </TableCell>
                     <TableCell>
                       <div>
                         <div className="font-medium">{dispute.dealTitle}</div>
-                        <div className="text-sm text-muted-foreground">{dispute.category}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {dispute.category}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>{dispute.disputedByEmail}</TableCell>
                     <TableCell>
                       <Badge variant={getPriorityVariant(dispute.priority)}>
-                        {dispute.priority.charAt(0).toUpperCase() + dispute.priority.slice(1)}
+                        {dispute.priority.charAt(0).toUpperCase() +
+                          dispute.priority.slice(1)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -212,7 +255,9 @@ export default function AdminDisputesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {toDate(dispute.createdAt) ? format(toDate(dispute.createdAt)!, 'PPP') : 'N/A'}
+                      {toDate(dispute.createdAt)
+                        ? format(toDate(dispute.createdAt)!, "PPP")
+                        : "N/A"}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon" asChild>
@@ -230,9 +275,11 @@ export default function AdminDisputesPage() {
               <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold">No disputes found</h3>
               <p className="text-muted-foreground">
-                {searchTerm || statusFilter !== 'all' || priorityFilter !== 'all'
-                  ? 'Try adjusting your filters'
-                  : 'No disputes have been filed yet'}
+                {searchTerm ||
+                statusFilter !== "all" ||
+                priorityFilter !== "all"
+                  ? "Try adjusting your filters"
+                  : "No disputes have been filed yet"}
               </p>
             </div>
           )}

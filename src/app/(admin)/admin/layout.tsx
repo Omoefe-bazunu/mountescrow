@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Shield, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 // Admin email list - in production, this should be in a secure config
 const ADMIN_EMAILS = [
-  'admin@mountescrow.com',
-  'support@mountescrow.com',
+  "admin@mountescrow.com",
+  "raniem57@gmail.com",
   // Add more admin emails as needed
 ];
 
@@ -31,9 +31,9 @@ export default function AdminLayout({
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        setIsAdmin(ADMIN_EMAILS.includes(currentUser.email || ''));
+        setIsAdmin(ADMIN_EMAILS.includes(currentUser.email || ""));
       } else {
-        router.push('/login');
+        router.push("/login");
       }
       setLoading(false);
     });
@@ -42,7 +42,7 @@ export default function AdminLayout({
 
   const handleLogout = async () => {
     await auth.signOut();
-    router.push('/');
+    router.push("/");
   };
 
   if (loading) {
@@ -88,9 +88,7 @@ export default function AdminLayout({
           </div>
         </div>
       </header>
-      <main className="container mx-auto px-4 py-6">
-        {children}
-      </main>
+      <main className="container mx-auto px-4 py-6">{children}</main>
     </div>
   );
 }

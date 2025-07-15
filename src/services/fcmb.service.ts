@@ -30,23 +30,17 @@ let accessToken: string | null = null;
 let tokenExpiry: number | null = null;
 
 async function getAccessToken(): Promise<string> {
+  // Return cached token if valid
   if (accessToken && tokenExpiry && Date.now() < tokenExpiry) {
-    if (!accessToken) {
-      throw new Error("Access token is null");
-    }
-    if (!accessToken) {
-      throw new Error("Access token is null");
-    }
-    if (!accessToken) {
-      throw new Error("Access token is null");
-    }
     return accessToken;
   }
 
+  // Validate configuration
   if (!fcmbConfig.clientId || !fcmbConfig.clientSecret || !fcmbConfig.authUrl) {
-    throw new Error(
-      "FCMB configuration is incomplete. Please check environment variables."
-    );
+    const errorMsg =
+      "FCMB configuration is incomplete. Please check environment variables.";
+    await logEvent("ERROR", "FCMB_AUTH", errorMsg);
+    throw new Error(errorMsg);
   }
 
   try {
@@ -98,6 +92,11 @@ async function getAccessToken(): Promise<string> {
       "FCMB_AUTH",
       "Successfully obtained FCMB access token."
     );
+
+    if (!accessToken) {
+      throw new Error("Access token was not properly set");
+    }
+
     return accessToken;
   } catch (error) {
     console.error("FCMB Auth Error:", error);
@@ -164,6 +163,8 @@ async function fcmbApiRequest(endpoint: string, options: RequestInit = {}) {
   });
   return responseData;
 }
+
+// [Rest of your existing code remains exactly the same...]
 
 // --- WALLET & USER MANAGEMENT ---
 
@@ -301,7 +302,13 @@ export async function createWalletForUser(
       updatedAt: FieldValue.serverTimestamp(),
     };
 
+    // Update both userWallets and users collections
     await db.collection("userWallets").doc(userId).set(newWallet);
+    await db.collection("users").doc(userId).update({
+      kycStatus: "approved",
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
     await logEvent(
       "INFO",
       "FCMB_SERVICE",
@@ -311,6 +318,19 @@ export async function createWalletForUser(
 
     return newWallet;
   } catch (error: any) {
+    // Update user's KYC status to rejected on failure
+    try {
+      await db.collection("users").doc(userId).update({
+        kycStatus: "rejected",
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    } catch (updateError) {
+      console.error(
+        "Failed to update user KYC status to rejected:",
+        updateError
+      );
+    }
+
     await logEvent(
       "ERROR",
       "FCMB_SERVICE",
@@ -503,6 +523,18 @@ export async function transferToEscrow(
       serviceRef: response.data?.reference || response.data?.id,
     });
 
+    await logEvent(
+      "INFO",
+      "FCMB_SERVICE",
+      "Successfully transferred to escrow",
+      {
+        dealId,
+        buyerUserId,
+        amount,
+        serviceRef: response.data?.reference || response.data?.id,
+      }
+    );
+
     return response;
   } catch (error) {
     await logEvent("ERROR", "FCMB_SERVICE", "Failed to transfer to escrow", {
@@ -558,6 +590,19 @@ export async function releaseFromEscrow(
       service: "FCMB",
       serviceRef: response.data?.reference || response.data?.id,
     });
+
+    await logEvent(
+      "INFO",
+      "FCMB_SERVICE",
+      "Successfully released from escrow",
+      {
+        dealId,
+        sellerUserId,
+        amount,
+        milestoneTitle,
+        serviceRef: response.data?.reference || response.data?.id,
+      }
+    );
 
     return response;
   } catch (error) {
@@ -623,6 +668,17 @@ export async function requestWithdrawal(
       service: "FCMB",
       serviceRef: response.data?.reference || response.data?.id,
     });
+
+    await logEvent(
+      "INFO",
+      "FCMB_SERVICE",
+      "Successfully processed withdrawal",
+      {
+        userId,
+        amount,
+        serviceRef: response.data?.reference || response.data?.id,
+      }
+    );
 
     return response;
   } catch (error) {

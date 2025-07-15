@@ -14,6 +14,7 @@ import {
   LogOut,
   ArrowRightLeft,
   MailWarning,
+  Verified,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,7 @@ const navItems = [
   { href: "/transactions", icon: ArrowRightLeft, label: "Transactions" },
   { href: "/wallet", icon: Wallet, label: "Wallet" },
   { href: "/disputes", icon: Shield, label: "Disputes" },
+  { href: "/kyc", icon: Verified, label: "KYC" },
 ];
 
 export default function DashboardLayout({
