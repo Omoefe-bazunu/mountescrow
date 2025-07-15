@@ -2,10 +2,10 @@
 // It ensures that secret keys are not exposed in the client-side code.
 
 export const fcmbConfig = {
-  clientId: process.env.NEXT_PUBLIC_FCMB_CLIENT_ID,
-  clientSecret: process.env.NEXT_PUBLIC_FCMB_CLIENT_SECRET,
-  authUrl: process.env.NEXT_PUBLIC_FCMB_AUTH_URL,
-  apiBaseUrl: process.env.NEXT_PUBLIC_FCMB_API_BASE_URL,
+  clientId: process.env.FCMB_CLIENT_ID,
+  clientSecret: process.env.FCMB_CLIENT_SECRET,
+  authUrl: process.env.FCMB_AUTH_URL,
+  apiBaseUrl: process.env.FCMB_API_BASE_URL,
 };
 
 export const emailjsConfig = {
