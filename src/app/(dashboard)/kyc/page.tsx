@@ -152,7 +152,33 @@ export default function KycPage() {
       console.error("KYC submission error:", error);
 
       let toastDescription = "Please check your details and try again.";
+      let specificErrorMessage = null;
+
+      // Attempt to parse the JSON part of the error message
       if (error.message && typeof error.message === "string") {
+        const jsonStartIndex = error.message.indexOf("{");
+        if (jsonStartIndex !== -1) {
+          const jsonString = error.message.substring(jsonStartIndex);
+          try {
+            const errorJson = JSON.parse(jsonString);
+            if (
+              errorJson.messages &&
+              Array.isArray(errorJson.messages) &&
+              errorJson.messages.length > 0
+            ) {
+              specificErrorMessage = errorJson.messages[0];
+            }
+          } catch (parseError) {
+            // JSON parsing failed, fall through to check for known string patterns
+            console.warn("Failed to parse error message JSON:", parseError);
+          }
+        }
+      }
+
+      if (specificErrorMessage) {
+        toastDescription = specificErrorMessage;
+      } else if (error.message && typeof error.message === "string") {
+        // Fallback to checking for known string patterns if JSON parsing didn't yield a specific message
         if (
           error.message.includes(
             "names provided do not match the ones on the BVN record"
@@ -170,7 +196,7 @@ export default function KycPage() {
         ) {
           toastDescription = "Date of birth must be in YYYY-MM-DD format.";
         } else {
-          toastDescription = error.message; // Fallback to the raw error message
+          toastDescription = error.message; // Final fallback to the raw error message
         }
       }
 
