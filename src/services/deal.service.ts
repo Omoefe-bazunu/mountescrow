@@ -1,3 +1,4 @@
+// src/services/deal.service.ts
 import { db, auth } from "@/lib/firebase";
 import {
   collection,
@@ -55,6 +56,7 @@ export interface DealData
   createdAt: any;
   updatedAt: any;
   milestones: Milestone[];
+  escrowFeePayer: number; // New: Percentage buyer pays (25, 50, 75, 100)
 }
 
 async function checkUserPermissions(): Promise<string> {
@@ -103,6 +105,7 @@ export async function createDealFromProposal(
       proposalId: proposal.id,
       status: "Awaiting Funding" as const,
       milestones: initialMilestones,
+      escrowFeePayer: proposal.escrowFeePayer, // Pass the escrow fee payer setting
     };
 
     const docRef = await addDoc(collection(db, "deals"), {
@@ -231,9 +234,10 @@ export async function fundDeal(
     throw new Error("Only the buyer can fund this deal");
   }
 
-  // Buyer only pays project amount + half of escrow fee
-  const buyerEscrowFee = dealData.escrowFee / 2;
-  const expectedAmount = dealData.totalAmount + buyerEscrowFee;
+  // Buyer only pays project amount + their portion of escrow fee
+  const buyerEscrowFeePortion =
+    dealData.escrowFee * (dealData.escrowFeePayer / 100);
+  const expectedAmount = dealData.totalAmount + buyerEscrowFeePortion;
 
   if (Math.abs(amount - expectedAmount) > 0.01) {
     throw new Error(
@@ -312,9 +316,12 @@ export async function approveAndReleaseMilestone(
     const sellerId = sellerUserQuery.docs[0].id;
 
     // Calculate seller's portion after deducting their half of escrow fee
-    const sellerEscrowFee = dealData.escrowFee / 2;
+    // Seller's escrow fee portion = deal.escrowFee * ((100 - deal.escrowFeePayer) / 100)
+    const sellerEscrowFeePortion =
+      dealData.escrowFee * ((100 - dealData.escrowFeePayer) / 100);
+    // Distribute seller's escrow fee portion proportionally across milestones
     const milestoneEscrowFee =
-      (milestone.amount / dealData.totalAmount) * sellerEscrowFee;
+      (milestone.amount / dealData.totalAmount) * sellerEscrowFeePortion;
     const sellerReceives = milestone.amount - milestoneEscrowFee;
 
     // Ensure seller receives a positive amount

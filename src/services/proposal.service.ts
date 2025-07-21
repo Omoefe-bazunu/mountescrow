@@ -15,6 +15,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { User } from "firebase/auth";
 import { sendEmail } from "./email.service";
 import { validateEnvironmentVariables } from "@/lib/config";
+import { createDealFromProposal, fundDeal } from "./deal.service"; // Import deal service functions
 
 export interface MilestoneData {
   title: string;
@@ -31,8 +32,14 @@ export interface ProposalData {
   milestones: MilestoneData[];
   totalAmount: number;
   escrowFee: number;
-  status: "Pending" | "Accepted" | "Declined" | "Completed";
-  buyerId: string;
+  escrowFeePayer: number; // New: Percentage buyer pays (25, 50, 75, 100)
+  status:
+    | "Pending"
+    | "Accepted"
+    | "Declined"
+    | "Completed"
+    | "AwaitingBuyerAcceptance"; // New status
+  buyerId: string | null; // Can be null for seller-initiated proposals
   buyerEmail: string | null;
   createdAt: any;
   updatedAt: any;
@@ -41,12 +48,13 @@ export interface ProposalData {
 export interface CreateProposalData {
   projectTitle: string;
   description: string;
-  sellerEmail: string;
+  counterpartyEmail: string; // New: Email of the other party
+  creatorRole: "buyer" | "seller"; // New: Role of the creator
   files?: File[]; // Files to upload
   milestones: MilestoneData[];
   totalAmount: number;
   escrowFee: number;
-  status: "Pending" | "Accepted" | "Declined" | "Completed";
+  escrowFeePayer: number; // New: Percentage buyer pays (25, 50, 75, 100)
 }
 
 async function checkUserPermissions(): Promise<string> {
@@ -110,8 +118,8 @@ export async function createProposal(proposalData: CreateProposalData) {
   if (!proposalData.description?.trim()) {
     throw new Error("Project description is required");
   }
-  if (!proposalData.sellerEmail?.trim()) {
-    throw new Error("Seller email is required");
+  if (!proposalData.counterpartyEmail?.trim()) {
+    throw new Error("Counterparty email is required");
   }
   if (!proposalData.milestones?.length) {
     throw new Error("At least one milestone is required");
@@ -122,11 +130,16 @@ export async function createProposal(proposalData: CreateProposalData) {
   if (proposalData.escrowFee < 0) {
     throw new Error("Escrow fee cannot be negative");
   }
+  if (![25, 50, 75, 100].includes(proposalData.escrowFeePayer)) {
+    throw new Error(
+      "Invalid escrow fee payer percentage. Must be 25, 50, 75, or 100."
+    );
+  }
 
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(proposalData.sellerEmail.trim())) {
-    throw new Error("Please enter a valid email address");
+  if (!emailRegex.test(proposalData.counterpartyEmail.trim())) {
+    throw new Error("Please enter a valid email address for the counterparty");
   }
 
   // Validate milestones
@@ -156,31 +169,61 @@ export async function createProposal(proposalData: CreateProposalData) {
       fileUrls = await uploadProjectFiles(proposalData.files);
     }
 
+    let buyerId: string | null;
+    let buyerEmail: string | null;
+    let sellerEmail: string;
+    let status: ProposalData["status"];
+    let emailRecipient: string;
+    let emailSubject: string;
+    let emailMessage: string;
+
+    if (proposalData.creatorRole === "buyer") {
+      buyerId = user.uid;
+      buyerEmail = user.email;
+      sellerEmail = proposalData.counterpartyEmail.trim();
+      status = "Pending"; // Buyer-initiated proposals are pending seller acceptance
+      emailRecipient = sellerEmail;
+      emailSubject = `New Proposal: ${proposalData.projectTitle}`;
+      emailMessage = `You've received a new proposal from ${user.email} for the project "${proposalData.projectTitle}".`;
+    } else {
+      // creatorRole === "seller"
+      buyerId = null; // Buyer ID is unknown until they accept
+      buyerEmail = proposalData.counterpartyEmail.trim(); // Counterparty is the buyer
+      sellerEmail = user.email!; // Current user is the seller
+      status = "AwaitingBuyerAcceptance"; // Seller-initiated proposals await buyer acceptance
+      emailRecipient = buyerEmail;
+      emailSubject = `New Proposal Invitation: ${proposalData.projectTitle}`;
+      emailMessage = `You've received a new proposal invitation from ${user.email} for the project "${proposalData.projectTitle}". Please review and accept to proceed.`;
+    }
+
     // Create the proposal document
-    const proposalDocData = {
+    const proposalDocData: Omit<ProposalData, "createdAt" | "updatedAt"> = {
       projectTitle: proposalData.projectTitle.trim(),
       description: proposalData.description.trim(),
-      sellerEmail: proposalData.sellerEmail.trim(),
+      sellerEmail: sellerEmail,
       files: fileUrls,
       milestones: proposalData.milestones,
       totalAmount: proposalData.totalAmount,
       escrowFee: proposalData.escrowFee,
-      status: proposalData.status,
-      buyerId: user.uid,
-      buyerEmail: user.email,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      escrowFeePayer: proposalData.escrowFeePayer,
+      status: status,
+      buyerId: buyerId,
+      buyerEmail: buyerEmail,
     };
 
-    const docRef = await addDoc(collection(db, "proposals"), proposalDocData);
+    const docRef = await addDoc(collection(db, "proposals"), {
+      ...proposalDocData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
 
     // Send email notification
     try {
       await sendEmail({
-        to_email: proposalData.sellerEmail.trim(),
-        to_name: "Seller",
-        subject: `New Proposal: ${proposalData.projectTitle}`,
-        message: `You've received a new proposal from ${user.email} for the project "${proposalData.projectTitle}".`,
+        to_email: emailRecipient,
+        to_name: proposalData.creatorRole === "buyer" ? "Seller" : "Buyer",
+        subject: emailSubject,
+        message: emailMessage,
         deal_title: proposalData.projectTitle,
         deal_url: `${window.location.origin}/proposals/${docRef.id}`,
       });
@@ -214,7 +257,8 @@ export async function getProposals(
       proposalsCol,
       or(
         where("buyerId", "==", user.uid),
-        where("sellerEmail", "==", user.email)
+        where("sellerEmail", "==", user.email),
+        where("buyerEmail", "==", user.email) // Include proposals where current user is the buyer (for seller-initiated)
       )
     );
     const querySnapshot = await getDocs(q);
@@ -262,7 +306,8 @@ export async function getProposalById(
     // Check if user has permission to view this proposal
     if (
       proposalData.buyerId === user.uid ||
-      proposalData.sellerEmail === user.email
+      proposalData.sellerEmail === user.email ||
+      proposalData.buyerEmail === user.email // Allow buyer to view seller-initiated proposals
     ) {
       return { id: docSnap.id, ...proposalData };
     } else {
@@ -303,11 +348,22 @@ export async function updateProposalStatus(
 
     const proposalData = proposalDoc.data() as ProposalData;
 
-    if (proposalData.status !== "Pending") {
+    // Only allow status updates from Pending (buyer-initiated) or AwaitingBuyerAcceptance (seller-initiated)
+    if (!["Pending", "AwaitingBuyerAcceptance"].includes(proposalData.status)) {
       throw new Error(
         `Cannot ${status.toLowerCase()} proposal. Current status: ${
           proposalData.status
         }`
+      );
+    }
+
+    // Ensure only the seller can accept/decline buyer-initiated proposals
+    if (
+      proposalData.status === "Pending" &&
+      auth.currentUser?.email !== proposalData.sellerEmail
+    ) {
+      throw new Error(
+        "You are not authorized to update this proposal's status."
       );
     }
 
@@ -348,5 +404,90 @@ export async function updateProposalStatus(
     }
 
     throw new Error("Failed to update proposal status. Please try again.");
+  }
+}
+
+export async function acceptAndFundSellerInitiatedProposal(
+  proposalId: string,
+  buyerUid: string
+) {
+  const user = auth.currentUser;
+  if (!user || user.uid !== buyerUid) {
+    throw new Error(
+      "User not authenticated or authorized to fund this proposal."
+    );
+  }
+
+  const proposalDocRef = doc(db, "proposals", proposalId);
+  const proposalDoc = await getDoc(proposalDocRef);
+
+  if (!proposalDoc.exists()) {
+    throw new Error("Proposal not found.");
+  }
+
+  const proposalData = proposalDoc.data() as ProposalData;
+
+  if (proposalData.status !== "AwaitingBuyerAcceptance") {
+    throw new Error(
+      `Cannot accept and fund. Proposal status: ${proposalData.status}`
+    );
+  }
+
+  if (user.email !== proposalData.buyerEmail) {
+    throw new Error("You are not the intended buyer for this proposal.");
+  }
+
+  try {
+    // Update proposal status and set buyerId
+    await updateDoc(proposalDocRef, {
+      status: "Accepted",
+      buyerId: buyerUid,
+      updatedAt: serverTimestamp(),
+    });
+
+    // Create updated proposal object with accepted status and buyerId for deal creation
+    const updatedProposal = {
+      ...proposalData,
+      id: proposalId, // Add ID for deal creation
+      status: "Accepted" as const,
+      buyerId: buyerUid,
+    };
+
+    // Create deal from the updated proposal
+    const dealId = await createDealFromProposal(updatedProposal);
+
+    // Fund the deal immediately
+    // Buyer only pays project amount + their portion of escrow fee
+    const buyerEscrowFeePortion =
+      proposalData.escrowFee * (proposalData.escrowFeePayer / 100);
+    const totalToFund = proposalData.totalAmount + buyerEscrowFeePortion;
+
+    await fundDeal(dealId, buyerUid, totalToFund);
+
+    // Send notification email to seller
+    try {
+      await sendEmail({
+        to_email: proposalData.sellerEmail,
+        to_name: "Seller",
+        subject: `Proposal Accepted & Funded: ${proposalData.projectTitle}`,
+        message: `Your proposal for "${proposalData.projectTitle}" has been accepted and funded by the buyer. A new deal has been created and is now in progress.`,
+        deal_title: proposalData.projectTitle,
+        deal_url: `${window.location.origin}/deals/${dealId}`,
+      });
+    } catch (emailError) {
+      console.error(
+        "Failed to send acceptance/funding notification email:",
+        emailError
+      );
+    }
+
+    return dealId;
+  } catch (error) {
+    console.error(
+      "Error accepting and funding seller-initiated proposal:",
+      error
+    );
+    // Revert proposal status if funding fails? This can get complex. For now, just re-throw.
+    throw error;
   }
 }

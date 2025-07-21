@@ -3,100 +3,101 @@ service cloud.firestore {
   match /databases/{database}/documents {
   
     // Default deny all access
-    match /{document=**} {
-      allow read, write: if false;
-    }
-    
-    // Users can read and update their own user document
-    match /users/{userId} {
-      allow read, update: if request.auth != null && request.auth.uid == userId;
-      // Allow creation during signup
-      allow create: if request.auth != null;
-    }
-    
-    // User wallets are highly sensitive and should only be read by the owner.
-    // All writes/updates are handled by the secure backend (admin SDK).
-    match /userWallets/{userId} {
-        allow read: if request.auth != null && request.auth.uid == userId;
-        allow write: if false; // Disallow client-side writes
-    }
-    
-    // Proposals can be read by buyer or seller.
-    // Buyer can create. Seller can update (accept/decline).
-    match /proposals/{proposalId} {
-       allow read: if request.auth != null && 
-         (request.auth.uid == resource.data.buyerId || 
-          request.auth.token.email == resource.data.sellerEmail);
-       
-       allow create: if request.auth != null && 
-         request.auth.uid == request.resource.data.buyerId &&
-         request.auth.token.email_verified == true;
-       
-       allow update: if request.auth != null && 
-         request.auth.token.email == resource.data.sellerEmail &&
-         request.auth.token.email_verified == true &&
-         // Only allow status updates from Pending to Accepted/Declined
-         resource.data.status == "Pending" &&
-         request.resource.data.status in ["Accepted", "Declined"] &&
-         // Ensure other fields aren't modified during status update
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
-    }
-    
-    // Deals can be read by buyer or seller.
-    // Seller can create deals from accepted proposals.
-    // Both parties can update for milestone management.
-    match /deals/{dealId} {
-       allow read: if request.auth != null && 
-         (request.auth.uid == resource.data.buyerId || 
-          request.auth.token.email == resource.data.sellerEmail);
-       
-       // Allow seller to create deal from accepted proposal
-       allow create: if request.auth != null && 
-         request.auth.token.email == request.resource.data.sellerEmail &&
-         request.auth.token.email_verified == true &&
-         request.resource.data.status == "Awaiting Funding" &&
-         exists(/databases/$(database)/documents/proposals/$(request.resource.data.proposalId)) &&
-         get(/databases/$(database)/documents/proposals/$(request.resource.data.proposalId)).data.status == "Accepted";
-       
-       // Allow buyer/seller to update milestones and deal status
-       allow update: if request.auth != null && 
-         (request.auth.uid == resource.data.buyerId || 
-          request.auth.token.email == resource.data.sellerEmail) &&
-         request.auth.token.email_verified == true;
-    }
-    
-    // Disputes can be read and created by the user who filed them.
-    // Updates are typically handled by admins/support, but allow users to update their own disputes.
-    match /disputes/{disputeId} {
-      allow read: if request.auth != null && 
-        (request.auth.uid == resource.data.disputedBy || 
-         request.auth.token.email == resource.data.disputedAgainst);
-      
-      allow create: if request.auth != null && 
-        request.resource.data.disputedBy == request.auth.uid &&
-        request.auth.token.email_verified == true;
-      
-      allow update: if request.auth != null && 
-        request.auth.uid == resource.data.disputedBy &&
-        request.auth.token.email_verified == true;
-    }
-    
-    // Transactions are append-only and created by the backend.
-    // Users can read their own transactions.
-    match /transactions/{transactionId} {
-        allow read: if request.auth != null && 
-          request.auth.uid == resource.data.userId;
-        allow write: if false;
-    }
-    
-    // Logs are write-only from the backend. Disallow all client access.
-    match /logs/{logId} {
-        allow read, write: if false;
-    }
-    
-    // Config is read-only from the backend. Disallow all client access.
-    match /config/{configId} {
-        allow read, write: if false;
-    }
+match /{document=**} {
+  allow read, write: if false;
+}
+
+// Users can read and update their own user document
+match /users/{userId} {
+  allow read, update: if request.auth != null && request.auth.uid == userId;
+  // Allow creation during signup
+  allow create: if request.auth != null;
+}
+
+// User wallets are highly sensitive and should only be read by the owner.
+// All writes/updates are handled by the secure backend (admin SDK).
+match /userWallets/{userId} {
+    allow read: if request.auth != null && request.auth.uid == userId;
+    allow write: if false; // Disallow client-side writes
+}
+
+// Proposals can be read by buyer or seller.
+// Buyer can create. Seller can update (accept/decline).
+match /proposals/{proposalId} {
+   allow read: if request.auth != null && 
+     (request.auth.uid == resource.data.buyerId || 
+      request.auth.token.email == resource.data.sellerEmail);
+   
+   allow create: if request.auth != null && 
+     request.auth.uid == request.resource.data.buyerId &&
+     request.auth.token.email_verified == true;
+   
+   allow update: if request.auth != null && 
+     request.auth.token.email == resource.data.sellerEmail &&
+     request.auth.token.email_verified == true &&
+     // Only allow status updates from Pending to Accepted/Declined
+     resource.data.status == "Pending" &&
+     request.resource.data.status in ["Accepted", "Declined"] &&
+     // Ensure other fields aren't modified during status update
+     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
+}
+
+// Deals can be read by buyer or seller.
+// Seller can create deals from accepted proposals.
+// Both parties can update for milestone management.
+match /deals/{dealId} {
+   allow read: if request.auth != null && 
+     (request.auth.uid == resource.data.buyerId || 
+      request.auth.token.email == resource.data.sellerEmail);
+   
+   // Allow seller to create deal from accepted proposal
+   allow create: if request.auth != null && 
+     request.auth.token.email == request.resource.data.sellerEmail &&
+     request.auth.token.email_verified == true &&
+     request.resource.data.status == "Awaiting Funding" &&
+     exists(/databases/$(database)/documents/proposals/$(request.resource.data.proposalId)) &&
+     get(/databases/$(database)/documents/proposals/$(request.resource.data.proposalId)).data.status == "Accepted";
+   
+   // Allow buyer/seller to update milestones and deal status
+   allow update: if request.auth != null && 
+     (request.auth.uid == resource.data.buyerId || 
+      request.auth.token.email == resource.data.sellerEmail) &&
+     request.auth.token.email_verified == true;
+}
+
+// Disputes can be read and created by the user who filed them.
+// Updates are typically handled by admins/support, but allow users to update their own disputes.
+match /disputes/{disputeId} {
+  allow read: if request.auth != null && 
+    (request.auth.uid == resource.data.disputedBy || 
+     request.auth.token.email == resource.data.disputedAgainst);
+  
+  allow create: if request.auth != null && 
+    request.resource.data.disputedBy == request.auth.uid &&
+    request.auth.token.email_verified == true;
+  
+  allow update: if request.auth != null && 
+    request.auth.uid == resource.data.disputedBy &&
+    request.auth.token.email_verified == true;
+}
+
+// Transactions are append-only and created by the backend.
+// Users can read their own transactions.
+match /transactions/{transactionId} {
+    allow read: if request.auth != null && 
+      request.auth.uid == resource.data.userId;
+    allow write: if false;
+}
+
+// Logs are write-only from the backend. Disallow all client access.
+match /logs/{logId} {
+    allow read, write: if false;
+}
+
+// Config is read-only from the backend. Disallow all client access.
+match /config/{configId} {
+    allow read, write: if false;
+}
+
   }
 }

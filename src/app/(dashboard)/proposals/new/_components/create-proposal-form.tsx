@@ -42,6 +42,14 @@ import { auth } from "@/lib/firebase";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileUpload } from "@/components/ui/file-upload";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const milestoneSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -53,7 +61,11 @@ const milestoneSchema = z.object({
 const formSchema = z.object({
   projectTitle: z.string().min(1, "Project title is required"),
   description: z.string().min(1, "Project description is required"),
-  sellerEmail: z.string().email("Please enter a valid email"),
+  creatorRole: z.enum(["buyer", "seller"], {
+    required_error: "You must select a role.",
+  }),
+  counterpartyEmail: z.string().email("Please enter a valid email"),
+  escrowFeePayer: z.coerce.number().int().min(0).max(100), // Percentage buyer pays
   milestones: z
     .array(milestoneSchema)
     .min(1, "At least one milestone is required"),
@@ -84,7 +96,9 @@ export function CreateProposalForm() {
     defaultValues: {
       projectTitle: "",
       description: "",
-      sellerEmail: "",
+      creatorRole: "buyer", // Default to buyer
+      counterpartyEmail: "",
+      escrowFeePayer: 50, // Default to 50% buyer pays
       milestones: [
         {
           title: "",
@@ -106,6 +120,16 @@ export function CreateProposalForm() {
     name: "milestones",
   });
 
+  const watchedCreatorRole = useWatch({
+    control: form.control,
+    name: "creatorRole",
+  });
+
+  const watchedEscrowFeePayer = useWatch({
+    control: form.control,
+    name: "escrowFeePayer",
+  });
+
   const { totalAmount, escrowFee } = useMemo(() => {
     const total = watchedMilestones.reduce((sum, milestone) => {
       const amount = Number(milestone?.amount) || 0;
@@ -115,6 +139,14 @@ export function CreateProposalForm() {
     const fee = total * feePercentage;
     return { totalAmount: total, escrowFee: fee };
   }, [watchedMilestones]);
+
+  const buyerEscrowFeePortion = useMemo(() => {
+    return escrowFee * (watchedEscrowFeePayer / 100);
+  }, [escrowFee, watchedEscrowFeePayer]);
+
+  const sellerEscrowFeePortion = useMemo(() => {
+    return escrowFee * ((100 - watchedEscrowFeePayer) / 100);
+  }, [escrowFee, watchedEscrowFeePayer]);
 
   const handleFilesChange = useCallback((files: File[]) => {
     setProjectFiles(files);
@@ -170,11 +202,12 @@ export function CreateProposalForm() {
       const proposalData = {
         projectTitle: values.projectTitle,
         description: values.description,
-        sellerEmail: values.sellerEmail,
+        counterpartyEmail: values.counterpartyEmail,
+        creatorRole: values.creatorRole,
         milestones,
         totalAmount,
         escrowFee,
-        status: "Pending" as const,
+        escrowFeePayer: values.escrowFeePayer,
         files: projectFiles, // Pass files directly
       };
 
@@ -269,17 +302,99 @@ export function CreateProposalForm() {
 
           <FormField
             control={form.control}
-            name="sellerEmail"
+            name="creatorRole"
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <FormLabel>I am creating this proposal as a:</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex flex-col space-y-1"
+                    disabled={loading}
+                  >
+                    <FormItem className="flex items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value="buyer" />
+                      </FormControl>
+                      <FormLabel className="font-normal">
+                        Buyer (I am hiring a seller)
+                      </FormLabel>
+                    </FormItem>
+                    <FormItem className="flex items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value="seller" />
+                      </FormControl>
+                      <FormLabel className="font-normal">
+                        Seller (I am proposing work to a buyer)
+                      </FormLabel>
+                    </FormItem>
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="counterpartyEmail"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Seller's Email</FormLabel>
+                <FormLabel>
+                  {watchedCreatorRole === "buyer"
+                    ? "Seller's Email"
+                    : "Buyer's Email"}
+                </FormLabel>
                 <FormControl>
                   <Input
                     type="email"
-                    placeholder="seller@example.com"
+                    placeholder={
+                      watchedCreatorRole === "buyer"
+                        ? "seller@example.com"
+                        : "buyer@example.com"
+                    }
                     {...field}
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="escrowFeePayer"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Who pays the escrow fee?</FormLabel>
+                <Select
+                  onValueChange={(value) => field.onChange(Number(value))}
+                  defaultValue={String(field.value)}
+                  disabled={loading}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select fee payment split" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="100">Buyer pays 100%</SelectItem>
+                    <SelectItem value="75">
+                      Buyer pays 75%, Seller pays 25%
+                    </SelectItem>
+                    <SelectItem value="50">
+                      Buyer pays 50%, Seller pays 50%
+                    </SelectItem>
+                    <SelectItem value="25">
+                      Buyer pays 25%, Seller pays 75%
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p>
+                  This determines how the escrow fee is split between the buyer
+                  and seller.
+                </p>
                 <FormMessage />
               </FormItem>
             )}
@@ -458,11 +573,11 @@ export function CreateProposalForm() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground ml-4">• Buyer pays</span>
-              <span>${(escrowFee / 2).toFixed(2)}</span>
+              <span>${buyerEscrowFeePortion.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground ml-4">• Seller pays</span>
-              <span>${(escrowFee / 2).toFixed(2)}</span>
+              <span>${sellerEscrowFeePortion.toFixed(2)}</span>
             </div>
             <div className="flex justify-between pt-2 border-t font-medium">
               <span>Project Value</span>

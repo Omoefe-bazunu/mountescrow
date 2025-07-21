@@ -6,8 +6,9 @@ import {
   getProposalById,
   ProposalData,
   updateProposalStatus,
+  acceptAndFundSellerInitiatedProposal,
 } from "@/services/proposal.service";
-import { createDealFromProposal } from "@/services/deal.service";
+import { createDealFromProposal } from "@/services/deal.service"; // Keep for seller-initiated deal creation
 import {
   Card,
   CardContent,
@@ -36,6 +37,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { auth } from "@/lib/firebase";
+import { User as FirebaseUser } from "firebase/auth"; // Alias User to FirebaseUser to avoid conflict
 
 export default function ProposalDetailPage() {
   const params = useParams();
@@ -53,32 +55,38 @@ export default function ProposalDetailPage() {
     new Set()
   );
 
-  const currentUser = auth.currentUser;
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
 
   useEffect(() => {
-    if (id) {
-      const fetchProposal = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-          const fetchedProposal = await getProposalById(id);
-          if (fetchedProposal) {
-            setProposal(fetchedProposal);
-          } else {
-            setError(
-              "Proposal not found or you don't have permission to view it."
-            );
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      if (user && id) {
+        const fetchProposal = async () => {
+          setLoading(true);
+          setError(null);
+          try {
+            const fetchedProposal = await getProposalById(id);
+            if (fetchedProposal) {
+              setProposal(fetchedProposal);
+            } else {
+              setError(
+                "Proposal not found or you don't have permission to view it."
+              );
+            }
+          } catch (err) {
+            console.error("Error fetching proposal:", err);
+            setError("An error occurred while fetching the proposal.");
+          } finally {
+            setLoading(false);
           }
-        } catch (err) {
-          console.error("Error fetching proposal:", err);
-          setError("An error occurred while fetching the proposal.");
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchProposal();
-    }
-  }, [id]);
+        };
+        fetchProposal();
+      } else if (!user) {
+        router.push("/login"); // Redirect to login if not authenticated
+      }
+    });
+    return () => unsubscribe();
+  }, [id, router]);
 
   const handleAccept = async () => {
     if (!proposal) return;
@@ -108,6 +116,36 @@ export default function ProposalDetailPage() {
         error instanceof Error
           ? error.message
           : "Could not accept the proposal. Please try again.";
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: errorMessage,
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleAcceptAndFund = async () => {
+    if (!proposal || !currentUser) return;
+    setIsProcessing(true);
+    try {
+      const dealId = await acceptAndFundSellerInitiatedProposal(
+        proposal.id,
+        currentUser.uid
+      );
+      toast({
+        title: "Proposal Accepted & Funded!",
+        description:
+          "The deal has been created and funded. Work can now begin.",
+      });
+      router.push(`/deals/${dealId}`);
+    } catch (error) {
+      console.error("Error accepting and funding proposal:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Could not accept and fund the proposal. Please check your KYC status and balance.";
       toast({
         variant: "destructive",
         title: "Error",
@@ -205,7 +243,9 @@ export default function ProposalDetailPage() {
   const getStatusVariant = (status: string) => {
     switch (status) {
       case "Pending":
-        return "secondary";
+        return "secondary"; // Buyer-initiated, awaiting seller
+      case "AwaitingBuyerAcceptance":
+        return "secondary"; // Seller-initiated, awaiting buyer
       case "Accepted":
         return "default";
       case "Declined":
@@ -223,7 +263,21 @@ export default function ProposalDetailPage() {
   };
 
   const isSeller = currentUser?.email === proposal?.sellerEmail;
-  const showActionButtons = isSeller && proposal?.status === "Pending";
+  const isBuyer =
+    currentUser?.uid === proposal?.buyerId ||
+    currentUser?.email === proposal?.buyerEmail; // Check both UID and email for buyer
+
+  // Determine which action buttons to show
+  const showSellerActionButtons = isSeller && proposal?.status === "Pending"; // For buyer-initiated proposals
+  const showBuyerAcceptAndFundButton =
+    isBuyer && proposal?.status === "AwaitingBuyerAcceptance"; // For seller-initiated proposals
+
+  const buyerEscrowFeePortion = proposal
+    ? proposal.escrowFee * (proposal.escrowFeePayer / 100)
+    : 0;
+  const sellerEscrowFeePortion = proposal
+    ? proposal.escrowFee * ((100 - proposal.escrowFeePayer) / 100)
+    : 0;
 
   if (loading) {
     return (
@@ -286,7 +340,7 @@ export default function ProposalDetailPage() {
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-primary" />
               <strong>Buyer:</strong>
-              <span>{proposal.buyerEmail}</span>
+              <span>{proposal.buyerEmail || "N/A"}</span>
             </div>
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-accent" />
@@ -420,14 +474,28 @@ export default function ProposalDetailPage() {
               ${proposal.escrowFee.toFixed(2)}
             </span>
           </div>
-          <div className="flex justify-between font-bold text-lg">
-            <span>Total Payment</span>
-            <span>
-              ${(proposal.totalAmount + proposal.escrowFee).toFixed(2)}
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground ml-4">
+              • Buyer pays ({proposal.escrowFeePayer}%)
+            </span>
+            <span className="font-medium">
+              ${buyerEscrowFeePortion.toFixed(2)}
             </span>
           </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground ml-4">
+              • Seller pays ({100 - proposal.escrowFeePayer}%)
+            </span>
+            <span className="font-medium">
+              ${sellerEscrowFeePortion.toFixed(2)}
+            </span>
+          </div>
+          <div className="flex justify-between font-bold text-lg">
+            <span>Total Project Value</span>
+            <span>${proposal.totalAmount.toFixed(2)}</span>
+          </div>
         </CardContent>
-        {showActionButtons && (
+        {(showSellerActionButtons || showBuyerAcceptAndFundButton) && (
           <CardFooter className="flex justify-end gap-2">
             <Button
               variant="destructive"
@@ -439,12 +507,22 @@ export default function ProposalDetailPage() {
               )}
               Decline
             </Button>
-            <Button onClick={handleAccept} disabled={isProcessing}>
-              {isProcessing && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Accept & Create Deal
-            </Button>
+            {showSellerActionButtons && (
+              <Button onClick={handleAccept} disabled={isProcessing}>
+                {isProcessing && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Accept & Create Deal
+              </Button>
+            )}
+            {showBuyerAcceptAndFundButton && (
+              <Button onClick={handleAcceptAndFund} disabled={isProcessing}>
+                {isProcessing && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Accept & Fund Deal
+              </Button>
+            )}
           </CardFooter>
         )}
       </Card>
