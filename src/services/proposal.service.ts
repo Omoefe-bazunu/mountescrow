@@ -462,7 +462,14 @@ export async function acceptAndFundSellerInitiatedProposal(
       proposalData.escrowFee * (proposalData.escrowFeePayer / 100);
     const totalToFund = proposalData.totalAmount + buyerEscrowFeePortion;
 
-    await fundDeal(dealId, buyerUid, totalToFund);
+    // Pass buyerEmail and buyerName to fundDeal
+    await fundDeal(
+      dealId,
+      buyerUid,
+      totalToFund,
+      user.email!, // Use user.email for buyerEmail
+      user.displayName || user.email! // Use user.displayName or fallback to user.email for buyerName
+    );
 
     // Send notification email to seller
     try {

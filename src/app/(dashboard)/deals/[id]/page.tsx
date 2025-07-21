@@ -71,18 +71,36 @@ export default function DealDetailPage() {
   }, [id, router]);
 
   const handleFundDeal = async () => {
-    if (!deal || !user) return;
+    if (!deal || !user || !user.email || !user.displayName) return; // Ensure user details are available
     setIsProcessing(true);
     try {
       // Buyer only pays project amount + half of escrow fee
       const buyerEscrowFee = deal.escrowFee / 2;
       const totalToFund = deal.totalAmount + buyerEscrowFee;
-      await fundDeal(deal.id, user.uid, totalToFund);
-      toast({
-        title: "Deal Funded!",
-        description: "The seller has been notified to start work.",
-      });
-      await fetchDeal();
+
+      const result = await fundDeal(
+        deal.id,
+        user.uid,
+        totalToFund,
+        user.email,
+        user.displayName
+      );
+
+      if (result.success && result.redirect_url) {
+        toast({
+          title: "Redirecting for Payment",
+          description:
+            "You will be redirected to Flutterwave to complete the payment.",
+        });
+        window.location.href = result.redirect_url; // Redirect to Flutterwave
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Payment Initiation Error",
+          description:
+            result.message || "Could not initiate payment. Please try again.",
+        });
+      }
     } catch (error: any) {
       console.error("Error funding deal:", error);
       toast({
@@ -111,6 +129,8 @@ export default function DealDetailPage() {
         return "default";
       case "In Dispute":
         return "destructive";
+      case "Pending Transfer": // New status for when transfer is initiated but not confirmed
+        return "outline";
       default:
         return "outline";
     }

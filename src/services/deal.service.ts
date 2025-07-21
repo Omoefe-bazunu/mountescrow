@@ -18,7 +18,7 @@ import {
   releaseFromEscrow,
   transferToEscrow,
   getUserWallet,
-} from "./fcmb.service";
+} from "./flutterwave.service"; // Updated import
 import { sendEmail } from "./email.service";
 import { uploadMultipleFiles, UploadedFile } from "./storage.service";
 import { validateEnvironmentVariables } from "@/lib/config";
@@ -192,8 +192,10 @@ export async function getDealById(
 export async function fundDeal(
   dealId: string,
   buyerId: string,
-  amount: number
-) {
+  amount: number,
+  buyerEmail: string,
+  buyerName: string
+): Promise<{ success: boolean; message: string; redirect_url?: string }> {
   if (!dealId?.trim()) {
     throw new Error("Deal ID is required");
   }
@@ -237,49 +239,49 @@ export async function fundDeal(
   // Buyer only pays project amount + their portion of escrow fee
   const buyerEscrowFeePortion =
     dealData.escrowFee * (dealData.escrowFeePayer / 100);
-  const expectedAmount = dealData.totalAmount + buyerEscrowFeePortion;
+  const totalToFund = dealData.totalAmount + buyerEscrowFeePortion;
 
-  if (Math.abs(amount - expectedAmount) > 0.01) {
+  if (Math.abs(amount - totalToFund) > 0.01) {
     throw new Error(
-      `Amount mismatch. Expected: $${expectedAmount.toFixed(
+      `Amount mismatch. Expected: $${totalToFund.toFixed(
         2
       )}, Provided: $${amount.toFixed(2)}`
     );
   }
 
-  // Transfer funds to escrow
-  await transferToEscrow(buyerId, dealId, amount);
+  // Initiate Flutterwave Standard payment
+  const redirectUrl = `https://www.mountescrow.com/api/flutterwave-payment-callback?dealId=${dealId}&buyerId=${buyerId}`;
+  const paymentResult = await transferToEscrow(
+    buyerId,
+    dealId,
+    amount,
+    buyerEmail,
+    buyerName,
+    redirectUrl
+  );
 
-  // Update deal status
-  await updateDoc(dealDoc, {
-    status: "In Progress",
-    updatedAt: serverTimestamp(),
-  });
-
-  // Fund first milestone
-  await fundNextMilestone(dealId, -1);
-
-  // Send notification email (non-blocking)
-  try {
-    await sendEmail({
-      to_email: dealData.sellerEmail,
-      to_name: "Seller",
-      subject: "Deal Funded! You Can Start Work",
-      message: `The deal "${dealData.projectTitle}" has been funded by the buyer. You can now begin work on the first milestone.`,
-      deal_title: dealData.projectTitle,
-      deal_url: `https://www.mountescrow.com/deals/${dealId}`,
-    });
-  } catch (emailError) {
-    console.error(
-      "Failed to send deal funding notification email:",
-      emailError
-    );
+  if (paymentResult.success && paymentResult.redirect_url) {
+    return {
+      success: true,
+      message: "Payment initiated.",
+      redirect_url: paymentResult.redirect_url,
+    };
+  } else {
+    return {
+      success: false,
+      message: paymentResult.message || "Failed to initiate payment.",
+    };
   }
 }
 
 export async function approveAndReleaseMilestone(
   dealId: string,
-  milestoneIndex: number
+  milestoneIndex: number,
+  sellerBankDetails: {
+    accountNumber: string;
+    bankCode: string;
+    accountName: string;
+  }
 ) {
   if (!dealId?.trim()) {
     throw new Error("Deal ID is required");
@@ -332,15 +334,19 @@ export async function approveAndReleaseMilestone(
     }
 
     // Release payment to seller (minus their portion of escrow fee)
-    await releaseFromEscrow(sellerId, dealId, milestone.title, sellerReceives);
+    // The status update for the milestone will happen via webhook after transfer.completed
+    await releaseFromEscrow(
+      sellerId,
+      dealId,
+      milestone.title,
+      sellerReceives,
+      sellerBankDetails
+    );
 
-    // Update milestone status
+    // Update milestone status to reflect transfer initiated
     const milestones = [...dealData.milestones];
-    milestones[milestoneIndex].status = "Completed";
+    milestones[milestoneIndex].status = "Pending"; // New temporary status
     await updateDoc(dealDocRef, { milestones, updatedAt: serverTimestamp() });
-
-    // Fund next milestone or complete deal
-    await fundNextMilestone(dealId, milestoneIndex);
 
     // Send notification email to seller (non-blocking)
     try {
@@ -352,7 +358,7 @@ export async function approveAndReleaseMilestone(
           milestone.title
         }" has been approved and payment of $${sellerReceives.toFixed(
           2
-        )} has been released to your wallet.`,
+        )} has been initiated to your wallet. You will be notified when the transfer is complete.`,
         deal_title: dealData.projectTitle,
         deal_url: `https://www.mountescrow.com/deals/${dealId}`,
       });

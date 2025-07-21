@@ -25,7 +25,7 @@ import {
   getUserWallet,
   UserWallet,
   refreshWalletBalance,
-} from "@/services/fcmb.service";
+} from "@/services/flutterwave.service";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 

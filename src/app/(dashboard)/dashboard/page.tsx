@@ -28,6 +28,8 @@ import {
   getDocs,
   limit,
   orderBy,
+  or,
+  and, // Import the 'and' function for combining filters
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,6 +47,14 @@ interface Transaction {
   amount: number;
   status: string;
   createdAt: any;
+}
+
+// Define ProposalData type for filtering
+interface ProposalData {
+  status: string;
+  sellerEmail: string;
+  buyerEmail: string;
+  // Add other fields if necessary for display, but status/emails are key for filtering
 }
 
 export default function DashboardPage() {
@@ -65,34 +75,60 @@ export default function DashboardPage() {
   }, [user, authLoading]);
 
   const fetchDashboardData = async () => {
-    if (!user || !user.email) return;
+    if (!user || !user.email || !user.uid) return; // Ensure user.uid is also available
     setLoading(true);
 
     try {
-      // Fetch stats
+      // Fetch Active Deals: User is either buyerId OR sellerEmail
+      // Combine the 'or' filter and the 'where' status filter using 'and'
       const dealsQuery = query(
         collection(db, "deals"),
-        where("status", "in", ["Awaiting Funding", "In Progress"]),
-        where(
-          user.uid ? "buyerId" : "sellerEmail",
-          "==",
-          user.uid || user.email
+        and(
+          or(
+            where("buyerId", "==", user.uid),
+            where("sellerEmail", "==", user.email)
+          ),
+          where("status", "in", ["Awaiting Funding", "In Progress"])
         )
       );
-      const proposalsQuery = query(
+
+      // Fetch All Relevant Proposals: User is either sellerEmail OR buyerEmail
+      const allProposalsQuery = query(
         collection(db, "proposals"),
-        where("status", "==", "Pending"),
-        where("sellerEmail", "==", user.email)
+        or(
+          where("sellerEmail", "==", user.email),
+          where("buyerEmail", "==", user.email)
+        )
       );
 
-      const [dealsSnapshot, proposalsSnapshot] = await Promise.all([
+      const [dealsSnapshot, allProposalsSnapshot] = await Promise.all([
         getDocs(dealsQuery),
-        getDocs(proposalsQuery),
+        getDocs(allProposalsQuery),
       ]);
+
+      // Calculate Pending Proposals: Filter proposals that require action from the current user
+      let pendingProposalsCount = 0;
+      allProposalsSnapshot.forEach((doc) => {
+        const proposal = doc.data() as ProposalData;
+        // If current user is the seller and proposal is Pending (buyer-initiated)
+        if (
+          proposal.sellerEmail === user.email &&
+          proposal.status === "Pending"
+        ) {
+          pendingProposalsCount++;
+        }
+        // If current user is the buyer and proposal is AwaitingBuyerAcceptance (seller-initiated)
+        else if (
+          proposal.buyerEmail === user.email &&
+          proposal.status === "AwaitingBuyerAcceptance"
+        ) {
+          pendingProposalsCount++;
+        }
+      });
 
       setStats({
         activeDeals: dealsSnapshot.size,
-        pendingProposals: proposalsSnapshot.size,
+        pendingProposals: pendingProposalsCount,
       });
 
       // Fetch recent transactions

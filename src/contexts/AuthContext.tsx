@@ -9,7 +9,7 @@ import {
 } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { getUserWallet, UserWallet } from "@/services/fcmb.service";
+import { getUserWallet, UserWallet } from "@/services/flutterwave.service";
 
 interface AuthContextType {
   user: User | null;
