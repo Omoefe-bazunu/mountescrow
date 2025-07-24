@@ -52,7 +52,6 @@ export default function DisputeResolutionPage() {
 
   const fetchPdfUrls = async () => {
     setLoading(true);
-    setError(null);
     try {
       const updatedData = { ...initialPolicyData };
 
@@ -62,11 +61,11 @@ export default function DisputeResolutionPage() {
             .toLowerCase()
             .replace(/\s+/g, "-")}.pdf`;
           try {
-            // Create a reference to the file
-            const fileRef = ref(storage, path);
+            // Add cache-busting parameter and proper content type
+            const url =
+              (await getDownloadURL(ref(storage, path))) +
+              `?alt=media&token=${Date.now()}`;
 
-            // Get the download URL (works for unauthenticated users)
-            const url = await getDownloadURL(fileRef);
             updatedData[policy] = { ...updatedData[policy], pdfUrl: url };
           } catch (error) {
             console.log(`PDF not found for ${policy}:`, error);
@@ -78,7 +77,6 @@ export default function DisputeResolutionPage() {
       setPolicyData(updatedData);
     } catch (error) {
       console.error("Failed to fetch PDFs:", error);
-      setError("Failed to load policy documents. Please try again later.");
     } finally {
       setLoading(false);
     }

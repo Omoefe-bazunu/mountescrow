@@ -3,66 +3,78 @@ service firebase.storage {
   match /b/{bucket}/o {
     
     // Default deny all access
-match /{allPaths=**} {
-  allow read, write: if false;
-}
-
-// Allow public read for static images used on the landing pages
-match /staticImages/{imageName} {
-    allow read: if true;
-}
-
-// Allow authenticated users to upload files for proposals
-// Files are organized by user ID for security and organization
-match /projects/{fileName} {
-  allow write: if request.auth != null && 
-    request.auth.token.email_verified == true &&
-    // Validate file size (5MB limit)
-    request.resource.size <= 5 * 1024 * 1024 &&
-    // Validate file type
-    request.resource.contentType.matches('image/.*') ||
-    request.resource.contentType == 'application/pdf' ||
-    request.resource.contentType == 'application/msword' ||
-    request.resource.contentType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-  
-  // Allow read access to proposal participants
-  // Note: This requires additional logic to verify proposal access
-  allow read: if request.auth != null;
-}
-
-// Allow authenticated users to upload and access their own files
-match /userFiles/{userId}/{fileName} {
-  allow write: if request.auth != null && 
-    request.auth.uid == userId &&
-    request.auth.token.email_verified == true &&
-    // Validate file size (10MB limit for user files)
-    request.resource.size <= 10 * 1024 * 1024;
-  
-  allow read: if request.auth != null && 
-    request.auth.uid == userId;
-}
-
-// Allow milestone-related file uploads for deals
-match /deals/{dealId}/milestones/{milestoneId}/{fileName} {
-  allow write: if request.auth != null &&
-    request.auth.token.email_verified == true &&
-    // Validate file size (10MB limit)
-    request.resource.size <= 10 * 1024 * 1024;
-  
-  // Allow read access to deal participants
-  allow read: if request.auth != null;
-}
-
-// Allow dispute-related file uploads
-match /disputes/{disputeId}/{fileName} {
-  allow write: if request.auth != null &&
-    request.auth.token.email_verified == true &&
-    // Validate file size (5MB limit for dispute files)
-    request.resource.size <= 5 * 1024 * 1024;
-  
-  // Allow read access to dispute participants
-  allow read: if request.auth != null;
-}
-
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+    
+// Policy documents - public read, admin write
+    match /policy-docs/{document} {
+      allow read: if true; // Public read access
+      allow write, delete: if request.auth != null && 
+                   (request.auth.token.email in [
+                     "raniem57@gmail.com", 
+                     "mountescrow@gmail.com"
+                   ]) &&
+                   request.resource.contentType.matches('application/pdf');
+    }
+    
+    // Allow public read for static images used on the landing pages
+    match /staticImages/{imageName} {
+        allow read: if true;
+    }
+    
+   
+    
+    // Allow authenticated users to upload files for proposals
+    // Files are organized by user ID for security and organization
+    match /projects/{fileName} {
+      allow write: if true && 
+       
+        // Validate file size (5MB limit)
+        request.resource.size <= 5 * 1024 * 1024 &&
+        // Validate file type
+        (request.resource.contentType.matches('image/.*') ||
+        request.resource.contentType == 'application/pdf' ||
+        request.resource.contentType == 'application/msword' ||
+        request.resource.contentType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      
+      // Allow read access to proposal participants
+      // Note: This requires additional logic to verify proposal access
+      allow read: if request.auth != null;
+    }
+    
+    // Allow authenticated users to upload and access their own files
+    match /userFiles/{userId}/{fileName} {
+      allow write: if request.auth != null && 
+        request.auth.uid == userId &&
+        request.auth.token.email_verified == true &&
+        // Validate file size (10MB limit for user files)
+        request.resource.size <= 10 * 1024 * 1024;
+      
+      allow read: if request.auth != null && 
+        request.auth.uid == userId;
+    }
+    
+    // Allow milestone-related file uploads for deals
+    match /deals/{dealId}/milestones/{milestoneId}/{fileName} {
+      allow write: if request.auth != null &&
+        request.auth.token.email_verified == true &&
+        // Validate file size (10MB limit)
+        request.resource.size <= 10 * 1024 * 1024;
+      
+      // Allow read access to deal participants
+      allow read: if request.auth != null;
+    }
+    
+    // Allow dispute-related file uploads
+    match /disputes/{disputeId}/{fileName} {
+      allow write: if request.auth != null &&
+        request.auth.token.email_verified == true &&
+        // Validate file size (5MB limit for dispute files)
+        request.resource.size <= 5 * 1024 * 1024;
+      
+      // Allow read access to dispute participants
+      allow read: if request.auth != null;
+    }
   }
 }
