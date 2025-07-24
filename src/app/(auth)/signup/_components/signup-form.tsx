@@ -13,10 +13,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   createUserWithEmailAndPassword,
   updateProfile,
@@ -33,6 +35,9 @@ const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
   phone: z.string().min(10, "Please enter a valid phone number."),
+  acceptTerms: z.boolean().refine((val) => val === true, {
+    message: "You must accept the terms and conditions to create an account.",
+  }),
 });
 
 export function SignUpForm() {
@@ -49,6 +54,7 @@ export function SignUpForm() {
       email: "",
       password: "",
       phone: "",
+      acceptTerms: false,
     },
   });
 
@@ -83,6 +89,8 @@ export function SignUpForm() {
         phone: cleanPhone,
         createdAt: new Date(),
         kycStatus: "pending", // User needs to complete KYC later
+        acceptedTerms: values.acceptTerms, // Store T&C acceptance for legal purposes
+        termsAcceptedAt: new Date(), // Timestamp when terms were accepted
       });
 
       // 4. Send verification email
@@ -228,10 +236,54 @@ export function SignUpForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={loading}>
+
+        <FormField
+          control={form.control}
+          name="acceptTerms"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel className="text-sm font-normal">
+                  I accept the{" "}
+                  <Link
+                    href="/policies"
+                    className="text-primary underline hover:no-underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Terms and Conditions
+                  </Link>
+                </FormLabel>
+                <FormMessage />
+              </div>
+            </FormItem>
+          )}
+        />
+
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={loading || !form.watch("acceptTerms")}
+        >
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Create Account
         </Button>
+
+        <div className="text-center text-sm text-muted-foreground">
+          By creating an account, you agree to our{" "}
+          <Link
+            href="/policies"
+            className="text-primary underline hover:no-underline"
+          >
+            Terms and Conditions
+          </Link>
+        </div>
       </form>
     </Form>
   );

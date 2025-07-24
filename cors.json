@@ -1,0 +1,14 @@
+[
+  {
+    "origin": ["https://mountescrow.vercel.app"],
+    "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": [
+      "Content-Type",
+      "Authorization",
+      "Content-Length",
+      "User-Agent",
+      "x-goog-*"
+    ]
+  }
+]

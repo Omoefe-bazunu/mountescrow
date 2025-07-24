@@ -80,10 +80,10 @@ export function Footer() {
               Products
             </Link>
             <Link
-              href="/dispute-resolution"
+              href="/policies"
               className="block text-sm hover:underline text-primary-foreground/80 font-body"
             >
-              Dispute Resolution
+              Policies
             </Link>
           </div>
 
