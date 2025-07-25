@@ -1,35 +1,26 @@
 // src/lib/firebase-admin.ts
 import admin from "firebase-admin";
 
-// Only initialize the Firebase Admin SDK once
 if (!admin.apps.length) {
   try {
-    const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    let cert;
 
-    if (!serviceAccountJson) {
-      throw new Error(
-        "Firebase credentials not found. Please set the FIREBASE_SERVICE_ACCOUNT_JSON environment variable."
-      );
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      // Vercel or any prod environment
+      cert = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+    } else {
+      // Local dev using .json file
+      cert = require("../../firebase-service-account.json");
     }
 
-    const serviceAccount = JSON.parse(serviceAccountJson);
-    serviceAccount.private_key = serviceAccount.private_key.replace(
-      /\\n/g,
-      "\n"
-    );
-
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+      credential: admin.credential.cert(cert),
     });
-
-    console.log("✅ Firebase Admin SDK initialized successfully.");
-  } catch (error: any) {
-    console.error("❌ Firebase admin initialization error:", error);
-    throw new Error(`Firebase initialization failed: ${error.message}`);
+  } catch (error) {
+    console.error("Firebase Admin initialization error", error);
+    throw error;
   }
 }
 
 const db = admin.firestore();
-const auth = admin.auth();
-
-export { admin, auth, db };
+export { admin, db };
