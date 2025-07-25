@@ -2,7 +2,6 @@
   "name": "nextn",
   "version": "0.1.0",
   "private": true,
-  "type": "commonjs",
   "scripts": {
     "dev": "next dev --turbopack -p 9002",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
@@ -11,7 +10,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "set-cors": "node scripts/setCors.js"
+    "set-cors": "node setCors.js"
   },
   "dependencies": {
     "@emailjs/browser": "^4.3.3",
@@ -46,7 +45,7 @@
     "date-fns": "^3.6.0",
     "dotenv": "^16.5.0",
     "embla-carousel-react": "^8.6.0",
-    "firebase": "^11.10.0",
+    "firebase": "^12.0.0",
     "firebase-admin": "^12.2.0",
     "genkit": "^1.13.0",
     "lucide-react": "^0.475.0",
