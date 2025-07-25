@@ -1,31 +1,32 @@
 // src/lib/firebase-admin.ts
-import admin from "firebase-admin";
+import * as admin from "firebase-admin";
 
-// Only initialize the Firebase Admin SDK once
 if (!admin.apps.length) {
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
 
-  if (!projectId || !clientEmail || !privateKey) {
-    throw new Error(
-      "Missing Firebase Admin SDK environment variables: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, or FIREBASE_PRIVATE_KEY"
-    );
+  if (!serviceAccountJson) {
+    throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON env variable is missing");
   }
 
+  let parsedCredentials;
   try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId,
-        clientEmail,
-        privateKey,
-      }),
-    });
+    parsedCredentials = JSON.parse(serviceAccountJson);
+    // Fix escaped newlines in private key (just in case)
+    parsedCredentials.private_key = parsedCredentials.private_key?.replace(
+      /\\n/g,
+      "\n"
+    );
   } catch (error) {
-    console.error("Firebase admin initialization error", error);
+    console.error("Error parsing FIREBASE_SERVICE_ACCOUNT_JSON", error);
     throw error;
   }
+
+  admin.initializeApp({
+    credential: admin.credential.cert(parsedCredentials),
+  });
 }
 
 const db = admin.firestore();
-export { admin, db };
+const auth = admin.auth();
+
+export { admin, db, auth };
