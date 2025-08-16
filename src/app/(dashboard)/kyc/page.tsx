@@ -27,18 +27,23 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { User } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import {
-  initiateBvnVerification,
-  UserWallet,
-} from "@/services/flutterwave.service"; // Updated import
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { createFcmbWallet } from "@/services/fcmb.service";
 
 const kycFormSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
+  middleName: z.string().optional(),
   phone: z
     .string()
     .regex(
@@ -49,14 +54,62 @@ const kycFormSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
   bvn: z.string().regex(/^\d{11}$/, "BVN must be exactly 11 digits"),
+  gender: z.enum(["M", "F"], {
+    errorMap: () => ({ message: "Please select Male or Female" }),
+  }),
 });
 
 type KycFormData = z.infer<typeof kycFormSchema>;
 
 interface UserData {
-  kycStatus?: "pending" | "approved" | "rejected" | "awaiting_consent"; // Added awaiting_consent
+  kycStatus?: "pending" | "approved" | "rejected";
   displayName?: string;
   email?: string;
+  walletCreated?: boolean;
+  accountNumber?: string;
+  bankName?: string;
+}
+
+async function initiateBvnVerification(userId: string, data: KycFormData) {
+  try {
+    console.log("Initiating BVN verification:", { userId, data });
+    const response = await fetch("/api/bvn-verification", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        bvn: data.bvn,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        middleName: data.middleName,
+        phone: data.phone,
+        dob: data.dob,
+        gender: data.gender,
+      }),
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      console.error("BVN verification failed:", {
+        status: response.status,
+        result,
+      });
+      throw new Error(
+        result.message || `BVN verification failed (status: ${response.status})`
+      );
+    }
+    console.log("BVN verification result:", result);
+    return result;
+  } catch (error: any) {
+    console.error("BVN verification fetch error:", {
+      message: error.message,
+      stack: error.stack,
+    });
+    throw new Error(
+      error.message || "Failed to connect to verification service"
+    );
+  }
 }
 
 export default function KycPage() {
@@ -72,9 +125,11 @@ export default function KycPage() {
     defaultValues: {
       firstName: "",
       lastName: "",
+      middleName: "",
       phone: "",
       dob: "",
       bvn: "",
+      gender: undefined,
     },
   });
 
@@ -86,12 +141,11 @@ export default function KycPage() {
       if (userDoc.exists()) {
         const data = userDoc.data() as UserData;
         setUserData(data);
-
-        // Pre-fill form with existing data if available
         if (data.displayName) {
           const nameParts = data.displayName.split(" ");
           form.setValue("firstName", nameParts[0] || "");
-          form.setValue("lastName", nameParts.slice(1).join(" ") || "");
+          form.setValue("middleName", nameParts.length > 2 ? nameParts[1] : "");
+          form.setValue("lastName", nameParts[nameParts.length - 1] || "");
         }
       } else {
         setUserData({ kycStatus: "pending" });
@@ -121,11 +175,10 @@ export default function KycPage() {
   }, [router]);
 
   const onSubmit = async (data: KycFormData) => {
-    if (!user || !user.email) return; // Ensure user and email are available
+    if (!user || !user.email) return;
 
     setSubmitting(true);
     try {
-      // Format phone number for API
       let formattedPhone = data.phone.replace(/[\s\-\(\)]/g, "");
       if (formattedPhone.startsWith("+234")) {
         formattedPhone = formattedPhone.substring(4);
@@ -133,58 +186,86 @@ export default function KycPage() {
         formattedPhone = formattedPhone.substring(1);
       }
 
-      // Construct the redirect URL for Flutterwave callback
-      // This should be an API route in your Next.js app that handles the callback
-      const redirectUrl = `${window.location.origin}/api/flutterwave-bvn-callback?userId=${user.uid}&email=${user.email}&firstName=${data.firstName}&lastName=${data.lastName}&phone=${formattedPhone}`;
+      const result = await initiateBvnVerification(user.uid, {
+        ...data,
+        phone: formattedPhone,
+      });
 
-      const result = await initiateBvnVerification(
-        user.uid,
-        {
-          bvn: data.bvn,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          phone: formattedPhone,
-          dob: data.dob,
-        },
-        redirectUrl
-      );
+      if (result.status === "SUCCESS") {
+        const verificationStatus = result.data.verificationStatus;
+        const kycStatus =
+          verificationStatus === "exact_match" ||
+          verificationStatus === "partial_match"
+            ? "approved"
+            : "rejected";
 
-      if (result.success && result.redirect_url) {
-        toast({
-          title: "BVN Consent Required",
-          description: "Redirecting to Flutterwave to obtain your consent...",
-        });
-        // Redirect user to Flutterwave for consent
-        window.location.href = result.redirect_url;
-      } else if (result.success && !result.redirect_url) {
-        // This scenario means consent was already given or not required
-        // You might need to call handleBvnConsentCallback directly here
-        toast({
-          title: "BVN Consent Not Required",
-          description: "Proceeding with verification...",
-        });
-        // In a real app, you'd likely have a server endpoint to call handleBvnConsentCallback
-        // For now, we'll just refresh the status, assuming a webhook or background process handles it.
-        await fetchUserData(user);
-      } else {
-        // Handle the error returned from the service function
-        let toastDescription = "Please check your details and try again.";
-        if (result.error) {
-          toastDescription = result.error;
+        const userDocRef = doc(db, "users", user.uid);
+        const updateData: any = {
+          kycStatus,
+          displayName: data.middleName
+            ? `${data.firstName} ${data.middleName} ${data.lastName}`
+            : `${data.firstName} ${data.lastName}`,
+          email: user.email,
+        };
+
+        if (kycStatus === "approved" && !userData?.walletCreated) {
+          try {
+            const wallet = await createFcmbWallet(user.uid, {
+              firstName: data.firstName,
+              lastName: data.lastName,
+              middleName: data.middleName,
+              phone: formattedPhone,
+              dob: data.dob,
+              bvn: data.bvn,
+            });
+            updateData.walletCreated = true;
+            updateData.accountNumber = wallet.accountNumber;
+            updateData.bankName = wallet.bankName;
+            toast({
+              title: "Wallet Created",
+              description: `Your wallet (Account: ${wallet.accountNumber}) has been created.`,
+            });
+          } catch (walletError) {
+            console.error("Wallet creation error:", walletError);
+            toast({
+              variant: "destructive",
+              title: "Wallet Creation Failed",
+              description:
+                "KYC approved, but wallet creation failed. Please contact support.",
+            });
+          }
         }
 
+        await setDoc(userDocRef, updateData, { merge: true });
+        await fetchUserData(user);
+
+        toast({
+          title: "KYC Verification Submitted",
+          description: `Verification ${kycStatus}. ${getStatusMessage(kycStatus)}`,
+        });
+
+        if (kycStatus === "approved") {
+          router.push("/wallet");
+        }
+      } else {
         toast({
           variant: "destructive",
           title: "KYC Submission Failed",
-          description: toastDescription,
+          description:
+            result.message || "Please check your details and try again.",
         });
       }
     } catch (error: any) {
-      console.error("Unexpected KYC submission error:", error);
+      console.error("KYC submission error:", {
+        message: error.message,
+        stack: error.stack,
+      });
       toast({
         variant: "destructive",
         title: "KYC Submission Failed",
-        description: "An unexpected error occurred. Please try again.",
+        description:
+          error.message ||
+          "Failed to connect to verification service. Please try again later.",
       });
     } finally {
       setSubmitting(false);
@@ -197,8 +278,6 @@ export default function KycPage() {
         return <CheckCircle className="h-5 w-5 text-green-600" />;
       case "rejected":
         return <AlertCircle className="h-5 w-5 text-red-600" />;
-      case "awaiting_consent":
-        return <Clock className="h-5 w-5 text-blue-600" />; // New icon for awaiting consent
       case "pending":
       default:
         return <Clock className="h-5 w-5 text-yellow-600" />;
@@ -211,8 +290,6 @@ export default function KycPage() {
         return "default" as const;
       case "rejected":
         return "destructive" as const;
-      case "awaiting_consent":
-        return "outline" as const; // New variant for awaiting consent
       case "pending":
       default:
         return "secondary" as const;
@@ -225,8 +302,6 @@ export default function KycPage() {
         return "Your KYC has been approved and your wallet is ready to use.";
       case "rejected":
         return "Your KYC was rejected. Please review your information and submit again.";
-      case "awaiting_consent":
-        return "Your BVN verification is awaiting your consent on Flutterwave. Please complete the process.";
       case "pending":
       default:
         return "Please complete your KYC verification to access wallet features.";
@@ -263,8 +338,7 @@ export default function KycPage() {
               className="flex items-center gap-2"
             >
               {getStatusIcon(kycStatus)}
-              {kycStatus.charAt(0).toUpperCase() +
-                kycStatus.slice(1).replace(/_/g, " ")}
+              {kycStatus.charAt(0).toUpperCase() + kycStatus.slice(1)}
             </Badge>
           </div>
         </CardHeader>
@@ -323,7 +397,7 @@ export default function KycPage() {
                     id="firstName"
                     placeholder="Enter your first name"
                     {...form.register("firstName")}
-                    disabled={submitting || kycStatus === "awaiting_consent"}
+                    disabled={submitting}
                   />
                   {form.formState.errors.firstName && (
                     <p className="text-sm text-red-600">
@@ -338,7 +412,7 @@ export default function KycPage() {
                     id="lastName"
                     placeholder="Enter your last name"
                     {...form.register("lastName")}
-                    disabled={submitting || kycStatus === "awaiting_consent"}
+                    disabled={submitting}
                   />
                   {form.formState.errors.lastName && (
                     <p className="text-sm text-red-600">
@@ -349,12 +423,27 @@ export default function KycPage() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="middleName">Middle Name (Optional)</Label>
+                <Input
+                  id="middleName"
+                  placeholder="Enter your middle name"
+                  {...form.register("middleName")}
+                  disabled={submitting}
+                />
+                {form.formState.errors.middleName && (
+                  <p className="text-sm text-red-600">
+                    {form.formState.errors.middleName.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
                   id="phone"
                   placeholder="e.g., +2348012345678 or 08012345678"
                   {...form.register("phone")}
-                  disabled={submitting || kycStatus === "awaiting_consent"}
+                  disabled={submitting}
                 />
                 {form.formState.errors.phone && (
                   <p className="text-sm text-red-600">
@@ -369,7 +458,7 @@ export default function KycPage() {
                   id="dob"
                   type="date"
                   {...form.register("dob")}
-                  disabled={submitting || kycStatus === "awaiting_consent"}
+                  disabled={submitting}
                 />
                 {form.formState.errors.dob && (
                   <p className="text-sm text-red-600">
@@ -385,7 +474,7 @@ export default function KycPage() {
                   placeholder="Enter your 11-digit BVN"
                   maxLength={11}
                   {...form.register("bvn")}
-                  disabled={submitting || kycStatus === "awaiting_consent"}
+                  disabled={submitting}
                 />
                 {form.formState.errors.bvn && (
                   <p className="text-sm text-red-600">
@@ -397,10 +486,32 @@ export default function KycPage() {
                 </p>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="gender">Gender</Label>
+                <Select
+                  {...form.register("gender")}
+                  onValueChange={(value) => form.setValue("gender", value)}
+                  disabled={submitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="M">Male</SelectItem>
+                    <SelectItem value="F">Female</SelectItem>
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.gender && (
+                  <p className="text-sm text-red-600">
+                    {form.formState.errors.gender.message}
+                  </p>
+                )}
+              </div>
+
               <Button
                 type="submit"
                 className="w-full"
-                disabled={submitting || kycStatus === "awaiting_consent"}
+                disabled={submitting}
                 size="lg"
               >
                 {submitting ? (

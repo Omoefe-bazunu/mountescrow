@@ -15,6 +15,7 @@ import {
   ArrowRightLeft,
   MailWarning,
   Verified,
+  Menu,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import {
   onAuthStateChanged,
@@ -41,7 +43,8 @@ import {
   signOut,
   sendEmailVerification,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
@@ -67,19 +70,46 @@ export default function DashboardLayout({
   const router = useRouter();
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
+  const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
+        // Query Firestore for user verification status
+        try {
+          const usersRef = collection(db, "users");
+          const q = query(
+            usersRef,
+            where("email", "==", currentUser.email?.toLowerCase())
+          );
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            const userDoc = querySnapshot.docs[0];
+            setIsVerified(userDoc.data().isVerified || false);
+          } else {
+            setIsVerified(false);
+            toast({
+              variant: "destructive",
+              title: "User not found",
+              description: "No account found with this email.",
+            });
+            await signOut(auth);
+            router.push("/login");
+          }
+        } catch (error) {
+          console.error("Error fetching verification status:", error);
+          setIsVerified(false);
+        }
       } else {
         router.push("/login");
       }
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [router]);
+  }, [router, toast]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -109,32 +139,27 @@ export default function DashboardLayout({
   }
 
   const EmailVerificationBanner = () => {
-    if (!user || user.emailVerified) return null;
+    if (!user || isVerified) return null;
 
     const handleResend = async () => {
       if (user) {
-        await sendEmailVerification(user);
-        toast({
-          title: "Verification Email Sent",
-          description: "Please check your inbox for a new verification link.",
-        });
+        router.push("/verify-account");
       }
     };
 
     return (
-      <Alert variant="destructive" className="m-4 rounded-lg">
+      <Alert variant="destructive" className="mx-4 my-2 rounded-lg">
         <MailWarning className="h-4 w-4" />
         <AlertTitle>Verify Your Email</AlertTitle>
         <AlertDescription>
-          Please check your inbox and click the verification link to unlock all
-          features.
+          Please check your inbox and for the verification code.
           <Button
             variant="link"
             size="sm"
-            className="p-0 h-auto ml-2 text-destructive-foreground"
+            className="p-0 h-auto ml-2 text-primary underline"
             onClick={handleResend}
           >
-            Resend Email
+            Go to Verification page
           </Button>
         </AlertDescription>
       </Alert>
@@ -144,9 +169,10 @@ export default function DashboardLayout({
   return (
     <>
       <LandingHeader />
-      <div className="grid min-h-screen  w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] bg-background">
-        <div className="hidden border-r bg-card md:block max-w-screen-xl mx-auto px-4 md:px-8">
-          <div className="flex h-full max-h-screen flex-col gap-2 ">
+      <div className="grid min-h-screen w-full max-w-[100vw] overflow-x-hidden md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] bg-background">
+        {/* --- DESKTOP SIDEBAR --- */}
+        <div className="hidden border-r bg-card md:block">
+          <div className="flex h-full max-h-screen flex-col gap-2">
             <div className="flex-1">
               <nav className="grid items-start px-2 text-sm font-medium lg:px-4 mt-4">
                 {navItems.map((item) => (
@@ -165,7 +191,7 @@ export default function DashboardLayout({
               </nav>
             </div>
             <div className="mt-auto p-4">
-              <Card className="my-0">
+              <Card>
                 <CardHeader className="p-2 pt-0 md:p-4">
                   <CardTitle className="font-headline text-xl">
                     Need Help?
@@ -185,11 +211,68 @@ export default function DashboardLayout({
             </div>
           </div>
         </div>
-        <div className="flex flex-col">
-          <header className="flex h-16 items-center gap-4 border-b bg-card px-4 lg:px-6">
-            <div className="w-full flex-1">
-              {/* Can add a search bar here if needed */}
-            </div>
+
+        <div className="flex flex-col w-full">
+          <header className="flex h-16 items-center gap-4 border-b bg-card px-4 lg:px-6 sticky top-0 z-10">
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0 md:hidden"
+                >
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="flex flex-col w-[250px] p-4">
+                <nav className="grid gap-2 text-lg font-medium">
+                  <Link
+                    href="/dashboard"
+                    className="flex items-center gap-2 text-lg font-semibold mb-4"
+                    onClick={() => setIsSheetOpen(false)}
+                  >
+                    <span>Mountescrow</span>
+                  </Link>
+                  {navItems.map((item) => (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                        pathname === item.href && "bg-muted text-primary"
+                      )}
+                      onClick={() => setIsSheetOpen(false)}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  ))}
+                </nav>
+                <div className="mt-auto">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Need Help?</CardTitle>
+                      <CardDescription>
+                        Contact our support team for assistance.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Link
+                        href="/contact-us"
+                        onClick={() => setIsSheetOpen(false)}
+                      >
+                        <Button size="sm" className="w-full">
+                          Contact Support
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            <div className="w-full flex-1" />
             <Button variant="outline" size="icon" className="h-8 w-8">
               <Bell className="h-4 w-4" />
               <span className="sr-only">Toggle notifications</span>
@@ -198,11 +281,7 @@ export default function DashboardLayout({
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage
-                      src={user?.photoURL || "https://placehold.co/40x40.png"}
-                      alt="User avatar"
-                      data-ai-hint="user avatar"
-                    />
+                    <AvatarImage src={user?.photoURL || ""} alt="User avatar" />
                     <AvatarFallback>
                       {getInitials(user?.displayName)}
                     </AvatarFallback>
@@ -230,9 +309,12 @@ export default function DashboardLayout({
               </DropdownMenuContent>
             </DropdownMenu>
           </header>
-          <main className="flex flex-1 flex-col bg-muted/40">
+
+          <main className="flex flex-1 flex-col bg-muted/40 w-full max-w-[100vw] overflow-x-hidden">
             <EmailVerificationBanner />
-            <div className="flex-1 p-4 lg:p-6 space-y-4">{children}</div>
+            <div className="flex-1 p-4 lg:p-6 space-y-4 w-full max-w-[100vw] overflow-x-hidden">
+              {children}
+            </div>
           </main>
         </div>
       </div>

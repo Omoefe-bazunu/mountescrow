@@ -8,8 +8,17 @@ import {
   ReactNode,
 } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { getUserWallet, UserWallet } from "@/services/flutterwave.service";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+import { refreshFcmbWalletBalance } from "@/services/fcmb.service";
+import { UserWallet } from "@/app/types/wallet";
+
+interface UserData {
+  kycStatus?: "pending" | "approved" | "rejected";
+  accountNumber?: string;
+  bankName?: string;
+  walletCreated?: boolean;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -37,9 +46,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchWallet = async (uid: string) => {
     try {
       console.log("Fetching wallet for UID:", uid);
-      const userWallet = await getUserWallet(uid);
-      console.log("Wallet fetched:", userWallet);
-      setWallet(userWallet);
+      const userDocRef = doc(db, "users", uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const data = userDoc.data() as UserData;
+        if (data.walletCreated && data.accountNumber && data.bankName) {
+          const balance = await refreshFcmbWalletBalance(
+            uid,
+            data.accountNumber
+          );
+          const userWallet: UserWallet = {
+            accountNumber: data.accountNumber,
+            bankName: data.bankName,
+            balance,
+          };
+          console.log("Wallet fetched:", userWallet);
+          setWallet(userWallet);
+        } else {
+          console.log("No wallet found in Firestore");
+          setWallet(null);
+        }
+      } else {
+        console.log("User document not found");
+        setWallet(null);
+      }
     } catch (error) {
       console.error("Failed to fetch wallet:", error);
       setWallet(null);

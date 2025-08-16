@@ -9,20 +9,20 @@ export default function ContactUsPage() {
   return (
     <div className="min-h-screen bg-muted/40 flex items-center justify-center p-4">
       <div className="flex flex-col md:flex-row w-full max-w-4xl bg-card rounded-lg shadow-lg overflow-hidden">
-        <div
-          className="relative text-primary-foreground px-6 py-12 flex flex-col items-center justify-center w-full md:w-1/2"
-        >
-            <div className="absolute inset-0 bg-primary/90"></div>
-             <Image
-                src="https://placehold.co/600x800.png"
-                alt="Man on a phone call in an office"
-                layout="fill"
-                objectFit="cover"
-                className="absolute inset-0"
-                data-ai-hint="contact background"
-              />
+        <div className="relative text-primary-foreground px-6 py-12 flex flex-col items-center justify-center w-full md:w-1/2">
+          <div className="absolute inset-0 bg-primary/90"></div>
+          <Image
+            src="https://firebasestorage.googleapis.com/v0/b/mountescrow-1ac4f.firebasestorage.app/o/staticImages%2FcontactpageImage.jpg?alt=media&token=30c8f24c-893a-46fb-80bc-de2fce353b2a"
+            alt="Man on a phone call in an office"
+            layout="fill"
+            objectFit="cover"
+            className="absolute inset-0"
+            data-ai-hint="contact background"
+          />
           <div className="relative z-10 flex flex-col items-center">
-            <h2 className="font-headline text-3xl mb-4 text-center">Contact Details</h2>
+            <h2 className="font-headline text-3xl mb-4 text-center">
+              Contact Details
+            </h2>
             <p className="max-w-xs mb-6 text-center text-primary-foreground/80 font-body">
               Get in touch with us using the following details or fill the form
               to leave a message. We love to hear from you.
@@ -45,8 +45,8 @@ export default function ContactUsPage() {
                   <MapPin className="text-primary-foreground" />
                 </span>
                 <p>
-                  3, Ajomo Road, Hilltop Avenue,
-                  <br /> FCT, Abuja
+                  House A2,Basic Estate, Lokogoma, <br />
+                  Abuja, Nigeria.
                 </p>
               </div>
             </div>
@@ -71,7 +71,7 @@ export default function ContactUsPage() {
                 type="email"
                 placeholder="E.g. raniem57@gmail.com"
                 className="bg-muted"
-                 aria-label="Your Email"
+                aria-label="Your Email"
               />
             </div>
             <div className="space-y-2">
@@ -81,7 +81,7 @@ export default function ContactUsPage() {
                 type="tel"
                 placeholder="E.g. +2349043970401"
                 className="bg-muted"
-                 aria-label="Your Phone Number"
+                aria-label="Your Phone Number"
               />
             </div>
             <div className="space-y-2">
@@ -90,7 +90,7 @@ export default function ContactUsPage() {
                 id="message"
                 placeholder="Write your message here"
                 className="bg-muted min-h-[100px]"
-                 aria-label="Your Message"
+                aria-label="Your Message"
               />
             </div>
             <Button

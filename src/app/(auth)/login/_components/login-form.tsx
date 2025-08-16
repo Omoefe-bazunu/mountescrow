@@ -19,7 +19,8 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -49,16 +50,37 @@ export function LoginForm() {
         values.password
       );
 
-      if (!userCredential.user.emailVerified) {
+      // Query Firestore for user document
+      const usersRef = collection(db, "users");
+      const q = query(
+        usersRef,
+        where("email", "==", values.email.toLowerCase())
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        toast({
+          variant: "destructive",
+          title: "User not found",
+          description: "No account found with this email.",
+        });
+        await auth.signOut();
+        setLoading(false);
+        return;
+      }
+
+      const userDoc = querySnapshot.docs[0];
+      const isVerified = userDoc.data().isVerified;
+
+      if (!isVerified) {
         toast({
           variant: "destructive",
           title: "Email not verified",
           description:
             "Please check your inbox to verify your email address before logging in.",
         });
-        setLoading(false);
-        // Optionally sign them out again if you want to be strict
         await auth.signOut();
+        setLoading(false);
         return;
       }
 

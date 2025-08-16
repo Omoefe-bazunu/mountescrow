@@ -53,3 +53,5 @@ serviceAccountKey.json
 .env
 firebase-service-account.json
 
+
+.vercel

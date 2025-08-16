@@ -77,9 +77,9 @@ export default function ProposalsPage() {
   };
 
   return (
-    <Card className="my-0">
+    <Card className="my-0 mx-auto w-full max-w-[100vw]">
       <CardHeader>
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
             <CardTitle className="font-headline text-2xl">Proposals</CardTitle>
             <CardDescription>
@@ -91,7 +91,7 @@ export default function ProposalsPage() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 sm:p-6">
         {loading ? (
           <div className="space-y-2">
             <Skeleton className="h-10 w-full" />
@@ -99,72 +99,63 @@ export default function ProposalsPage() {
             <Skeleton className="h-10 w-full" />
           </div>
         ) : proposals.length > 0 ? (
-          <div className="relative">
-            <div className="w-full overflow-x-auto pb-2">
-              <div className="inline-block min-w-full align-middle">
-                <div className="overflow-hidden">
-                  <Table className="min-w-[800px] md:min-w-full">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="whitespace-nowrap">
-                          Project Title
-                        </TableHead>
-                        <TableHead className="whitespace-nowrap">
-                          Other Party
-                        </TableHead>
-                        <TableHead className="whitespace-nowrap">
-                          Role
-                        </TableHead>
-                        <TableHead className="whitespace-nowrap text-right">
-                          Total Amount
-                        </TableHead>
-                        <TableHead className="whitespace-nowrap">
-                          Status
-                        </TableHead>
-                        <TableHead className="whitespace-nowrap">
-                          Action
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {proposals.map((proposal) => (
-                        <TableRow key={proposal.id}>
-                          <TableCell className="font-medium whitespace-nowrap">
-                            {proposal.projectTitle}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            {user?.uid === proposal.buyerId
-                              ? proposal.sellerEmail
-                              : proposal.buyerEmail}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            {getRoleForProposal(proposal)}
-                          </TableCell>
-                          <TableCell className="text-right whitespace-nowrap">
-                            $
-                            {(
-                              proposal.totalAmount + proposal.escrowFee
-                            ).toFixed(2)}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <Badge variant={getStatusVariant(proposal.status)}>
-                              {proposal.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right whitespace-nowrap">
-                            <Button variant="ghost" size="icon" asChild>
-                              <Link href={`/proposals/${proposal.id}`}>
-                                <ArrowRight className="h-4 w-4" />
-                              </Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            </div>
+          <div className="relative w-full overflow-x-auto">
+            <Table className="w-full">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-left">Project Title</TableHead>
+                  <TableHead className="hidden sm:table-cell">
+                    Other Party
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell">Role</TableHead>
+                  <TableHead className="text-right">Total Amount</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {proposals.map((proposal) => (
+                  <TableRow key={proposal.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col">
+                        <span>{proposal.projectTitle}</span>
+                        <span className="sm:hidden text-sm text-muted-foreground">
+                          {user?.uid === proposal.buyerId
+                            ? proposal.sellerEmail
+                            : proposal.buyerEmail}
+                        </span>
+                        <span className="md:hidden sm:hidden text-sm text-muted-foreground">
+                          {getRoleForProposal(proposal)}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {user?.uid === proposal.buyerId
+                        ? proposal.sellerEmail
+                        : proposal.buyerEmail}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {getRoleForProposal(proposal)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      ${(proposal.totalAmount + proposal.escrowFee).toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={getStatusVariant(proposal.status)}>
+                        {proposal.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" asChild>
+                        <Link href={`/proposals/${proposal.id}`}>
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         ) : (
           <div className="text-center py-12">

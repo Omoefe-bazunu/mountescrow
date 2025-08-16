@@ -2,6 +2,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { v4 as uuidv4 } from "uuid";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -68,7 +69,6 @@ export function SignUpForm() {
         throw new Error("Invalid phone number format");
       }
 
-      // 1. Create Firebase user
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         values.email,
@@ -77,58 +77,65 @@ export function SignUpForm() {
       user = userCredential.user;
 
       const displayName = `${values.firstName.trim()} ${values.lastName.trim()}`;
-      await updateProfile(user, {
-        displayName: displayName,
-      });
+      await updateProfile(user, { displayName });
 
-      // 2. Create user document in Firestore
+      const verificationToken = uuidv4().split("-")[0]; // short unique code
+
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
-        email: user.email,
-        displayName: displayName,
+        email: values.email,
+        displayName,
         phone: cleanPhone,
+        isVerified: false,
+        verificationToken,
+        tokenCreatedAt: new Date(),
         createdAt: new Date(),
-        kycStatus: "pending", // User needs to complete KYC later
-        acceptedTerms: values.acceptTerms, // Store T&C acceptance for legal purposes
-        termsAcceptedAt: new Date(), // Timestamp when terms were accepted
+        kycStatus: "pending",
+        acceptedTerms: values.acceptTerms,
+        termsAcceptedAt: new Date(),
       });
 
-      // 4. Send verification email
-      await sendEmailVerification(user);
+      const emailResponse = await fetch("/api/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: values.email,
+          firstName: values.firstName,
+          verificationCode: verificationToken,
+        }),
+      });
+
+      if (!emailResponse.ok) {
+        throw new Error("Failed to send verification email");
+      }
 
       toast({
         title: "Account created successfully!",
         description:
-          "A verification link has been sent to your email. Please verify before logging in.",
+          "We've sent a verification code to your email. Please enter it to verify your account.",
       });
 
       await auth.signOut();
-      router.push("/login");
+      router.push("/verify-account"); // Create this page to enter code
     } catch (error: any) {
       console.error("Signup error:", error);
 
-      // If user was created in Firebase but subsequent steps failed, delete them
       if (user) {
         await deleteUser(user).catch((deleteError) => {
           console.error(
-            "Failed to delete orphaned user after signup error:",
+            "Failed to delete user after signup error:",
             deleteError
           );
         });
       }
 
-      let errorMessage =
-        "An unknown error occurred. Please check your details and try again.";
-
-      // Handle Firebase Auth errors
+      let errorMessage = "Something went wrong. Please try again.";
       switch (error.code) {
         case "auth/email-already-in-use":
-          errorMessage =
-            "This email is already registered. Please use a different email or try logging in.";
+          errorMessage = "This email is already registered.";
           break;
         case "auth/weak-password":
-          errorMessage =
-            "Password is too weak. Please choose a stronger password.";
+          errorMessage = "Password is too weak.";
           break;
         default:
           errorMessage = error.message || errorMessage;
@@ -182,7 +189,11 @@ export function SignUpForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="raniem57@.com" {...field} />
+                <Input
+                  type="email"
+                  placeholder="raniem57@gmail.com"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

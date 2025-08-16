@@ -318,7 +318,7 @@ export function CreateProposalForm() {
                         <RadioGroupItem value="buyer" />
                       </FormControl>
                       <FormLabel className="font-normal">
-                        Buyer (I am hiring a seller)
+                        Buyer (I am the one paying)
                       </FormLabel>
                     </FormItem>
                     <FormItem className="flex items-center space-x-3 space-y-0">
@@ -326,7 +326,7 @@ export function CreateProposalForm() {
                         <RadioGroupItem value="seller" />
                       </FormControl>
                       <FormLabel className="font-normal">
-                        Seller (I am proposing work to a buyer)
+                        Seller (I am the one delivering)
                       </FormLabel>
                     </FormItem>
                   </RadioGroup>
