@@ -12,7 +12,7 @@ import {
   or,
 } from "firebase/firestore";
 import { sendEmail } from "./email.service";
-import { getUserWallet } from "./flutterwave.service";
+import { getUserWallet } from "./fcmb.service";
 
 export interface DisputeData {
   dealId: string;

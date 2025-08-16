@@ -1,5 +1,13 @@
-import { UserWallet } from "@/app/types/wallet";
+import { db } from "@/lib/firebase";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 
+export interface UserWallet {
+  accountNumber: string;
+  bankName: string;
+  balance: number;
+  kycStatus?: "pending" | "approved" | "rejected";
+  updatedAt?: any;
+}
 // Function to fetch FCMB Bearer token (reused from BVN verification logic)
 async function getFcmbAccessToken(): Promise<string> {
   const clientId = process.env.FCMB_CLIENT_ID;
@@ -93,12 +101,20 @@ export async function createFcmbWallet(
     }
 
     const result = await response.json();
-    // Assuming FCMB returns accountNumber and bankName; adjust based on actual response
-    return {
+    
+    // Create wallet object
+    const wallet: UserWallet = {
       accountNumber: result.data.accountNumber || "Unknown",
       bankName: result.data.bankName || "FCMB",
       balance: result.data.balance || 0,
+      kycStatus: "approved",
+      updatedAt: serverTimestamp(),
     };
+
+    // Store wallet in Firestore
+    await setDoc(doc(db, "userWallets", userId), wallet);
+
+    return wallet;
   } catch (error: any) {
     console.error("FCMB wallet creation error:", error);
     throw new Error(error.message || "Could not create wallet");
@@ -131,9 +147,31 @@ export async function refreshFcmbWalletBalance(
     }
 
     const result = await response.json();
-    return result.data.balance || 0; // Adjust based on actual response structure
+    const newBalance = result.data.balance || 0;
+    
+    // Update balance in Firestore
+    await setDoc(doc(db, "userWallets", userId), {
+      balance: newBalance,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+    
+    return newBalance;
   } catch (error: any) {
     console.error("FCMB balance refresh error:", error);
     throw new Error(error.message || "Could not refresh balance");
+  }
+}
+
+// Function to get user wallet from Firestore
+export async function getUserWallet(userId: string): Promise<UserWallet | null> {
+  try {
+    const walletDoc = await getDoc(doc(db, "userWallets", userId));
+    if (walletDoc.exists()) {
+      return walletDoc.data() as UserWallet;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching user wallet:", error);
+    return null;
   }
 }

@@ -17,8 +17,8 @@ import type { ProposalData } from "./proposal.service";
 import {
   releaseFromEscrow,
   transferToEscrow,
-  getUserWallet,
-} from "./flutterwave.service"; // Updated import
+} from "./flutterwave.service";
+import { getUserWallet } from "./fcmb.service";
 import { sendEmail } from "./email.service";
 import { uploadMultipleFiles, UploadedFile } from "./storage.service";
 import { validateEnvironmentVariables } from "@/lib/config";

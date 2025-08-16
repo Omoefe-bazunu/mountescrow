@@ -23,9 +23,9 @@ import { auth } from "@/lib/firebase";
 import { User } from "firebase/auth";
 import {
   getUserWallet,
-  UserWallet,
-  refreshWalletBalance,
-} from "@/services/flutterwave.service";
+  refreshFcmbWalletBalance,
+} from "@/services/fcmb.service";
+import { UserWallet } from "@/app/types/wallet";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -66,10 +66,10 @@ export default function WalletPage() {
   }, []);
 
   const handleRefreshBalance = async () => {
-    if (!user) return;
+    if (!user || !wallet?.accountNumber) return;
     setIsRefreshing(true);
     try {
-      const newBalance = await refreshWalletBalance(user.uid);
+      const newBalance = await refreshFcmbWalletBalance(user.uid, wallet.accountNumber);
       setWallet((prev) => (prev ? { ...prev, balance: newBalance } : null));
       toast({
         title: "Balance Updated",
