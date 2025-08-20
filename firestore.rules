@@ -1,237 +1,86 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // MOUNTESCROW RULES
+    
     match /users/{userId} {
-      allow read: if true;
-      allow write: if request.auth != null && (
-        request.auth.uid == userId || 
-        request.auth.token.email in ["raniem57@gmail.com", "edumebifavour@gmail.com"]
-      );
-      
-      allow update: if request.auth != null && request.auth.uid == userId && (
-        request.auth.token.email in ["raniem57@gmail.com", "edumebifavour@gmail.com"] ||
-        (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(["upvotedPosts"]) &&
-          (
-            request.resource.data.upvotedPosts.size() == resource.data.upvotedPosts.size() + 1 ||
-            request.resource.data.upvotedPosts.size() == resource.data.upvotedPosts.size() - 1 ||
-            (!resource.data.keys().hasAny(["upvotedPosts"]) && request.resource.data.upvotedPosts.size() == 1)
-          )
-        ) ||
-        (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(["posts"]) &&
-          (
-            request.resource.data.posts.size() == resource.data.posts.size() + 1 ||
-            request.resource.data.posts.size() == resource.data.posts.size() - 1
-          )
-        )
-      );
-    }
-
-    match /posts/{postId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && (
-        request.auth.token.email in ["raniem57@gmail.com", "edumebifavour@gmail.com"] ||
-        request.auth.uid == resource.data.userId ||
-        (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(["upvotes"]) &&
-          (
-            request.resource.data.upvotes == resource.data.upvotes + 1 ||
-            request.resource.data.upvotes == resource.data.upvotes - 1
-          )
-        )
-      );
-      allow delete: if request.auth != null && (
-        request.auth.token.email in ["raniem57@gmail.com", "edumebifavour@gmail.com"] ||
-        request.auth.uid == resource.data.userId
-      );
-      
-      match /comments/{commentId} {
-        allow read: if true;
-        allow create: if request.auth != null;
-        allow update, delete: if request.auth != null && 
-          request.auth.uid == resource.data.userId;
-      }
-    }
-
-    match /series/{seriesId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && (
-        request.auth.token.email in ["raniem57@gmail.com", "edumebifavour@gmail.com"] ||
-        request.auth.uid == resource.data.userId
-      );
-      allow delete: if request.auth != null && (
-        request.auth.token.email in ["raniem57@gmail.com", "edumebifavour@gmail.com"] ||
-        request.auth.uid == resource.data.userId
-      );
-      
-      match /episodes/{episodeId} {
-        allow read: if true;
-        allow create: if request.auth != null;
-        allow update: if request.auth != null && (
-          request.auth.token.email in ["raniem57@gmail.com", "edumebifavour@gmail.com"] ||
-          request.auth.uid == get(/databases/$(database)/documents/series/$(seriesId)).data.userId
-        );
-        allow delete: if request.auth != null && (
-          request.auth.token.email in ["raniem57@gmail.com", "edumebifavour@gmail.com"] ||
-          request.auth.uid == get(/databases/$(database)/documents/series/$(seriesId)).data.userId
-        );
-        
-        match /comments/{commentId} {
-          allow read: if true;
-          allow create: if request.auth != null;
-          allow update, delete: if request.auth != null && 
-            request.auth.uid == resource.data.userId;
-        }
-      }
-      
-      match /comments/{commentId} {
-        allow read: if true;
-        allow create: if request.auth != null;
-        allow update, delete: if request.auth != null && 
-          request.auth.uid == resource.data.userId;
-      }
-    }
-
-    match /jobs/{docId} {
-      allow read: if true;
-      allow create, update, delete: if request.auth != null && 
-        request.auth.token.email in ["raniem57@gmail.com", "edumebifavour@gmail.com"];
-    }
-
-    match /blogs/{blogId} {
-      allow read: if true;
-      allow create, delete: if request.auth != null &&
-        request.auth.token.email in ["raniem57@gmail.com", "edumebifavour@gmail.com"];
-
-      allow update: if request.auth != null && (
-        request.auth.token.email in ["raniem57@gmail.com", "edumebifavour@gmail.com"] ||
-        (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            "likes", "dislikes", "likedBy", "dislikedBy", "comments"
-          ])
-        )
-      );
-    }
-
-    match /competitions/{docId} {
-      allow read: if true;
-      allow create, update, delete: if request.auth != null && 
-        request.auth.token.email in ["raniem57@gmail.com", "edumebifavour@gmail.com"];
-    }
-
-    match /applications/{docId} {
-      allow read: if true;
-      allow create, update, delete: if request.auth != null && 
-        request.auth.token.email in ["raniem57@gmail.com", "edumebifavour@gmail.com"];
-    }
-
-    match /contacts/{docId} {
-      allow create: if true;
-      allow read: if true;
+      allow read, write: if true; // Adjust based on your auth setup
     }
     
-    //MOUNTESCROW RULES
+    match /wallets/{userId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false; // Disallow client-side writes
+    }
     
-    // User wallets are highly sensitive and should only be read by the owner.
-    // All writes/updates are handled by the secure backend (admin SDK).
     match /userWallets/{userId} {
         allow read: if request.auth != null && request.auth.uid == userId;
         allow write: if false; // Disallow client-side writes
     }
     
-    // Proposals can be read by buyer or seller.
     match /proposals/{proposalId} {
        allow read: if request.auth != null && 
          (request.auth.uid == resource.data.buyerId || 
           request.auth.token.email == resource.data.sellerEmail ||
-          request.auth.token.email == resource.data.buyerEmail); // Allow buyer to read seller-initiated proposals
+          request.auth.token.email == resource.data.buyerEmail);
        
-       // Allow creation of proposals by either buyer or seller
-       allow create: if request.auth != null && 
-         request.auth.token.email_verified == true && (
-           // Buyer-initiated proposal: current user is buyer, status is Pending
+       allow create: if request.auth != null && (
            (request.auth.uid == request.resource.data.buyerId &&
             request.auth.token.email == request.resource.data.buyerEmail &&
             request.resource.data.status == 'Pending') ||
-           // Seller-initiated proposal: current user is seller, buyerId is null, status is AwaitingBuyerAcceptance
            (request.auth.token.email == request.resource.data.sellerEmail &&
             request.resource.data.buyerId == null &&
             request.resource.data.status == 'AwaitingBuyerAcceptance')
-         );
+       );
        
-       // Allow updates to proposals
-       allow update: if request.auth != null && 
-         request.auth.token.email_verified == true && (
-           // Seller accepting/decline a buyer-initiated proposal
+       allow update: if request.auth != null && (
            (request.auth.token.email == resource.data.sellerEmail &&
             resource.data.status == 'Pending' &&
             request.resource.data.status in ['Accepted', 'Declined'] &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])) ||
-           // Buyer accepting a seller-initiated proposal (setting buyerId and status)
            (request.auth.token.email == resource.data.buyerEmail &&
             resource.data.status == 'AwaitingBuyerAcceptance' &&
             request.resource.data.status == 'Accepted' &&
             request.resource.data.buyerId == request.auth.uid &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'buyerId', 'updatedAt']))
-         );
+       );
     }
     
-    // Deals can be read by buyer or seller.
-    // Seller can create deals from accepted proposals.
-    // Both parties can update for milestone management.
     match /deals/{dealId} {
        allow read: if request.auth != null && 
          (request.auth.uid == resource.data.buyerId || 
           request.auth.token.email == resource.data.sellerEmail);
        
-       // Allow seller to create deal from accepted proposal
        allow create: if request.auth != null && 
          request.auth.token.email == request.resource.data.sellerEmail &&
-         request.auth.token.email_verified == true &&
          request.resource.data.status == "Awaiting Funding" &&
          exists(/databases/$(database)/documents/proposals/$(request.resource.data.proposalId)) &&
          get(/databases/$(database)/documents/proposals/$(request.resource.data.proposalId)).data.status == "Accepted";
        
-       // Allow buyer/seller to update milestones and deal status
        allow update: if request.auth != null && 
          (request.auth.uid == resource.data.buyerId || 
-          request.auth.token.email == resource.data.sellerEmail) &&
-         request.auth.token.email_verified == true;
+          request.auth.token.email == resource.data.sellerEmail);
     }
     
-    // Disputes can be read and created by the user who filed them.
-    // Updates are typically handled by admins/support, but allow users to update their own disputes.
     match /disputes/{disputeId} {
       allow read: if request.auth != null && 
         (request.auth.uid == resource.data.disputedBy || 
          request.auth.token.email == resource.data.disputedAgainst);
       
-      allow create: if request.auth != null && 
-        request.resource.data.disputedBy == request.auth.uid &&
-        request.auth.token.email_verified == true;
+      allow create: if request.auth != null && request.resource.data.disputedBy == request.auth.uid;
       
-      allow update: if request.auth != null && 
-        request.auth.uid == resource.data.disputedBy &&
-        request.auth.token.email_verified == true;
+      allow update: if request.auth != null && request.auth.uid == resource.data.disputedBy;
     }
     
-    // Transactions are append-only and created by the backend.
-    // Users can read their own transactions.
     match /transactions/{transactionId} {
-        allow read: if request.auth != null && 
-          request.auth.uid == resource.data.userId;
+        allow read: if request.auth != null && request.auth.uid == resource.data.userId;
         allow write: if false;
     }
     
-    // Logs are write-only from the backend. Disallow all client access.
     match /logs/{logId} {
         allow read, write: if false;
     }
     
-    // Config is read-only from the backend. Disallow all client access.
     match /config/{configId} {
         allow read, write: if false;
     }
