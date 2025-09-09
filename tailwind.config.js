@@ -10,7 +10,7 @@ module.exports = {
     extend: {
       fontFamily: {
         body: ["Montaga", "serif"],
-        headline: ["Bebas Neue", "sans-serif"],
+        headline: ["Tahoma", "sans-serif"],
         code: ["monospace"],
       },
       colors: {

@@ -83,7 +83,9 @@ export default function ProposalsPage() {
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <CardTitle className="font-headline text-2xl">Proposals</CardTitle>
+            <CardTitle className="font-headline font-semibold text-2xl">
+              Proposals
+            </CardTitle>
             <CardDescription>
               Create and manage your transaction proposals.
             </CardDescription>

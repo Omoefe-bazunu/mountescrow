@@ -24,8 +24,8 @@ export async function POST(request) {
     }
 
     // Fetch FCMB access token
-    const clientId = process.env.FCMB_BVN_CLIENT_ID;
-    const clientSecret = process.env.FCMB_BVN_CLIENT_SECRET;
+    const clientId = process.env.FCMB_CLIENT_ID;
+    const clientSecret = process.env.FCMB_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
       console.error("FCMB credentials not configured");
@@ -37,7 +37,7 @@ export async function POST(request) {
 
     console.log("Fetching FCMB access token...");
     const tokenResponse = await fetch(
-      "https://baas.dev.getrova.co.uk/api/services/token",
+      "https://baas-api.getrova.io/api/services/token",
       {
         method: "POST",
         headers: {
@@ -75,7 +75,7 @@ export async function POST(request) {
       lastName,
     });
     const verificationResponse = await fetch(
-      "https://baas.dev.getrova.co.uk/api/services/bvn-verification/match",
+      "https://baas-api.getrova.io/api/services/bvn-verification/match",
       {
         method: "POST",
         headers: {

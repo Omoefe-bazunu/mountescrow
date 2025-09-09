@@ -71,7 +71,7 @@ export function LandingHeader() {
         </Button>
         <Button
           asChild
-          className="bg-accent hover:bg-accent/90 text-accent-foreground"
+          className="bg-accent hover:bg-primary transition-colors  hover:text-white text-accent-foreground"
         >
           <Link href="/signup">
             Sign Up <ArrowRight className="ml-2 h-4 w-4" />

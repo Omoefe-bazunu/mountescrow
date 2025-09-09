@@ -195,7 +195,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-semibold">
               Wallet Balance
             </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -217,7 +217,9 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Deals</CardTitle>
+            <CardTitle className="text-sm font-semibold">
+              Active Deals
+            </CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -231,7 +233,7 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-semibold">
               Pending Proposals
             </CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
@@ -249,7 +251,7 @@ export default function DashboardPage() {
       <Card>
         <CardHeader className="flex flex-row items-center">
           <div className="grid gap-2">
-            <CardTitle className="font-headline text-xl">
+            <CardTitle className="font-headline font-semibold text-xl">
               Recent Transactions
             </CardTitle>
             <CardDescription>Your last 5 transactions.</CardDescription>

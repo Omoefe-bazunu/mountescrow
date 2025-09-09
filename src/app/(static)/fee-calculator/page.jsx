@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,20 +18,52 @@ export default function FeeCalculatorPage() {
   return (
     <>
       <div className="bg-muted/40 font-body">
-        <div className="container max-w-screen-xl mx-auto px-4 md:px-8 py-16 ">
-          <div className="max-w-md w-full bg-card p-8 rounded-lg shadow-md">
-            <h1 className="font-headline text-3xl md:text-4xl text-primary mb-4">
+        <div className="container max-w-screen-xl mx-auto px-4 md:px-8 py-16">
+          {/* Card animation */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="max-w-md w-full bg-card p-8 rounded-lg shadow-md"
+          >
+            {/* Title */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="font-headline font-semibold text-3xl md:text-4xl text-primary mb-4"
+            >
               Calculate Your Escrow Fee
-            </h1>
-            <p className="text-lg text-muted-foreground mb-6">
+            </motion.h1>
+
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.6 }}
+              className="text-lg text-muted-foreground mb-6"
+            >
               Calculate the exact amount we are charging for helping you hold
               your funds until your transaction is completed.
-            </p>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="amount">
-                  Amount to hold
-                </Label>
+            </motion.p>
+
+            {/* Inputs & Button */}
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: {},
+                visible: { transition: { staggerChildren: 0.15 } },
+              }}
+              className="space-y-4"
+            >
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0 },
+                }}
+              >
+                <Label htmlFor="amount">Amount to hold</Label>
                 <div className="flex space-x-2 mt-2">
                   <Input
                     id="amount"
@@ -47,16 +80,46 @@ export default function FeeCalculatorPage() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-                Calculate
-              </Button>
-            </div>
-          </div>
+              </motion.div>
+
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0 },
+                }}
+              >
+                <motion.div
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                    Calculate
+                  </Button>
+                </motion.div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
-      <FeesBreakdown />
-      <FaqSection />
+
+      {/* Fade in other sections */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+      >
+        <FeesBreakdown />
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, delay: 0.3 }}
+      >
+        <FaqSection />
+      </motion.div>
     </>
   );
 }

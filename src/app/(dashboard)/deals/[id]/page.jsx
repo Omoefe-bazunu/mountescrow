@@ -176,7 +176,7 @@ export default function DealDetailPage() {
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <CardTitle className="font-headline text-3xl">
+              <CardTitle className="font-headline font-semibold text-3xl">
                 {deal.projectTitle}
               </CardTitle>
               <CardDescription className="mt-2 flex items-center gap-2">

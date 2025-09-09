@@ -277,7 +277,7 @@ export default function KycPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="font-headline text-2xl">
+              <CardTitle className="font-headline font-semibold text-2xl">
                 KYC Verification
               </CardTitle>
               <CardDescription>

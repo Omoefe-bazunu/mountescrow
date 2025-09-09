@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
 const faqData = {
@@ -49,7 +50,7 @@ export default function FaqSection() {
 
   return (
     <section className="bg-background py-20 px-4 md:px-20">
-      <h2 className="text-primary font-headline text-3xl md:text-4xl text-center mb-8">
+      <h2 className="text-primary font-semibold font-headline text-3xl md:text-4xl text-center mb-8">
         FREQUENTLY ASKED QUESTIONS
       </h2>
 
@@ -85,11 +86,22 @@ export default function FaqSection() {
                 {openIndex === idx ? "−" : "+"}
               </span>
             </button>
-            {openIndex === idx && (
-              <div className="px-6 pb-4 text-muted-foreground text-sm">
-                {item.answer}
-              </div>
-            )}
+
+            <AnimatePresence>
+              {openIndex === idx && (
+                <motion.div
+                  key="content"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
+                  <div className="px-6 pb-4 text-muted-foreground text-sm">
+                    {item.answer}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         ))}
       </div>

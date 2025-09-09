@@ -103,7 +103,9 @@ export default function TransactionsPage() {
   return (
     <Card className="my-0">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">Transactions</CardTitle>
+        <CardTitle className="font-headline font-semibold text-2xl">
+          Transactions
+        </CardTitle>
         <CardDescription>
           View and filter your complete transaction history.
         </CardDescription>

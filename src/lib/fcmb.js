@@ -24,7 +24,7 @@ export async function createFcmbWallet(userId, data) {
 
     // 4. Call FCMB API
     const response = await axios.post(
-      "https://baas.dev.getrova.co.uk/wallet/create-tier-1",
+      "https://baas-api.getrova.io/wallet/create-tier-1",
       payload,
       {
         headers: {

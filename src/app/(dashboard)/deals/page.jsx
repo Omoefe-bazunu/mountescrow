@@ -73,7 +73,9 @@ export default function DealsPage() {
   return (
     <Card className="my-0">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">Deals</CardTitle>
+        <CardTitle className="font-headline font-semibold text-2xl">
+          Deals
+        </CardTitle>
         <CardDescription>Track and manage your active deals.</CardDescription>
       </CardHeader>
       <CardContent>

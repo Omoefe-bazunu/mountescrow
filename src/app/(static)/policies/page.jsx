@@ -11,6 +11,8 @@ import {
   deleteObject,
 } from "firebase/storage";
 import { db, storage, auth } from "@/lib/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
 
 const initialPolicyData = {
   "Refund & Privacy Policy": {
@@ -32,14 +34,11 @@ export default function DisputeResolutionPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Check admin status via Firebase Auth
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setIsAdmin(user ? ADMIN_EMAILS.includes(user.email) : false);
     });
 
-    // Fetch PDF URLs on component mount
     fetchPdfUrls();
-
     return () => unsubscribe();
   }, []);
 
@@ -54,7 +53,6 @@ export default function DisputeResolutionPage() {
             .toLowerCase()
             .replace(/\s+/g, "-")}.pdf`;
           try {
-            // Add cache-busting parameter
             const url =
               (await getDownloadURL(ref(storage, path))) +
               `?alt=media&token=${Date.now()}`;
@@ -90,12 +88,10 @@ export default function DisputeResolutionPage() {
         .replace(/\s+/g, "-")}.pdf`;
       const storageRef = ref(storage, path);
 
-      // Upload the file with public cache control
       await uploadBytes(storageRef, file, {
         cacheControl: "public, max-age=31536000",
       });
 
-      // Get the download URL
       const url = await getDownloadURL(storageRef);
 
       setPolicyData((prev) => ({
@@ -118,7 +114,6 @@ export default function DisputeResolutionPage() {
         .replace(/\s+/g, "-")}.pdf`;
       const storageRef = ref(storage, path);
 
-      // Delete the file
       await deleteObject(storageRef);
 
       setPolicyData((prev) => ({
@@ -135,8 +130,13 @@ export default function DisputeResolutionPage() {
 
   return (
     <div className="container py-12 md:py-20">
-      <div className="max-w-4xl mx-auto px-4 text-center">
-        <h1 className="font-headline text-4xl md:text-5xl mb-4 text-primary">
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7 }}
+        className="max-w-4xl mx-auto px-4 text-center"
+      >
+        <h1 className="font-headline font-semibold text-4xl md:text-5xl mb-4 text-primary">
           Policies & Terms
         </h1>
         <p className="lead mb-8 text-muted-foreground">
@@ -151,8 +151,13 @@ export default function DisputeResolutionPage() {
         )}
 
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          <div className="space-y-6">
+            <Skeleton className="h-10 w-2/3 mx-auto" />
+            <Skeleton className="h-6 w-1/2 mx-auto" />
+            <div className="grid gap-6 mt-8">
+              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-40 w-full" />
+            </div>
           </div>
         ) : (
           <Tabs
@@ -160,81 +165,98 @@ export default function DisputeResolutionPage() {
             className="w-full text-left"
           >
             <TabsList className="flex flex-col bg-gray-300 h-fit lg:flex-row gap-2 lg:gap-4 justify-center items-center lg:items-stretch">
-              {Object.keys(policyData).map((key) => (
-                <TabsTrigger
+              {Object.keys(policyData).map((key, idx) => (
+                <motion.div
                   key={key}
-                  value={key}
-                  className="w-full lg:w-auto text-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: idx * 0.1 }}
+                  viewport={{ once: true }}
+                  className="w-full lg:w-auto"
                 >
-                  {key}
-                </TabsTrigger>
+                  <TabsTrigger
+                    value={key}
+                    className="w-full font-semibold text-center"
+                  >
+                    {key}
+                  </TabsTrigger>
+                </motion.div>
               ))}
             </TabsList>
 
             <div className="mt-8">
-              {Object.entries(policyData).map(([key, { summary, pdfUrl }]) => (
-                <TabsContent key={key} value={key}>
-                  <Card>
-                    <CardHeader>
-                      <div className="flex justify-between items-center">
-                        <CardTitle className="font-headline text-2xl text-primary">
-                          {key}
-                        </CardTitle>
-                        {isAdmin && (
-                          <div className="flex gap-2">
-                            <label
-                              htmlFor={`file-upload-${key}`}
-                              className="cursor-pointer"
-                            >
-                              <FilePlus2 className="h-5 w-5 text-primary" />
-                              <input
-                                id={`file-upload-${key}`}
-                                type="file"
-                                accept=".pdf"
-                                className="hidden"
-                                onChange={(e) =>
-                                  e.target.files?.[0] &&
-                                  handleFileUpload(key, e.target.files[0])
-                                }
-                              />
-                            </label>
-                            {pdfUrl && (
-                              <button onClick={() => handleDeletePdf(key)}>
-                                <Trash2 className="h-5 w-5 text-destructive" />
-                              </button>
+              {Object.entries(policyData).map(
+                ([key, { summary, pdfUrl }], idx) => (
+                  <TabsContent key={key} value={key}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: idx * 0.2 }}
+                      viewport={{ once: true }}
+                    >
+                      <Card>
+                        <CardHeader>
+                          <div className="flex justify-between items-center">
+                            <CardTitle className="font-headline font-semibold text-2xl text-primary">
+                              {key}
+                            </CardTitle>
+                            {isAdmin && (
+                              <div className="flex gap-2">
+                                <label
+                                  htmlFor={`file-upload-${key}`}
+                                  className="cursor-pointer"
+                                >
+                                  <FilePlus2 className="h-5 w-5 text-primary" />
+                                  <input
+                                    id={`file-upload-${key}`}
+                                    type="file"
+                                    accept=".pdf"
+                                    className="hidden"
+                                    onChange={(e) =>
+                                      e.target.files?.[0] &&
+                                      handleFileUpload(key, e.target.files[0])
+                                    }
+                                  />
+                                </label>
+                                {pdfUrl && (
+                                  <button onClick={() => handleDeletePdf(key)}>
+                                    <Trash2 className="h-5 w-5 text-destructive" />
+                                  </button>
+                                )}
+                              </div>
                             )}
                           </div>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="prose max-w-none">
-                      <div>{summary}</div>
-                      {pdfUrl ? (
-                        <div className="mt-6">
-                          <a
-                            href={pdfUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
-                          >
-                            View Full {key} PDF
-                          </a>
-                        </div>
-                      ) : (
-                        <div className="mt-4 text-gray-500">
-                          {isAdmin
-                            ? "No PDF uploaded yet"
-                            : "PDF currently unavailable"}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              ))}
+                        </CardHeader>
+                        <CardContent className="prose max-w-none">
+                          <div>{summary}</div>
+                          {pdfUrl ? (
+                            <div className="mt-6">
+                              <a
+                                href={pdfUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+                              >
+                                View Full {key} PDF
+                              </a>
+                            </div>
+                          ) : (
+                            <div className="mt-4 text-gray-500">
+                              {isAdmin
+                                ? "No PDF uploaded yet"
+                                : "PDF currently unavailable"}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </TabsContent>
+                )
+              )}
             </div>
           </Tabs>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

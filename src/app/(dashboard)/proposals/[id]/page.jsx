@@ -301,7 +301,7 @@ export default function ProposalDetailPage() {
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <CardTitle className="font-headline text-3xl">
+              <CardTitle className="font-headline font-semibold text-3xl">
                 {proposal.projectTitle}
               </CardTitle>
               <CardDescription className="mt-2">
