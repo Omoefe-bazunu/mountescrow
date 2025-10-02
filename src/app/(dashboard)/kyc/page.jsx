@@ -152,11 +152,13 @@ export default function KycPage() {
   }, [router]);
 
   // Handle form submission
+  // Update the onSubmit function in your KYC page component
   const onSubmit = async (data) => {
     if (!user || !user.email) return;
 
     setSubmitting(true);
     try {
+      // Format phone for API call
       let formattedPhone = data.phone.replace(/[\s\-\(\)]/g, "");
       if (formattedPhone.startsWith("+234")) {
         formattedPhone = formattedPhone.substring(4);
@@ -164,27 +166,78 @@ export default function KycPage() {
         formattedPhone = formattedPhone.substring(1);
       }
 
-      const result = await initiateBvnVerification(user.uid, {
-        ...data,
-        phone: formattedPhone,
+      console.log("🚀 Submitting KYC with BVN:", data.bvn.slice(-4));
+
+      // Call BVN verification API with all data for validation
+      const response = await fetch("/api/bvn-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bvn: data.bvn,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          middleName: data.middleName,
+          phone: formattedPhone,
+          gender: data.gender,
+        }),
       });
 
-      if (result.status === "SUCCESS") {
-        const verificationStatus = result.data.verificationStatus;
-        const kycStatus =
-          verificationStatus === "exact_match" ||
-          verificationStatus === "partial_match"
-            ? "approved"
-            : "rejected";
+      const result = await response.json();
+      console.log("📨 API Response:", result);
 
+      if (response.ok && result.success) {
+        console.log("✅ BVN verified and validated, updating Firestore...");
+
+        // Mark user as approved in Firestore and initialize wallet
         await setDoc(
           doc(db, "users", user.uid),
           {
-            kycStatus,
+            kycStatus: "approved",
             displayName: data.middleName
               ? `${data.firstName} ${data.middleName} ${data.lastName}`
               : `${data.firstName} ${data.lastName}`,
             email: user.email,
+            walletBalance: 0, // Initialize wallet with zero balance
+            kycData: {
+              firstName: data.firstName,
+              lastName: data.lastName,
+              middleName: data.middleName,
+              phone: formattedPhone,
+              dob: data.dob,
+              gender: data.gender,
+              bvn: data.bvn, // Store BVN securely
+              verifiedAt: new Date().toISOString(),
+            },
+            // Store Dojah response data for reference
+            bvnData: result.data,
+            walletCreatedAt: new Date().toISOString(), // Track when wallet was created
+          },
+          { merge: true }
+        );
+
+        console.log("💰 Wallet initialized with balance: 0");
+
+        await fetchUserData(user);
+
+        toast({
+          title: "KYC Verified ✅",
+          description: "Your identity has been verified successfully!",
+        });
+
+        // Redirect to wallet
+        setTimeout(() => {
+          router.push("/wallet");
+        }, 1000);
+      } else {
+        console.error("❌ Verification failed:", result.message);
+
+        // Mark as rejected in Firestore
+        await setDoc(
+          doc(db, "users", user.uid),
+          {
+            kycStatus: "rejected",
+            rejectionReason: result.message || "BVN verification failed",
+            lastAttempt: new Date().toISOString(),
           },
           { merge: true }
         );
@@ -192,30 +245,21 @@ export default function KycPage() {
         await fetchUserData(user);
 
         toast({
-          title: "KYC Verification Submitted",
-          description: `Verification ${kycStatus}. ${getStatusMessage(
-            kycStatus
-          )}`,
-        });
-
-        if (kycStatus === "approved") {
-          router.push("/wallet");
-        }
-      } else {
-        toast({
           variant: "destructive",
-          title: "KYC Submission Failed",
-          description:
-            result.message || "Please check your details and try again.",
+          title: "Verification Failed",
+          description: result.errors
+            ? result.errors.join(". ")
+            : result.message ||
+              "Unable to verify your BVN. Please check your details.",
         });
       }
     } catch (error) {
-      console.error("KYC submission error:", error);
+      console.error("❌ Submission error:", error);
+
       toast({
         variant: "destructive",
-        title: "KYC Submission Failed",
-        description:
-          error.message || "An unexpected error occurred. Please try again.",
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
       });
     } finally {
       setSubmitting(false);

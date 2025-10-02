@@ -93,6 +93,7 @@ export function SignUpForm() {
         termsAcceptedAt: new Date(),
       });
 
+      // Fixed email sending with better error handling
       const emailResponse = await fetch("/api/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -103,8 +104,16 @@ export function SignUpForm() {
         }),
       });
 
+      // Parse the response body
+      const emailResult = await emailResponse.json();
+
       if (!emailResponse.ok) {
-        throw new Error("Failed to send verification email");
+        console.error("Email API error:", emailResult);
+        throw new Error(
+          emailResult.error?.message ||
+            emailResult.error ||
+            "Failed to send verification email"
+        );
       }
 
       toast({
@@ -114,29 +123,42 @@ export function SignUpForm() {
       });
 
       await auth.signOut();
-      router.push("/verify-account"); // Create this page to enter code
+      router.push("/verify-account");
     } catch (error) {
       console.error("Signup error:", error);
 
+      // Clean up user if created
       if (user) {
-        await deleteUser(user).catch((deleteError) => {
+        try {
+          await deleteUser(user);
+          console.log("User deleted after signup error");
+        } catch (deleteError) {
           console.error(
             "Failed to delete user after signup error:",
             deleteError
           );
-        });
+        }
       }
 
       let errorMessage = "Something went wrong. Please try again.";
-      switch (error.code) {
-        case "auth/email-already-in-use":
-          errorMessage = "This email is already registered.";
-          break;
-        case "auth/weak-password":
-          errorMessage = "Password is too weak.";
-          break;
-        default:
-          errorMessage = error.message || errorMessage;
+
+      // Handle Firebase auth errors
+      if (error.code) {
+        switch (error.code) {
+          case "auth/email-already-in-use":
+            errorMessage = "This email is already registered.";
+            break;
+          case "auth/weak-password":
+            errorMessage = "Password is too weak.";
+            break;
+          case "auth/invalid-email":
+            errorMessage = "Invalid email address.";
+            break;
+          default:
+            errorMessage = error.message || errorMessage;
+        }
+      } else {
+        errorMessage = error.message || errorMessage;
       }
 
       toast({
@@ -187,11 +209,7 @@ export function SignUpForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input
-                  type="email"
-                  placeholder="raniem57@gmail.com"
-                  {...field}
-                />
+                <Input type="email" placeholder="john@example.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

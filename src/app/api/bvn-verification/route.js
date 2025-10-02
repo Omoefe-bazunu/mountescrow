@@ -1,139 +1,240 @@
+// app/api/bvn-verification/route.js
 import { NextResponse } from "next/server";
 
-// Handles POST requests to /api/bvn-verification
-export async function POST(request) {
-  try {
-    // Parse request body
-    const body = await request.json();
-    const { bvn, firstName, lastName, middleName, phone, dob, gender } = body;
+// Helper function to normalize strings for comparison
+function normalizeString(str) {
+  return str?.toString().toLowerCase().trim().replace(/\s+/g, " ") || "";
+}
 
-    // Validate required fields
-    if (!bvn || !firstName || !lastName || !phone || !dob || !gender) {
-      console.error("Missing required fields:", {
-        bvn,
-        firstName,
-        lastName,
-        phone,
-        dob,
-        gender,
-      });
+// Helper function to normalize phone numbers
+function normalizePhone(phone) {
+  // Remove all non-digit characters
+  let normalized = phone?.toString().replace(/\D/g, "") || "";
+
+  // Remove leading country code or zero
+  if (normalized.startsWith("234")) {
+    normalized = normalized.substring(3);
+  } else if (normalized.startsWith("0")) {
+    normalized = normalized.substring(1);
+  }
+
+  return normalized;
+}
+
+// Helper function to check name match (allowing partial matches)
+function namesMatch(provided, bvnName) {
+  const providedNorm = normalizeString(provided);
+  const bvnNorm = normalizeString(bvnName);
+
+  // Exact match
+  if (providedNorm === bvnNorm) return true;
+
+  // One contains the other
+  if (providedNorm.includes(bvnNorm) || bvnNorm.includes(providedNorm))
+    return true;
+
+  // Check if all words in provided name exist in BVN name
+  const providedWords = providedNorm.split(" ");
+  const bvnWords = bvnNorm.split(" ");
+
+  return providedWords.every((word) =>
+    bvnWords.some((bvnWord) => bvnWord.includes(word) || word.includes(bvnWord))
+  );
+}
+
+export async function POST(req) {
+  try {
+    const body = await req.json();
+    const { bvn, firstName, lastName, middleName, phone, gender } = body;
+
+    // Validate BVN
+    if (!bvn) {
       return NextResponse.json(
-        { message: "Missing required fields" },
+        { success: false, message: "BVN is required" },
         { status: 400 }
       );
     }
 
-    // Fetch FCMB access token
-    const clientId = process.env.FCMB_CLIENT_ID;
-    const clientSecret = process.env.FCMB_CLIENT_SECRET;
-
-    if (!clientId || !clientSecret) {
-      console.error("FCMB credentials not configured");
+    // Validate BVN format (11 digits)
+    if (!/^\d{11}$/.test(bvn)) {
       return NextResponse.json(
-        { message: "Server configuration error" },
+        { success: false, message: "BVN must be exactly 11 digits" },
+        { status: 400 }
+      );
+    }
+
+    // Check environment variables
+    const appId = process.env.DOJAH_APP_ID;
+    const secretKey = process.env.DOJAH_SECRET_KEY;
+    const baseUrl = process.env.DOJAH_BASE_URL || "https://api.dojah.io";
+
+    if (!appId || !secretKey) {
+      console.error("Missing Dojah credentials");
+      return NextResponse.json(
+        { success: false, message: "Server configuration error" },
         { status: 500 }
       );
     }
 
-    console.log("Fetching FCMB access token...");
-    const tokenResponse = await fetch(
-      "https://baas-api.getrova.io/api/services/token",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          grant_type: "client_credentials",
-          client_id: clientId,
-          client_secret: clientSecret,
-          scope: "profile",
-        }),
-      }
-    );
-
-    if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json();
-      console.error("Token fetch error:", {
-        status: tokenResponse.status,
-        statusText: tokenResponse.statusText,
-        errorData,
-      });
-      return NextResponse.json(
-        { message: errorData.message || "Failed to fetch access token" },
-        { status: tokenResponse.status }
-      );
-    }
-
-    const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
-
-    // Make BVN verification request to FCMB's match endpoint
-    console.log("Initiating BVN verification for:", {
-      bvn,
+    console.log("🔍 Attempting BVN verification...");
+    console.log("BVN (last 4 digits):", bvn.slice(-4));
+    console.log("User provided:", {
       firstName,
       lastName,
+      middleName,
+      phone,
+      gender,
     });
-    const verificationResponse = await fetch(
-      "https://baas-api.getrova.io/api/services/bvn-verification/match",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          country: "NG", // Required by FCMB
-          idNumber: bvn, // Map bvn to idNumber
-          firstName,
-          lastName,
-          middleName: middleName || undefined,
-          phoneNumber: phone, // Map phone to phoneNumber
-          dob,
-          gender,
-        }),
-      }
-    );
 
-    if (!verificationResponse.ok) {
-      const errorData = await verificationResponse.json();
-      console.error("BVN verification error:", {
-        status: verificationResponse.status,
-        statusText: verificationResponse.statusText,
-        errorData,
-      });
+    // Call Dojah API
+    const dojahUrl = `${baseUrl}/api/v1/kyc/bvn/full?bvn=${bvn}`;
+
+    const response = await fetch(dojahUrl, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        AppId: appId,
+        Authorization: secretKey,
+      },
+    });
+
+    const data = await response.json();
+
+    // Log response for debugging
+    console.log("📥 Dojah Response Status:", response.status);
+    console.log("📥 Dojah Response Body:", JSON.stringify(data, null, 2));
+
+    // Check for successful response from Dojah
+    if (!response.ok || !data?.entity?.bvn) {
+      console.error("❌ BVN verification failed");
+      const errorMessage =
+        data?.error || data?.message || "BVN verification failed";
+
       return NextResponse.json(
-        { message: errorData.message || "BVN verification failed" },
-        { status: verificationResponse.status }
+        {
+          success: false,
+          message: errorMessage,
+          details: data,
+        },
+        { status: response.status || 400 }
       );
     }
 
-    const verificationData = await verificationResponse.json();
-    console.log("BVN verification successful:", verificationData);
+    // BVN found - now validate user-provided data against BVN records
+    const bvnData = data.entity;
+    const validationErrors = [];
 
-    // Return response matching FCMB's structure
+    console.log("🔍 Validating user data against BVN records...");
+
+    // 1. Validate First Name
+    if (firstName && bvnData.first_name) {
+      if (!namesMatch(firstName, bvnData.first_name)) {
+        console.error("❌ First name mismatch:", {
+          provided: firstName,
+          bvn: bvnData.first_name,
+        });
+        validationErrors.push("First name does not match BVN records");
+      } else {
+        console.log("✅ First name matched");
+      }
+    }
+
+    // 2. Validate Last Name
+    if (lastName && bvnData.last_name) {
+      if (!namesMatch(lastName, bvnData.last_name)) {
+        console.error("❌ Last name mismatch:", {
+          provided: lastName,
+          bvn: bvnData.last_name,
+        });
+        validationErrors.push("Last name does not match BVN records");
+      } else {
+        console.log("✅ Last name matched");
+      }
+    }
+
+    // 3. Validate Middle Name (optional - only if provided by user)
+    if (middleName && bvnData.middle_name) {
+      if (!namesMatch(middleName, bvnData.middle_name)) {
+        console.warn("⚠️ Middle name mismatch:", {
+          provided: middleName,
+          bvn: bvnData.middle_name,
+        });
+        // Don't fail on middle name mismatch, just warn
+      } else {
+        console.log("✅ Middle name matched");
+      }
+    }
+
+    // 4. Validate Phone Number
+    if (phone && bvnData.phone_number1) {
+      const normalizedUserPhone = normalizePhone(phone);
+      const normalizedBvnPhone1 = normalizePhone(bvnData.phone_number1);
+      const normalizedBvnPhone2 = normalizePhone(bvnData.phone_number2);
+
+      const phoneMatches =
+        normalizedUserPhone === normalizedBvnPhone1 ||
+        normalizedUserPhone === normalizedBvnPhone2;
+
+      if (!phoneMatches) {
+        console.error("❌ Phone number mismatch:", {
+          provided: normalizedUserPhone,
+          bvn: [normalizedBvnPhone1, normalizedBvnPhone2],
+        });
+        validationErrors.push("Phone number does not match BVN records");
+      } else {
+        console.log("✅ Phone number matched");
+      }
+    }
+
+    // 5. Validate Gender
+    if (gender && bvnData.gender) {
+      // Normalize gender (M/Male, F/Female)
+      const normalizedUserGender = gender.toUpperCase().charAt(0); // M or F
+      const normalizedBvnGender = bvnData.gender.toUpperCase().charAt(0); // M or F
+
+      if (normalizedUserGender !== normalizedBvnGender) {
+        console.error("❌ Gender mismatch:", {
+          provided: gender,
+          bvn: bvnData.gender,
+        });
+        validationErrors.push("Gender does not match BVN records");
+      } else {
+        console.log("✅ Gender matched");
+      }
+    }
+
+    // If there are validation errors, return them
+    if (validationErrors.length > 0) {
+      console.error("❌ Validation failed with errors:", validationErrors);
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Personal information does not match BVN records",
+          errors: validationErrors,
+        },
+        { status: 400 }
+      );
+    }
+
+    // All validations passed
+    console.log("✅ All validations passed - BVN verification successful");
     return NextResponse.json({
-      status: verificationData.status,
-      data: {
-        idType: verificationData.data.idType,
-        idNumberVerified: verificationData.data.idNumberVerified,
-        namesVerified: verificationData.data.namesVerified,
-        dobVerified: verificationData.data.dobVerified,
-        genderVerified: verificationData.data.genderVerified,
-        phoneNumberVerified: verificationData.data.phoneNumberVerified,
-        secondaryIdNumberVerified:
-          verificationData.data.secondaryIdNumberVerified,
-        verificationStatus: verificationData.data.verificationStatus,
-      },
-      message: verificationData.message,
+      success: true,
+      data: bvnData,
+      message: "BVN verified successfully",
     });
   } catch (error) {
-    console.error("BVN verification route error:", {
-      message: error.message,
-      stack: error.stack,
-    });
+    console.error("❌ BVN Verification Error:", error);
+    console.error("Error details:", error.message);
+
     return NextResponse.json(
-      { message: error.message || "Internal server error" },
+      {
+        success: false,
+        message: "Internal server error",
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
+      },
       { status: 500 }
     );
   }
