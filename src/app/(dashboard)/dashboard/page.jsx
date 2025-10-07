@@ -192,57 +192,57 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-primary-blue">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 space-y-4 md:space-y-0 md:gap-8 mb-4">
+        <Card className="bg-primary-blue text-white my-0">
+          <CardHeader className="flex flex-row   items-center justify-between space-y-0 pb-2">
+            <div className="text-xl font-semibold text-fontFamily-code">
               Wallet Balance
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-secondary-blue" />
+            </div>
+            NGN
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold font-headline tracking-wider">
-              $
+              NGN
               {wallet?.balance?.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               }) ?? "0.00"}
             </div>
-            <p className="text-xs text-secondary-blue">
+            <p className="text-xs text-white">
               {wallet?.updatedAt
                 ? `Updated ${formatDistanceToNow(toDate(wallet.updatedAt))} ago`
                 : "Available funds"}
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-green-600 text-white my-0">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm text-primary-blue font-semibold">
+            <div className="text-xl font-semibold text-fontFamily-code">
               Active Deals
-            </CardTitle>
-            <Package className="h-4 w-4 text-secondary-blue" />
+            </div>
+            <Package className="h-4 w-4 text-white" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold font-headline tracking-wider">
               {stats.activeDeals}
             </div>
-            <p className="text-xs text-secondary-blue">
+            <p className="text-xs text-white">
               Deals awaiting funding or in progress
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-accent-blue text-white my-0">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm text-primary-blue font-semibold">
+            <div className="text-xl font-semibold text-fontFamily-code">
               Pending Proposals
-            </CardTitle>
-            <FileText className="h-4 w-4 text-secondary-blue" />
+            </div>
+            <FileText className="h-4 w-4 text-white" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold font-headline tracking-wider">
               {stats.pendingProposals}
             </div>
-            <p className="text-xs text-secondary-blue">
+            <p className="text-xs text-white">
               Proposals awaiting your response
             </p>
           </CardContent>

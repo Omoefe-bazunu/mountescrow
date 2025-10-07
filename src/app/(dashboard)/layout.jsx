@@ -164,7 +164,7 @@ export default function DashboardLayout({ children }) {
     <>
       <LandingHeader />
       <div className="grid min-h-screen w-full max-w-[100vw] overflow-x-hidden md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] bg-background">
-        <div className="hidden border-r bg-card md:block">
+        <div className="hidden border-r bg-secondary-blue text-white md:block">
           <div className="flex h-full max-h-screen flex-col gap-2">
             <div className="flex-1">
               <nav className="grid items-start px-2 text-sm font-medium lg:px-4 mt-4">
@@ -173,8 +173,8 @@ export default function DashboardLayout({ children }) {
                     key={item.label}
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                      pathname === item.href && "bg-muted text-primary"
+                      "flex items-center gap-3 rounded-lg px-3 py-2 text-white hover:bg-highlight-blue transition-all",
+                      pathname === item.href && "bg-accent-blue text-white"
                     )}
                   >
                     <item.icon className="h-4 w-4" />
@@ -218,7 +218,10 @@ export default function DashboardLayout({ children }) {
                   <span className="sr-only">Toggle navigation menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="flex flex-col w-[250px] p-4">
+              <SheetContent
+                side="left"
+                className="flex flex-col bg-primary-blue text-white w-[250px] p-4"
+              >
                 <nav className="grid gap-2 text-lg font-medium">
                   <Link
                     href="/dashboard"
@@ -232,12 +235,12 @@ export default function DashboardLayout({ children }) {
                       key={item.label}
                       href={item.href}
                       className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                        pathname === item.href && "bg-muted text-primary"
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-white transition-all  hover:bg-highlight-blue",
+                        pathname === item.href && "bg-muted text-white"
                       )}
                       onClick={() => setIsSheetOpen(false)}
                     >
-                      <item.icon className="h-4 w-4" />
+                      <item.icon className="h-4 w-4 " />
                       {item.label}
                     </Link>
                   ))}
@@ -255,7 +258,11 @@ export default function DashboardLayout({ children }) {
                         href="/contact-us"
                         onClick={() => setIsSheetOpen(false)}
                       >
-                        <Button size="sm" className="w-full">
+                        <Button
+                          size="sm"
+                          asChild
+                          className="w-full bg-orange-500 hover:bg-highlight-blue text-white  "
+                        >
                           Contact Support
                         </Button>
                       </Link>
@@ -265,14 +272,17 @@ export default function DashboardLayout({ children }) {
               </SheetContent>
             </Sheet>
 
-            <div className="w-full flex-1" />
-            <Button variant="outline" size="icon" className="h-8 w-8">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">Toggle notifications</span>
-            </Button>
+            <div className="w-full flex-1">
+              {" "}
+              <h3 className=" font-semibold">DASHBOARD</h3>
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full bg-primary-blue hover:bg-highlight-blue text-white"
+                >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user?.photoURL || ""} alt="User avatar" />
                     <AvatarFallback>
@@ -285,12 +295,6 @@ export default function DashboardLayout({ children }) {
                 <DropdownMenuLabel>
                   {user?.displayName || "My Account"}
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem>Support</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleLogout}
@@ -305,7 +309,7 @@ export default function DashboardLayout({ children }) {
 
           <main className="flex flex-1 flex-col bg-muted/40 w-full max-w-[100vw] overflow-x-hidden">
             <EmailVerificationBanner />
-            <div className="flex-1 p-4 lg:p-6 space-y-4 w-full max-w-[100vw] overflow-x-hidden">
+            <div className="flex-1 p-3 lg:p-4 space-y-3 w-full max-w-[100vw] overflow-x-hidden">
               {children}
             </div>
           </main>

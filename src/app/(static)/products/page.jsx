@@ -19,7 +19,7 @@ export default function ProductsPage() {
               viewport={{ once: true }}
             >
               <motion.h1
-                className="font-headline font-semibold text-3xl md:text-4xl text-primary-blue mb-4 uppercase"
+                className="font-headline hidden font-semibold text-3xl md:text-4xl text-primary-blue mb-4 uppercase"
                 initial={{ y: -30, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.7 }}
@@ -28,13 +28,15 @@ export default function ProductsPage() {
               </motion.h1>
 
               <motion.h2
-                className="font-headline font-semibold text-3xl md:text-4xl text-orange-500 max-w-xl mb-8"
+                className="font-headline uppercase font-semibold text-3xl md:text-4xl text-orange-500 max-w-xl mb-8"
                 initial={{ x: -40, opacity: 0 }}
                 whileInView={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.9, delay: 0.2 }}
               >
-                AN ESCROW PLATFORM YOU CAN{" "}
-                <span className="text-primary-blue">TRUST WITH YOUR FUNDS</span>
+                MountEscrow. Built for Trust.{" "}
+                <span className="text-primary-blue">
+                  Secure Every Transaction.
+                </span>
               </motion.h2>
 
               <motion.p

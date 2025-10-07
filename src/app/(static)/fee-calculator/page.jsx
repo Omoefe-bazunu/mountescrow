@@ -17,7 +17,16 @@ import FaqSection from "@/components/home/FaqSection";
 export default function FeeCalculatorPage() {
   return (
     <>
-      <div className="bg-muted/40 font-body">
+      <div
+        className=" font-body"
+        style={{
+          backgroundImage:
+            "url('https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FfeesbreakdownBgImage.jpg?alt=media&token=fa1a900a-7233-4ae5-8074-e3d333a6af84')",
+          backgroundSize: "cover",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "center",
+        }}
+      >
         <div className="container max-w-screen-xl mx-auto px-4 md:px-8 py-16">
           {/* Card animation */}
           <motion.div

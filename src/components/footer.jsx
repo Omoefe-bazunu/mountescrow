@@ -91,8 +91,8 @@ export function Footer() {
           <div className="flex flex-col justify-start items-start space-y-4">
             <p className="font-headline text-2xl">CONTACT US</p>
             <p className="text-sm text-primary-foreground/80 font-body">
-              Got enquiries or wanna make a suggestion? We are open and happy to
-              hear from you.
+              Got enquiries or want to make a suggestion? We are open and happy
+              to hear from you.
             </p>
             <div className="flex flex-col sm:flex-row gap-2 w-full">
               <Button

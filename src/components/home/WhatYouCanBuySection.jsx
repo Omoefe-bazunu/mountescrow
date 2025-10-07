@@ -96,14 +96,14 @@ export default function WhatYouCanBuySection() {
 
   return (
     <div
-      className="bg-background"
-      style={{
-        backgroundImage:
-          "url('https://firebasestorage.googleapis.com/v0/b/mountescrow-1ac4f.firebasestorage.app/o/staticImages%2FwhyyoushoulduseusbgImage.jpg?alt=media&token=e7a526e4-851d-4804-b3d2-1d60b2144d58')",
-        backgroundSize: "cover",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "center",
-      }}
+      className="bg-primary-blue "
+      // style={{
+      //   backgroundImage:
+      //     "url('https://firebasestorage.googleapis.com/v0/b/mountescrow-1ac4f.firebasestorage.app/o/staticImages%2FwhyyoushoulduseusbgImage.jpg?alt=media&token=e7a526e4-851d-4804-b3d2-1d60b2144d58')",
+      //   backgroundSize: "cover",
+      //   backgroundRepeat: "no-repeat",
+      //   backgroundPosition: "center",
+      // }}
       data-ai-hint="market products"
     >
       <style>{styles}</style>
@@ -113,7 +113,7 @@ export default function WhatYouCanBuySection() {
         className="py-20 text-center max-w-screen-xl mx-auto px-4 md:px-8"
       >
         <h2
-          className={`text-primary-blue font-semibold font-headline text-3xl md:text-4xl mb-6 ${
+          className={`text-white font-semibold font-headline text-3xl md:text-4xl mb-6 ${
             sectionInView ? "animate-fadeUp" : "opacity-0"
           }`}
         >
@@ -121,7 +121,7 @@ export default function WhatYouCanBuySection() {
         </h2>
 
         <p
-          className={`text-secondary-blue max-w-3xl mx-auto mb-12 font-body ${
+          className={`text-white max-w-3xl mx-auto mb-12 font-body ${
             sectionInView ? "animate-fadeUp" : "opacity-0"
           }`}
           style={{ animationDelay: "0.2s" }}
@@ -134,7 +134,7 @@ export default function WhatYouCanBuySection() {
           {cards.map((card, index) => (
             <div
               key={index}
-              className={`bg-card rounded-lg shadow-lg overflow-hidden card-hover opacity-0 ${
+              className={`bg-card rounded-lg shadow-lg bg-white hover:bg-highlight-blue overflow-hidden card-hover opacity-0 ${
                 sectionInView ? "animate-fadeUp" : ""
               }`}
               style={{ animationDelay: `${0.3 + index * 0.2}s` }}

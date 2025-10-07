@@ -59,12 +59,12 @@ export function LandingHeader() {
     }
     return (
       <>
-        <Button variant="ghost" asChild>
+        <Button variant="ghost" asChild className="text-lg">
           <Link href="/login">Login</Link>
         </Button>
         <Button
           asChild
-          className="bg-orange-500 hover:bg-highlight-blue transition-colors hover:text-white text-white"
+          className="bg-orange-500 text-lg hover:bg-highlight-blue transition-colors hover:text-white text-white"
         >
           <Link href="/signup">
             Sign Up <ArrowRight className="ml-2 h-4 w-4" />
@@ -79,7 +79,7 @@ export function LandingHeader() {
     const wrapperProps = isMobile ? { asChild: true } : {};
 
     const linkClass =
-      "text-secondary-blue hover:text-highlight-blue transition-colors font-medium";
+      "text-primary-blue text-lg hover:text-highlight-blue transition-colors font-medium";
     const mobileLinkClass =
       "block w-full text-secondary-blue hover:text-highlight-blue transition-colors font-medium ext-left p-2 rounded-md hover:bg-muted";
     const navLinkStyles = isMobile ? mobileLinkClass : linkClass;

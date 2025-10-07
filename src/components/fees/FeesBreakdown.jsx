@@ -6,14 +6,14 @@ import { motion } from "framer-motion";
 export default function FeesBreakdown() {
   return (
     <motion.div
-      className="w-full bg-background"
-      style={{
-        backgroundImage:
-          "url('https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FfeesbreakdownBgImage.jpg?alt=media&token=fa1a900a-7233-4ae5-8074-e3d333a6af84')",
-        backgroundSize: "cover",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "center",
-      }}
+      className="w-full bg-primary-blue text-white"
+      // style={{
+      //   backgroundImage:
+      //     "url('https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FfeesbreakdownBgImage.jpg?alt=media&token=fa1a900a-7233-4ae5-8074-e3d333a6af84')",
+      //   backgroundSize: "cover",
+      //   backgroundRepeat: "no-repeat",
+      //   backgroundPosition: "center",
+      // }}
       data-ai-hint="abstract pattern"
       initial={{ opacity: 0, y: 60 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -33,7 +33,7 @@ export default function FeesBreakdown() {
         >
           {/* Title */}
           <motion.h2
-            className="font-headline font-semibold text-3xl md:text-4xl text-primary-blue mb-2"
+            className="font-headline font-semibold text-3xl md:text-4xl  mb-2"
             variants={{
               hidden: { opacity: 0, y: 20 },
               visible: { opacity: 1, y: 0 },
@@ -44,7 +44,7 @@ export default function FeesBreakdown() {
 
           {/* Intro paragraph */}
           <motion.p
-            className="text-lg text-secondary-blue max-w-2xl"
+            className="text-lg text-white max-w-2xl"
             variants={{
               hidden: { opacity: 0, y: 20 },
               visible: { opacity: 1, y: 0 },
@@ -69,7 +69,7 @@ export default function FeesBreakdown() {
             }}
           >
             <motion.h3
-              className="font-headline font-semibold text-3xl md:text-4xl text-primary-blue mb-2"
+              className="font-headline font-semibold text-3xl md:text-4xl text-white mb-2"
               variants={{
                 hidden: { opacity: 0, y: 20 },
                 visible: { opacity: 1, y: 0 },
@@ -77,7 +77,7 @@ export default function FeesBreakdown() {
             >
               Payment options for buyers
             </motion.h3>
-            <motion.ul className="text-lg text-secondary-blue list-disc list-inside mt-2 max-w-2xl space-y-1">
+            <motion.ul className="text-lg text-white list-disc list-inside mt-2 max-w-2xl space-y-1">
               {[
                 "Credit & Debit Card",
                 "Bank Transfer",
@@ -106,7 +106,7 @@ export default function FeesBreakdown() {
             }}
           >
             <motion.h3
-              className="font-headline font-semibold text-3xl md:text-4xl text-primary-blue mb-2"
+              className="font-headline font-semibold text-3xl md:text-4xl text-white mb-2"
               variants={{
                 hidden: { opacity: 0, y: 20 },
                 visible: { opacity: 1, y: 0 },
@@ -115,7 +115,7 @@ export default function FeesBreakdown() {
               Disbursement options for sellers and brokers
             </motion.h3>
             <motion.p
-              className="text-lg text-secondary-blue max-w-2xl"
+              className="text-lg text-white max-w-2xl"
               variants={{
                 hidden: { opacity: 0, y: 20 },
                 visible: { opacity: 1, y: 0 },

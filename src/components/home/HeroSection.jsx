@@ -13,7 +13,7 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <div className="bg-image min-h-screen relative overflow-hidden">
+    <div className="bg-primary-blue bg-image min-h-screen relative overflow-hidden">
       <style jsx>{`
         @keyframes fadeSlideUp {
           0% {
@@ -30,7 +30,7 @@ export default function HeroSection() {
         }
 
         .bg-image {
-          background-image: url("https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2Fhbg.jpg?alt=media&token=31f43e7f-0a35-4478-a792-dde159a972d4");
+          background-image: url("https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2Fwwhybg.jpg?alt=media&token=d6a2afc6-5d1b-4df1-ae0a-6c824b4ba714");
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
@@ -56,8 +56,8 @@ export default function HeroSection() {
         }`}
       >
         {/* Limited time offer badge */}
-        <div className="flex items-center gap-3 bg-primary-blue text-white px-4 py-1 rounded-md text-sm ">
-          <span className="bg-white text-primary-blue flex-grow py-1 rounded text-xs px-6">
+        <div className="hidden items-center gap-3 bg-white text-primary-blue px-4 py-1 rounded-md text-sm ">
+          <span className="bg-primary-blue text-white flex-grow py-1 rounded text-xs px-6">
             High-stakes transactions?
           </span>
           <span className="">100% Secured</span>
@@ -65,22 +65,24 @@ export default function HeroSection() {
 
         {/* Main headline */}
         <div className="max-w-4xl flex flex-col items-center text-center">
-          <h1 className="text-primary-blue font-bold text-3xl md:text-5xl lg:text-6xl mb-6 leading-tight">
-            Escrow Made Effortless. Close Deals,
-            <span className="text-orange-500"> Not Concerns.</span>
+          <h1 className="text-white font-bold text-4xl md:text-6xl lg:text-7xl mb-6 leading-tight">
+            Every Transaction
+            <span className="text-orange-500">
+              {" "}
+              Absolute Trust <br />{" "}
+              <span className="text-white">Every time</span>
+            </span>
           </h1>
 
           {/* CTA Button with avatars */}
-          <div className="flex flex-col md:flex-row items-center gap-6">
+          <div className="flex flex-col md:flex-row items-center gap-6 mt-4">
             <button className="bg-orange-500 hover:bg-highlight-blue text-white px-4 py-2 text-lg rounded-md transition-transform duration-300 hover:scale-105 shadow-lg flex items-center gap-2">
               Get Started
-              <span className="bg-white text-orange-500 rounded px-2 hover:text-highlight-blue flex items-center justify-center">
-                →
-              </span>
+              <span className=" flex items-center justify-center">→</span>
             </button>
 
             {/* Social proof avatars */}
-            <div className="flex items-center gap-4">
+            <div className="hidden items-center gap-4">
               <div className="flex -space-x-3">
                 <img
                   src="https://placehold.co/40x40/010e5a/ffffff?text=1"
@@ -118,8 +120,8 @@ export default function HeroSection() {
         </div>
 
         {/* Video/Image placeholder */}
-        <div className="w-full max-w-4xl mt-8">
-          <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border-8 border-primary-blue">
+        <div className="w-full max-w-4xl mt-4">
+          <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border-8 border-white">
             {/* YouTube Embed */}
             <iframe
               className="absolute inset-0 w-full h-full"

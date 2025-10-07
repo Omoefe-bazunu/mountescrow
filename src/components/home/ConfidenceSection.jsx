@@ -75,17 +75,17 @@ export default function ConfidenceSection() {
 
   return (
     <div
-      className=" bg-cover bg-no-repeat bg-center"
-      style={{
-        backgroundImage:
-          "url('https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2Fwwhybg.jpg?alt=media&token=d6a2afc6-5d1b-4df1-ae0a-6c824b4ba714')",
-      }}
+      className="bg-white bg-cover bg-no-repeat bg-center"
+      // style={{
+      //   backgroundImage:
+      //     "url('https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2Fwwhybg.jpg?alt=media&token=d6a2afc6-5d1b-4df1-ae0a-6c824b4ba714')",
+      // }}
     >
       <style>{styles}</style>
       <section className="py-16 flex flex-col items-center text-center relative max-w-screen-xl mx-auto px-4 md:px-8">
         {/* Heading */}
         <h2
-          className={`text-white font-semibold font-headline text-3xl md:text-4xl mb-6 ${
+          className={`text-primary-blue font-semibold font-headline text-3xl md:text-4xl mb-6 ${
             mounted ? "animate-fadeInUp" : "opacity-0"
           }`}
         >
@@ -94,7 +94,7 @@ export default function ConfidenceSection() {
 
         {/* Paragraph */}
         <p
-          className={`text-white max-w-3xl mx-auto mb-6 font-body ${
+          className={`text-primary-blue max-w-3xl mx-auto mb-6 font-body ${
             mounted ? "animate-fadeInUp" : "opacity-0"
           }`}
           style={{ animationDelay: "0.2s" }}
@@ -138,7 +138,7 @@ export default function ConfidenceSection() {
           ].map((card, idx) => (
             <div
               key={idx}
-              className={`bg-card bg-white p-6 rounded-md shadow-sm transition-transform duration-300 hover:scale-105 hover:shadow-md ${
+              className={`bg-card bg-primary-blue text-white p-6 rounded-md shadow-sm transition-transform duration-300 hover:scale-105 hover:shadow-md ${
                 cardsInView ? "animate-slideUp" : "opacity-0"
               }`}
               style={{ animationDelay: `${0.3 + idx * 0.2}s` }}
@@ -156,7 +156,7 @@ export default function ConfidenceSection() {
             alt="A person joyfully looking at a laptop, symbolizing a successful payment."
             width={300}
             height={300}
-            className="rounded-full object-cover border-8 border-primary-blue shadow-lg"
+            className="rounded-full object-cover border-8 border-white shadow-lg"
           />
         </div>
       </section>
