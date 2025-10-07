@@ -27,7 +27,7 @@ export default function ContactUsPage() {
         >
           <div className="absolute inset-0 bg-primary/90"></div>
           <Image
-            src="https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FcontactpageImage.jpg?alt=media&token=c3335bde-2316-4c4e-a346-633b8611205d"
+            src="https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FcontactpageImage.jpg?alt=media&token=b99be386-f9d1-482b-970d-0b29bef72a5e"
             alt="Man on a phone call in an office"
             fill
             className="absolute inset-0 object-cover"

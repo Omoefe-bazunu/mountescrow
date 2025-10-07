@@ -35,7 +35,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import {
   onAuthStateChanged,
@@ -49,6 +54,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { LandingHeader } from "@/components/landing-header";
 import { Footer } from "@/components/footer";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 const navItems = [
   { href: "/dashboard", icon: Home, label: "Dashboard" },
@@ -146,7 +152,7 @@ export default function DashboardLayout({ children }) {
         <MailWarning className="h-4 w-4" />
         <AlertTitle>Verify Your Email</AlertTitle>
         <AlertDescription>
-          Please check your inbox and for the verification code.
+          Please check your inbox and look for the verification code.
           <Button
             variant="link"
             size="sm"
@@ -194,8 +200,14 @@ export default function DashboardLayout({ children }) {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
-                  <Link href="/contact-us">
-                    <Button size="sm" className="w-full">
+                  <Link
+                    href="/contact-us"
+                    onClick={() => setIsSheetOpen(false)}
+                  >
+                    <Button
+                      size="sm"
+                      className="w-full hover:bg-highlight-blue text-white"
+                    >
                       Contact Support
                     </Button>
                   </Link>
@@ -222,6 +234,11 @@ export default function DashboardLayout({ children }) {
                 side="left"
                 className="flex flex-col bg-primary-blue text-white w-[250px] p-4"
               >
+                {/* ✅ Accessibility fix */}
+                <VisuallyHidden>
+                  <SheetTitle>Navigation Menu</SheetTitle>
+                </VisuallyHidden>
+
                 <nav className="grid gap-2 text-lg font-medium">
                   <Link
                     href="/dashboard"
@@ -235,12 +252,12 @@ export default function DashboardLayout({ children }) {
                       key={item.label}
                       href={item.href}
                       className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-white transition-all  hover:bg-highlight-blue",
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-white transition-all hover:bg-highlight-blue",
                         pathname === item.href && "bg-muted text-white"
                       )}
                       onClick={() => setIsSheetOpen(false)}
                     >
-                      <item.icon className="h-4 w-4 " />
+                      <item.icon className="h-4 w-4" />
                       {item.label}
                     </Link>
                   ))}
@@ -250,7 +267,7 @@ export default function DashboardLayout({ children }) {
                     <CardHeader>
                       <CardTitle>Need Help?</CardTitle>
                       <CardDescription>
-                        Contact our support team for assistance.
+                        Contact our support team for any questions or issues.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -260,8 +277,7 @@ export default function DashboardLayout({ children }) {
                       >
                         <Button
                           size="sm"
-                          asChild
-                          className="w-full bg-orange-500 hover:bg-highlight-blue text-white  "
+                          className="w-full hover:bg-highlight-blue text-white bg-accent-blue"
                         >
                           Contact Support
                         </Button>
@@ -273,8 +289,7 @@ export default function DashboardLayout({ children }) {
             </Sheet>
 
             <div className="w-full flex-1">
-              {" "}
-              <h3 className=" font-semibold">DASHBOARD</h3>
+              <h3 className="font-semibold">DASHBOARD</h3>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

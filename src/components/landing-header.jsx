@@ -59,7 +59,7 @@ export function LandingHeader() {
     }
     return (
       <>
-        <Button variant="ghost" asChild className="text-lg">
+        <Button variant="ghost" asChild className="text-lg text-primary-blue">
           <Link href="/login">Login</Link>
         </Button>
         <Button
@@ -121,7 +121,7 @@ export function LandingHeader() {
         {/* Left - Logo */}
         <Link href="/" className="flex items-center gap-2">
           <Image
-            src="https://firebasestorage.googleapis.com/v0/b/mountescrow-1ac4f.firebasestorage.app/o/staticImages%2FWEBlogo.png?alt=media&token=e65a5ac9-4ca3-4140-bf52-135610209802"
+            src="https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FWEBlogo.png?alt=media&token=7e74c386-87f2-4fc6-9f0a-d8cfbb467be7"
             alt="Mountescrow"
             width={312}
             height={44.2}

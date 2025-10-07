@@ -159,7 +159,7 @@ export default function TestimonialsSection() {
       className="bg-background py-20 px-4 md:px-20 text-center relative"
       style={{
         backgroundImage:
-          "url('https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FtestimonialbgImage.jpg?alt=media&token=e23848d9-629f-418e-9fe6-c4699032031d')",
+          "url('https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FtestimonialbgImage.jpg?alt=media&token=bc374504-4a64-4511-b9b2-3f432d76bbcb')",
         backgroundSize: "cover",
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center",

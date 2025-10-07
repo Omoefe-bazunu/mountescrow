@@ -208,7 +208,7 @@ export default function DashboardPage() {
                 maximumFractionDigits: 2,
               }) ?? "0.00"}
             </div>
-            <p className="text-xs text-white">
+            <p className="text-xs text-white mt-2">
               {wallet?.updatedAt
                 ? `Updated ${formatDistanceToNow(toDate(wallet.updatedAt))} ago`
                 : "Available funds"}
