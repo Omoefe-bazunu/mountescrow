@@ -23,7 +23,7 @@ export default function ContactUsPage() {
           whileInView={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
           viewport={{ once: true }}
-          className="relative text-primary-foreground px-6 py-12 flex flex-col items-center justify-center w-full md:w-1/2"
+          className="relative text-white px-6 py-12 flex flex-col items-center justify-center w-full md:w-1/2"
         >
           <div className="absolute inset-0 bg-primary/90"></div>
           <Image
@@ -90,7 +90,7 @@ export default function ContactUsPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2 }}
             viewport={{ once: true }}
-            className="space-y-4 font-body"
+            className="space-y-4 font-body text-secondary-blue"
           >
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
@@ -130,7 +130,7 @@ export default function ContactUsPage() {
             <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
               <Button
                 type="submit"
-                className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+                className="w-full bg-orange-500 hover:bg-highlight-blue text-white"
               >
                 Send Message
               </Button>

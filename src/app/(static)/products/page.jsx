@@ -19,7 +19,7 @@ export default function ProductsPage() {
               viewport={{ once: true }}
             >
               <motion.h1
-                className="font-headline font-semibold text-3xl md:text-4xl text-primary mb-4 uppercase"
+                className="font-headline font-semibold text-3xl md:text-4xl text-primary-blue mb-4 uppercase"
                 initial={{ y: -30, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.7 }}
@@ -28,18 +28,17 @@ export default function ProductsPage() {
               </motion.h1>
 
               <motion.h2
-                className="font-headline font-semibold text-3xl md:text-4xl text-accent max-w-xl mb-8"
+                className="font-headline font-semibold text-3xl md:text-4xl text-orange-500 max-w-xl mb-8"
                 initial={{ x: -40, opacity: 0 }}
                 whileInView={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.9, delay: 0.2 }}
               >
                 AN ESCROW PLATFORM YOU CAN{" "}
-                <span className="text-primary">TRUST</span> WITH YOUR{" "}
-                <span className="text-primary">FUNDS</span>
+                <span className="text-primary-blue">TRUST WITH YOUR FUNDS</span>
               </motion.h2>
 
               <motion.p
-                className="text-muted-foreground max-w-xl mb-8 text-lg"
+                className="text-secondary-blue max-w-xl mb-8 text-lg"
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 transition={{ duration: 1, delay: 0.4 }}
@@ -52,7 +51,7 @@ export default function ProductsPage() {
 
             {/* Animated Icon */}
             <motion.div
-              className="flex-shrink-0 w-64 h-64 border-8 border-accent rounded-full flex justify-center items-center"
+              className="flex-shrink-0 w-64 h-64 border-8 border-orange-500 rounded-full flex justify-center items-center"
               initial={{ scale: 0.7, opacity: 0 }}
               whileInView={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.8, ease: "easeOut" }}

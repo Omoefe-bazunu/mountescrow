@@ -8,13 +8,7 @@ import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, Menu, ChevronDown, LogOut } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ArrowRight, Menu, LogOut } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -23,7 +17,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
 
 export function LandingHeader() {
   const [user, setUser] = useState(null);
@@ -71,7 +64,7 @@ export function LandingHeader() {
         </Button>
         <Button
           asChild
-          className="bg-accent hover:bg-primary transition-colors  hover:text-white text-accent-foreground"
+          className="bg-orange-500 hover:bg-highlight-blue transition-colors hover:text-white text-white"
         >
           <Link href="/signup">
             Sign Up <ArrowRight className="ml-2 h-4 w-4" />
@@ -86,9 +79,9 @@ export function LandingHeader() {
     const wrapperProps = isMobile ? { asChild: true } : {};
 
     const linkClass =
-      "text-foreground/60 transition-colors hover:text-foreground/80";
+      "text-secondary-blue hover:text-highlight-blue transition-colors font-medium";
     const mobileLinkClass =
-      "block w-full text-left p-2 rounded-md hover:bg-muted";
+      "block w-full text-secondary-blue hover:text-highlight-blue transition-colors font-medium ext-left p-2 rounded-md hover:bg-muted";
     const navLinkStyles = isMobile ? mobileLinkClass : linkClass;
 
     return (
@@ -103,24 +96,16 @@ export function LandingHeader() {
             Products
           </Link>
         </Wrapper>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            className={cn(
-              "flex items-center gap-1 outline-none",
-              navLinkStyles
-            )}
-          >
-            Support <ChevronDown className="h-4 w-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem asChild>
-              <Link href="/contact-us">Contact Us</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/policies">Policies</Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Wrapper {...wrapperProps}>
+          <Link href="/contact-us" className={navLinkStyles}>
+            Contact
+          </Link>
+        </Wrapper>
+        <Wrapper {...wrapperProps}>
+          <Link href="/policies" className={navLinkStyles}>
+            Policies
+          </Link>
+        </Wrapper>
         <Wrapper {...wrapperProps}>
           <Link href="/fee-calculator" className={navLinkStyles}>
             Fees
@@ -132,8 +117,9 @@ export function LandingHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white">
-      <div className="container max-w-screen-xl mx-auto px-4 md:px-8 flex h-16 justify-between items-center">
-        <Link href="/" className="mr-auto flex items-center gap-2">
+      <div className="container max-w-screen-xl mx-auto px-4 md:px-8 flex h-16 items-center justify-between">
+        {/* Left - Logo */}
+        <Link href="/" className="flex items-center gap-2">
           <Image
             src="https://firebasestorage.googleapis.com/v0/b/mountescrow-1ac4f.firebasestorage.app/o/staticImages%2FWEBlogo.png?alt=media&token=e65a5ac9-4ca3-4140-bf52-135610209802"
             alt="Mountescrow"
@@ -144,12 +130,13 @@ export function LandingHeader() {
           />
         </Link>
 
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex justify-between items-center gap-6 text-sm font-medium">
+        {/* Center - Nav */}
+        <nav className="hidden md:flex flex-1 justify-center items-center gap-6 text-sm font-medium">
           <NavLinks />
         </nav>
 
-        <div className="hidden md:flex ml-4 items-center gap-2">
+        {/* Right - Auth Buttons */}
+        <div className="hidden md:flex items-center gap-2">
           <AuthButtons />
         </div>
 

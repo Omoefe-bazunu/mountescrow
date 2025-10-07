@@ -195,10 +195,10 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold">
+            <CardTitle className="text-sm font-semibold text-primary-blue">
               Wallet Balance
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="h-4 w-4 text-secondary-blue" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold font-headline tracking-wider">
@@ -208,7 +208,7 @@ export default function DashboardPage() {
                 maximumFractionDigits: 2,
               }) ?? "0.00"}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-secondary-blue">
               {wallet?.updatedAt
                 ? `Updated ${formatDistanceToNow(toDate(wallet.updatedAt))} ago`
                 : "Available funds"}
@@ -217,32 +217,32 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold">
+            <CardTitle className="text-sm text-primary-blue font-semibold">
               Active Deals
             </CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <Package className="h-4 w-4 text-secondary-blue" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold font-headline tracking-wider">
               {stats.activeDeals}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-secondary-blue">
               Deals awaiting funding or in progress
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold">
+            <CardTitle className="text-sm text-primary-blue font-semibold">
               Pending Proposals
             </CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <FileText className="h-4 w-4 text-secondary-blue" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold font-headline tracking-wider">
               {stats.pendingProposals}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-secondary-blue">
               Proposals awaiting your response
             </p>
           </CardContent>
@@ -251,7 +251,7 @@ export default function DashboardPage() {
       <Card>
         <CardHeader className="flex flex-row items-center">
           <div className="grid gap-2">
-            <CardTitle className="font-headline font-semibold text-xl">
+            <CardTitle className="font-headline text-primary-blue font-semibold text-xl">
               Recent Transactions
             </CardTitle>
             <CardDescription>Your last 5 transactions.</CardDescription>
@@ -310,7 +310,7 @@ export default function DashboardPage() {
               </TableBody>
             </Table>
           ) : (
-            <div className="text-center py-12 text-muted-foreground">
+            <div className="text-center py-12 text-secondary-blue">
               <p>No recent transactions found.</p>
             </div>
           )}

@@ -1,61 +1,37 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 
-// Updated CSS with adjusted flip animation
 const styles = `
-  @keyframes slideInUp {
+  @keyframes fadeUp {
     0% {
       opacity: 0;
-      transform: translateY(50px);
+      transform: translateY(30px);
     }
     100% {
       opacity: 1;
       transform: translateY(0);
     }
   }
-  
-  @keyframes slideInFromLeft {
-    0% {
-      opacity: 0;
-      transform: translateX(-50px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateX(0);
-    }
+
+  .animate-fadeUp {
+    animation: fadeUp 0.8s ease-out forwards;
   }
-  
-  @keyframes slideInFromRight {
-    0% {
-      opacity: 0;
-      transform: translateX(50px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateX(0);
-    }
+
+  .card-hover {
+    transition: all 0.4s ease;
   }
-  
-  @keyframes flipHalf {
-    0%, 100% {
-      transform: perspective(1000px) rotateY(0deg);
-    }
-    50% {
-      transform: perspective(1000px) rotateY(15deg); /* Adjusted to 45deg for half flip */
-    }
+  .card-hover:hover {
+    transform: scale(1.05);
+    background-color: hsl(var(--primary));
+    color: white;
   }
-  
-  .animate-slideInUp {
-    animation: slideInUp 0.6s ease-out forwards;
+  .card-hover:hover h3 {
+    color: white;
   }
-  
-  .animate-slideInFromLeft {
-    animation: slideInFromLeft 0.8s ease-out forwards, flipHalf 3s ease-in-out 0.8s infinite;
-  }
-  
-  .animate-slideInFromRight {
-    animation: slideInFromRight 0.8s ease-out forwards, flipHalf 3s ease-in-out 0.8s infinite;
+  .card-hover:hover ul li {
+    color: white;
   }
 `;
 
@@ -71,23 +47,52 @@ export default function WhatYouCanBuySection() {
           observer.unobserve(entry.target);
         }
       },
-      {
-        root: null,
-        rootMargin: "0px",
-        threshold: 0.2,
-      }
+      { threshold: 0.2 }
     );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
+    if (sectionRef.current) observer.observe(sectionRef.current);
     return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
+      if (sectionRef.current) observer.unobserve(sectionRef.current);
     };
   }, []);
+
+  const cards = [
+    {
+      title: "PHYSICAL PRODUCTS",
+      items: [
+        "Electronics & Gadgets",
+        "Mobile Phones & Accessories",
+        "Home Appliances",
+        "Fashion & Clothing Items",
+        "Other Everyday Products",
+      ],
+      image:
+        "https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FPHYS.png?alt=media&token=a2a12a27-9a0e-447e-84ba-692fdf4af0aa",
+    },
+    {
+      title: "DIGITAL PRODUCTS",
+      items: [
+        "Web Development & Software Services",
+        "Design & Creative Projects",
+        "Online Courses (PDF, Video, eLearning)",
+        "Templates & Licensed Digital Goods",
+        "Downloadable Content & Resources",
+      ],
+      image:
+        "https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FSER.jpeg?alt=media&token=6460acfb-9d38-4993-aec8-c58e6b26a2cc",
+    },
+    {
+      title: "SERVICES",
+      items: [
+        "Freelance & Contract Work",
+        "Professional Services",
+        "Consulting, Advisory & Business Solutions",
+        "Real Estate Transactions & Payments",
+        "Vendor Bookings & Event Services",
+      ],
+      image:
+        "https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FDIG.jpeg?alt=media&token=301e7505-b924-4537-a9c1-1f360edb9e6f",
+    },
+  ];
 
   return (
     <div
@@ -102,74 +107,59 @@ export default function WhatYouCanBuySection() {
       data-ai-hint="market products"
     >
       <style>{styles}</style>
+
       <section
         ref={sectionRef}
         className="py-20 text-center max-w-screen-xl mx-auto px-4 md:px-8"
       >
         <h2
-          className={`text-primary-foreground font-semibold font-headline text-3xl md:text-4xl mb-6 ${sectionInView ? "animate-slideInUp" : "opacity-0"}`}
+          className={`text-primary-blue font-semibold font-headline text-3xl md:text-4xl mb-6 ${
+            sectionInView ? "animate-fadeUp" : "opacity-0"
+          }`}
         >
-          Goods, Services, and More — All Safely on Mountescrow
+          Goods, Services, and More. All Safely on Mountescrow
         </h2>
+
         <p
-          className={`text-primary-foreground max-w-3xl mx-auto mb-12 font-body ${sectionInView ? "animate-slideInUp" : "opacity-0"}`}
+          className={`text-secondary-blue max-w-3xl mx-auto mb-12 font-body ${
+            sectionInView ? "animate-fadeUp" : "opacity-0"
+          }`}
           style={{ animationDelay: "0.2s" }}
         >
           Whether it’s products, services, or digital assets, MountEscrow
           provides a safe, trusted space for every transaction.
         </p>
 
-        <div className="grid gap-6 md:grid-cols-3 text-left">
-          {/* Card with slide-in from left and adjusted flip animation */}
-          <div
-            className={`bg-card p-6 rounded shadow transition-all duration-300 hover:scale-105 hover:shadow-lg ${sectionInView ? "animate-slideInFromLeft" : "opacity-0"}`}
-            style={{ animationDelay: "0.4s" }}
-          >
-            <h3 className="text-primary font-semibold font-headline text-2xl mb-2">
-              PHYSICAL PRODUCTS
-            </h3>
-            <ul className="list-disc list-inside text-muted-foreground text-sm space-y-1 font-body">
-              <li>Electronics & Gadgets</li>
-              <li>Mobile Phones & Accessories</li>
-              <li>Home Appliances</li>
-              <li>Fashion & Clothing Items</li>
-              <li>Other Everyday Products</li>
-            </ul>
-          </div>
-
-          {/* Card with slide-in from right and adjusted flip animation */}
-          <div
-            className={`bg-card p-6 rounded shadow transition-all duration-300 hover:scale-105 hover:shadow-lg ${sectionInView ? "animate-slideInFromRight" : "opacity-0"}`}
-            style={{ animationDelay: "0.6s" }}
-          >
-            <h3 className="text-primary font-semibold font-headline text-2xl mb-2">
-              DIGITAL PRODUCTS
-            </h3>
-            <ul className="list-disc list-inside text-muted-foreground text-sm space-y-1 font-body">
-              <li>Web Development & Software Services</li>
-              <li>Design & Creative Projects</li>
-              <li>Online Courses (PDF, Video, eLearning)</li>
-              <li>emplates & Licensed Digital Goods</li>
-              <li>Downloadable Content & Resources</li>
-            </ul>
-          </div>
-
-          {/* Card with slide-in from right and adjusted flip animation */}
-          <div
-            className={`bg-card p-6 rounded shadow transition-all duration-300 hover:scale-105 hover:shadow-lg ${sectionInView ? "animate-slideInFromRight" : "opacity-0"}`}
-            style={{ animationDelay: "0.8s" }}
-          >
-            <h3 className="text-primary font-semibold font-headline text-2xl mb-2">
-              SERVICES
-            </h3>
-            <ul className="list-disc list-inside text-muted-foreground text-sm space-y-1 font-body">
-              <li>Freelance & Contract Work</li>
-              <li>Professional Services</li>
-              <li>Consulting, Advisory & Business Solutions</li>
-              <li>Real Estate Transactions & Payments</li>
-              <li>Vendor Bookings & Event Services</li>
-            </ul>
-          </div>
+        <div className="grid gap-8 md:grid-cols-3 text-left">
+          {cards.map((card, index) => (
+            <div
+              key={index}
+              className={`bg-card rounded-lg shadow-lg overflow-hidden card-hover opacity-0 ${
+                sectionInView ? "animate-fadeUp" : ""
+              }`}
+              style={{ animationDelay: `${0.3 + index * 0.2}s` }}
+            >
+              <div className="w-full aspect-[4/3] relative">
+                <Image
+                  src={card.image}
+                  alt={card.title}
+                  width={800}
+                  height={600}
+                  className="object-cover rounded-t-lg w-full h-full"
+                />
+              </div>
+              <div className="p-6">
+                <h3 className="text-primary-blue font-semibold font-headline text-2xl mb-3">
+                  {card.title}
+                </h3>
+                <ul className="list-disc list-inside text-secondary-blue text-sm space-y-1 font-body">
+                  {card.items.map((item, i) => (
+                    <li key={i}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
     </div>

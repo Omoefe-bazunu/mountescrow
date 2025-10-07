@@ -1,17 +1,17 @@
 export default function OurStory() {
   return (
     <div
-      className="py-16 bg-primary"
+      className="py-16 bg-primary-blue"
       style={{
         backgroundImage:
-          "url('https://firebasestorage.googleapis.com/v0/b/mountescrow-1ac4f.firebasestorage.app/o/staticImages%2FourStoryBgImage.jpg?alt=media&token=666d65ed-ff5f-4bf9-a4a8-2f7c3f937f03')",
+          "url('https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FourStoryBgImage.jpg?alt=media&token=852e5021-97fb-4afa-bca7-f5fc80274372')",
         backgroundSize: "cover",
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center",
       }}
       data-ai-hint="abstract pattern"
     >
-      <div className=" text-primary-foreground rounded-lg">
+      <div className=" text-white rounded-lg">
         <h2 className="font-headline font-semibold text-3xl md:text-4xl mb-4 text-center">
           OUR STORY
         </h2>

@@ -49,8 +49,8 @@ export default function FaqSection() {
   const [openIndex, setOpenIndex] = useState(null);
 
   return (
-    <section className="bg-background py-20 px-4 md:px-20">
-      <h2 className="text-primary font-semibold font-headline text-3xl md:text-4xl text-center mb-8">
+    <section className="bg-gray-100 py-20 px-4 md:px-20">
+      <h2 className="text-primary-blue font-semibold font-headline text-3xl md:text-4xl text-center mb-8">
         FREQUENTLY ASKED QUESTIONS
       </h2>
 
@@ -81,8 +81,8 @@ export default function FaqSection() {
               onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
               className="w-full px-6 py-4 flex justify-between items-center text-left"
             >
-              <span className="font-medium text-primary">{item.question}</span>
-              <span className="text-2xl text-primary">
+              <span className="text-primary-blue">{item.question}</span>
+              <span className="text-2xl text-primary-blue font-semibold">
                 {openIndex === idx ? "−" : "+"}
               </span>
             </button>
@@ -96,7 +96,7 @@ export default function FaqSection() {
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.3, ease: "easeInOut" }}
                 >
-                  <div className="px-6 pb-4 text-muted-foreground text-sm">
+                  <div className="px-6 pb-4 text-secondary-blue text-sm">
                     {item.answer}
                   </div>
                 </motion.div>

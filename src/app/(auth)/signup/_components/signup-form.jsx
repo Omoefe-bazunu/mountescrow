@@ -232,7 +232,7 @@ export function SignUpForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-secondary-blue"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
@@ -302,11 +302,11 @@ export function SignUpForm() {
           Create Account
         </Button>
 
-        <div className="text-center text-sm text-muted-foreground">
+        <div className="text-center text-sm text-secondary-blue">
           By creating an account, you agree to our{" "}
           <Link
             href="/policies"
-            className="text-primary underline hover:no-underline"
+            className="text-primary-blue underline hover:no-underline"
           >
             Terms and Conditions
           </Link>

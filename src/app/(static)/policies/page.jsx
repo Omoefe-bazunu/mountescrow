@@ -136,10 +136,10 @@ export default function DisputeResolutionPage() {
         transition={{ duration: 0.7 }}
         className="max-w-4xl mx-auto px-4 text-center"
       >
-        <h1 className="font-headline font-semibold text-4xl md:text-5xl mb-4 text-primary">
+        <h1 className="font-headline font-semibold text-4xl md:text-5xl mb-4 text-primary-blue">
           Policies & Terms
         </h1>
-        <p className="lead mb-8 text-muted-foreground">
+        <p className="lead mb-8 text-secondary-blue">
           Our policies and terms of use are designed to be fair, transparent,
           and efficient.
         </p>
@@ -164,7 +164,7 @@ export default function DisputeResolutionPage() {
             defaultValue="Refund & Privacy Policy"
             className="w-full text-left"
           >
-            <TabsList className="flex flex-col bg-gray-300 h-fit lg:flex-row gap-2 lg:gap-4 justify-center items-center lg:items-stretch">
+            <TabsList className="flex flex-col bg-accent-blue h-fit lg:flex-row gap-2 lg:gap-4 justify-center items-center lg:items-stretch">
               {Object.keys(policyData).map((key, idx) => (
                 <motion.div
                   key={key}
@@ -176,7 +176,7 @@ export default function DisputeResolutionPage() {
                 >
                   <TabsTrigger
                     value={key}
-                    className="w-full font-semibold text-center"
+                    className="w-full bg-accent-blue text-white font-semibold text-center"
                   >
                     {key}
                   </TabsTrigger>
@@ -197,7 +197,7 @@ export default function DisputeResolutionPage() {
                       <Card>
                         <CardHeader>
                           <div className="flex justify-between items-center">
-                            <CardTitle className="font-headline font-semibold text-2xl text-primary">
+                            <CardTitle className="font-headline font-semibold text-2xl text-primary-blue">
                               {key}
                             </CardTitle>
                             {isAdmin && (
@@ -206,7 +206,7 @@ export default function DisputeResolutionPage() {
                                   htmlFor={`file-upload-${key}`}
                                   className="cursor-pointer"
                                 >
-                                  <FilePlus2 className="h-5 w-5 text-primary" />
+                                  <FilePlus2 className="h-5 w-5 text-primary-blue" />
                                   <input
                                     id={`file-upload-${key}`}
                                     type="file"
@@ -235,7 +235,7 @@ export default function DisputeResolutionPage() {
                                 href={pdfUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+                                className="inline-flex items-center justify-center px-4 py-2 bg-primary-blue text-white rounded-md hover:bg-primary-dark transition-colors"
                               >
                                 View Full {key} PDF
                               </a>

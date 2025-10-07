@@ -11,7 +11,7 @@ export default function NewProposalPage() {
   return (
     <Card className="my-0">
       <CardHeader>
-        <CardTitle className="font-headline font-semibold text-3xl">
+        <CardTitle className="font-headline text-primary-blue font-semibold text-3xl">
           Create New Proposal
         </CardTitle>
         <CardDescription>

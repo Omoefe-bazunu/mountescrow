@@ -74,36 +74,42 @@ export default function ConfidenceSection() {
   }, []);
 
   return (
-    <div className="bg-primary">
+    <div
+      className=" bg-cover bg-no-repeat bg-center"
+      style={{
+        backgroundImage:
+          "url('https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2Fwwhybg.jpg?alt=media&token=d6a2afc6-5d1b-4df1-ae0a-6c824b4ba714')",
+      }}
+    >
       <style>{styles}</style>
       <section className="py-16 flex flex-col items-center text-center relative max-w-screen-xl mx-auto px-4 md:px-8">
         {/* Heading */}
         <h2
-          className={`text-primary-foreground font-semibold font-headline text-3xl md:text-4xl mb-6 ${
+          className={`text-white font-semibold font-headline text-3xl md:text-4xl mb-6 ${
             mounted ? "animate-fadeInUp" : "opacity-0"
           }`}
         >
-          BUY AND SELL WITH ABSOLUTE CONFIDENCE
+          SEAL EVERY DEAL WITH TOTAL CONFIDENCE
         </h2>
 
         {/* Paragraph */}
         <p
-          className={`text-primary-foreground max-w-3xl mx-auto mb-6 font-body ${
+          className={`text-white max-w-3xl mx-auto mb-6 font-body ${
             mounted ? "animate-fadeInUp" : "opacity-0"
           }`}
           style={{ animationDelay: "0.2s" }}
         >
-          Whether you are buying, hiring, or renting — to ensure your customers’
-          comfort, Mountescrow brings the assurance of neutrality and trust.
-          Each transaction is transparently tracked so buyers and sellers both
-          reach mutual satisfaction.
+          Whether you are buying, hiring, or renting, or exchanging value in any
+          form, Mountescrow guarantees trust through impartial protection. Every
+          step is transparently monitored, ensuring all parties feel secure and
+          achieve complete satisfaction.
         </p>
 
         {/* Button */}
         <Button
           size="lg"
           asChild
-          className={`bg-accent hover:bg-accent/90 text-accent-foreground transition-transform duration-300 hover:scale-105 hover:shadow-lg ${
+          className={`bg-orange-500 hover:bg-highlight-blue text-white transition-transform duration-300 hover:scale-105 hover:shadow-lg ${
             mounted ? "animate-fadeInUp" : "opacity-0"
           }`}
           style={{ animationDelay: "0.4s" }}
@@ -132,7 +138,7 @@ export default function ConfidenceSection() {
           ].map((card, idx) => (
             <div
               key={idx}
-              className={`bg-card p-6 rounded-md shadow-sm transition-transform duration-300 hover:scale-105 hover:shadow-md ${
+              className={`bg-card bg-white p-6 rounded-md shadow-sm transition-transform duration-300 hover:scale-105 hover:shadow-md ${
                 cardsInView ? "animate-slideUp" : "opacity-0"
               }`}
               style={{ animationDelay: `${0.3 + idx * 0.2}s` }}
@@ -146,11 +152,11 @@ export default function ConfidenceSection() {
         {/* Circular image (unchanged) */}
         <div className="w-fit h-fit mx-auto mb-8 absolute -bottom-[230px] md:-bottom-[200px] transform -translate-x-1/2 animate-heartbeat">
           <img
-            src="https://firebasestorage.googleapis.com/v0/b/mountescrow-1ac4f.firebasestorage.app/o/staticImages%2FwhatyoucanbuyImage.jpg?alt=media&token=4cd4027b-db7e-425f-8195-656549a57a52"
+            src="https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FCONFIDENCE.jpeg?alt=media&token=8ae8e7ae-5e72-412b-abf7-a6fe5156c347"
             alt="A person joyfully looking at a laptop, symbolizing a successful payment."
             width={300}
             height={300}
-            className="rounded-full object-cover border-8 border-primary shadow-lg"
+            className="rounded-full object-cover border-8 border-primary-blue shadow-lg"
           />
         </div>
       </section>

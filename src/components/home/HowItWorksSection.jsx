@@ -64,19 +64,39 @@ export default function HowItWorksSection() {
   }, []);
 
   const steps = [
-    { icon: Handshake, text: "Buyer and Seller agree on terms" },
-    { icon: ShieldCheck, text: "Buyer funds escrow via Mountescrow" },
-    { icon: Truck, text: "Seller delivers order to buyer" },
-    { icon: ThumbsUp, text: "Buyer approves order" },
-    { icon: HandCoins, text: "Mountescrow releases payment to seller" },
+    {
+      icon: Handshake,
+      main: "Terms are Set",
+      text: "Buyer and Seller agree on transaction details and conditions.",
+    },
+    {
+      icon: ShieldCheck,
+      main: "Payment is Secured",
+      text: "Buyer deposits payment into Mountescrow’s secure account.",
+    },
+    {
+      icon: Truck,
+      main: "Order is Delivered",
+      text: "Seller fulfills and delivers the product or service as agreed.",
+    },
+    {
+      icon: ThumbsUp,
+      main: "Order is Approved",
+      text: "Buyer reviews and confirms satisfaction with the order.",
+    },
+    {
+      icon: HandCoins,
+      main: "Payment is Released",
+      text: "Mountescrow releases funds to the seller—deal complete!",
+    },
   ];
 
   return (
     <div
-      className="bg-background"
+      className="bg-gray-100"
       style={{
         backgroundImage:
-          "url('https://firebasestorage.googleapis.com/v0/b/mountescrow-1ac4f.firebasestorage.app/o/staticImages%2FhowMountescrowWorksImage.jpg?alt=media&token=c4018604-278f-46e8-ada2-eb9ab864a8e2')",
+          "url('https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FhowMountescrowWorksImage.jpg?alt=media&token=cedd54b5-52ea-462e-9df5-363b79a82276')",
         backgroundSize: "cover",
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center",
@@ -90,7 +110,7 @@ export default function HowItWorksSection() {
       >
         <div className="max-w-5xl mx-auto mt-[120px] md:mt-[140px]">
           <h2
-            className={`text-primary font-semibold font-headline text-3xl md:text-4xl mb-4 ${
+            className={`text-primary-blue font-semibold font-headline text-3xl md:text-4xl mb-4 ${
               sectionInView ? "animate-slideInUp" : "opacity-0"
             }`}
           >
@@ -103,32 +123,36 @@ export default function HowItWorksSection() {
             }`}
             style={{ animationDelay: "0.2s" }}
           >
-            Buyers and sellers can be rest assured that their money and goods
-            are fully secured for every exchange. We provide more than escrow,
-            offering reliability and safety in every transaction.
+            Each transaction follows a secure, transparent, and automated flow —
+            protecting both buyer and seller every step of the way.
           </p>
 
-          <div className="grid gap-6 md:grid-cols-5 text-center text-sm md:text-base text-primary">
+          {/* Steps */}
+          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 text-center text-primary">
             {steps.map((step, i) => (
               <div
                 key={i}
-                className={`flex flex-col items-center ${
+                className={`flex flex-col items-center justify-start p-8 md:p-4 rounded-xl bg-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-2 ${
                   sectionInView ? "animate-slideInUp" : "opacity-0"
                 }`}
-                style={{ animationDelay: `${0.4 + i * 0.2}s` }}
+                style={{ animationDelay: `${0.3 + i * 0.2}s` }}
               >
                 <div
-                  className={`bg-primary h-24 w-24 rounded-full flex items-center justify-center mb-2 relative border-4 border-card ${
+                  className={`bg-primary-blue h-20 w-20 rounded-full flex items-center justify-center mb-4 relative border-4 border-white shadow-md ${
                     sectionInView ? "icon-seq-pop" : ""
                   }`}
-                  style={{ animationDelay: `${i * 1.2}s` }}
                 >
-                  <div className="font-bold text-2xl absolute -top-3 -left-1 text-primary rounded-full bg-card w-10 h-10 flex items-center justify-center">
+                  <div className="font-bold text-2xl absolute -top-3 -left-1 text-primary-blue rounded-full bg-white w-10 h-10 flex items-center justify-center">
                     {i + 1}
                   </div>
-                  <step.icon size={50} className="text-primary-foreground" />
+                  <step.icon size={40} className="text-white" />
                 </div>
-                <p className="font-body">{step.text}</p>
+                <h3 className="text-sm font-semibold font-headline text-primary-blue mb-1">
+                  {step.main}
+                </h3>
+                <p className="text-gray-700 text-sm font-body leading-relaxed">
+                  {step.text}
+                </p>
               </div>
             ))}
           </div>

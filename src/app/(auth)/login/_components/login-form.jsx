@@ -127,7 +127,7 @@ export function LoginForm() {
                 <FormLabel>Password</FormLabel>
                 <Link
                   href="#"
-                  className="text-sm font-medium text-primary hover:underline"
+                  className="text-sm font-medium text-primary-blue hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -143,7 +143,7 @@ export function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-secondary-blue"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (

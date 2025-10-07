@@ -5,7 +5,7 @@ import { Facebook, Twitter, Linkedin } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="bg-primary text-primary-foreground py-16">
+    <footer className="bg-primary-blue text-white py-16">
       <div className="container max-w-screen-xl mx-auto px-4 md:px-8 flex flex-col items-center justify-center">
         <div className="grid md:grid-cols-3 gap-10 w-full mb-8 ">
           {/* Column 1 - Logo + Intro */}
@@ -29,30 +29,30 @@ export function Footer() {
                 variant="ghost"
                 size="icon"
                 asChild
-                className="bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-full"
+                className="bg-gray-100 text-primary-blue hover:text-white hover:bg-highlight-blue rounded-full"
               >
                 <a href="#">
-                  <Facebook className="text-white h-4 w-4" />
+                  <Facebook className=" h-4 w-4" />
                 </a>
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
                 asChild
-                className="bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-full"
+                className="bg-gray-100 text-primary-blue hover:text-white hover:bg-highlight-blue rounded-full"
               >
                 <a href="#">
-                  <Twitter className="text-white h-4 w-4" />
+                  <Twitter className=" h-4 w-4" />
                 </a>
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
                 asChild
-                className="bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-full"
+                className="bg-gray-100 text-primary-blue hover:text-white hover:bg-highlight-blue rounded-full"
               >
                 <a href="#">
-                  <Linkedin className="text-white h-4 w-4" />
+                  <Linkedin className=" h-4 w-4" />
                 </a>
               </Button>
             </div>
@@ -98,13 +98,13 @@ export function Footer() {
               <Button
                 asChild
                 variant="outline"
-                className="bg-transparent border-white text-white hover:bg-white hover:text-primary"
+                className="bg-transparent border-white text-white hover:bg-white hover:text-primary-blue w-full sm:w-auto flex-1"
               >
                 <Link href="/contact-us">Contact Us</Link>
               </Button>
               <Button
                 asChild
-                className="bg-accent hover:bg-accent/90 text-accent-foreground"
+                className="bg-orange-500 hover:bg-highlight-blue text-accent-foreground"
               >
                 <Link href="/signup">Get Started</Link>
               </Button>

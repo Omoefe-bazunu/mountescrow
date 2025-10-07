@@ -31,7 +31,7 @@ export default function FeeCalculatorPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.6 }}
-              className="font-headline font-semibold text-3xl md:text-4xl text-primary mb-4"
+              className="font-headline font-semibold text-3xl md:text-4xl text-primary-blue mb-4"
             >
               Calculate Your Escrow Fee
             </motion.h1>
@@ -41,7 +41,7 @@ export default function FeeCalculatorPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35, duration: 0.6 }}
-              className="text-lg text-muted-foreground mb-6"
+              className="text-lg text-secondary-blue mb-6"
             >
               Calculate the exact amount we are charging for helping you hold
               your funds until your transaction is completed.
@@ -92,7 +92,7 @@ export default function FeeCalculatorPage() {
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                 >
-                  <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                  <Button className="w-full bg-primary-blue hover:bg-highlight-blue text-white">
                     Calculate
                   </Button>
                 </motion.div>
