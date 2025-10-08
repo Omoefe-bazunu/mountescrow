@@ -182,7 +182,7 @@ export default function TestimonialsSection() {
       {user ? (
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 mx-auto mb-10 bg-primary-blue text-white px-5 py-3 rounded-full hover:bg-primary/80 transition-all"
+          className="flex items-center gap-2 mx-auto mb-10 bg-orange-500 hover:bg-highlight-blue text-white px-5 py-3 rounded-full transition-all"
         >
           <PlusCircle size={18} />
           Add Your Testimonial
@@ -190,7 +190,7 @@ export default function TestimonialsSection() {
       ) : (
         <a
           href="/login"
-          className="text-sm text-muted-foreground bg-primary-blue px-4 py-2 rounded-full hover:bg-primary-blue/90 text-white transition-all block w-fit mx-auto mb-10"
+          className="text-sm text-muted-foreground bg-orange-500 px-4 py-2 rounded-full hover:bg-highlight-blue text-white transition-all block w-fit mx-auto mb-10"
         >
           Log in to leave a review
         </a>

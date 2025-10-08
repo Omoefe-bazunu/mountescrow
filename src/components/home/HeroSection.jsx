@@ -7,13 +7,12 @@ export default function HeroSection() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Trigger animation after mount
     const timer = setTimeout(() => setVisible(true), 100);
     return () => clearTimeout(timer);
   }, []);
 
   return (
-    <div className="bg-primary-blue bg-image min-h-screen relative overflow-hidden">
+    <div className="bg-primary-blue bg-image h-fit relative overflow-hidden">
       <style jsx>{`
         @keyframes fadeSlideUp {
           0% {
@@ -37,7 +36,7 @@ export default function HeroSection() {
         }
       `}</style>
 
-      {/* Animated background dots/particles effect */}
+      {/* Animated background dots */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
         <div
@@ -51,78 +50,33 @@ export default function HeroSection() {
       </div>
 
       <section
-        className={`relative py-20 flex flex-col items-center justify-center gap-12 max-w-7xl mx-auto px-4 md:px-8 transition-all duration-1000 ${
-          visible ? "animate-on-render" : "opacity-0 translate-y-8"
-        }`}
+        className={`relative flex flex-col items-center justify-center gap-8 md:gap-12 max-w-7xl mx-auto px-4 md:px-8 transition-all duration-1000
+        ${visible ? "animate-on-render" : "opacity-0 translate-y-8"}
+        py-12 md:py-20`}
       >
-        {/* Limited time offer badge */}
-        <div className="hidden items-center gap-3 bg-white text-primary-blue px-4 py-1 rounded-md text-sm ">
-          <span className="bg-primary-blue text-white flex-grow py-1 rounded text-xs px-6">
-            High-stakes transactions?
-          </span>
-          <span className="">100% Secured</span>
-        </div>
-
-        {/* Main headline */}
+        {/* Headline */}
         <div className="max-w-4xl flex flex-col items-center text-center">
-          <h1 className="text-white font-bold text-4xl md:text-6xl lg:text-7xl mb-6 leading-tight">
+          <h1 className="text-white font-bold text-3xl sm:text-4xl md:text-6xl lg:text-7xl mb-4 md:mb-6 leading-tight">
             Every Transaction
             <span className="text-orange-500">
               {" "}
-              Absolute Trust <br />{" "}
+              Absolute Trust <br />
               <span className="text-white">Every time</span>
             </span>
           </h1>
 
-          {/* CTA Button with avatars */}
-          <div className="flex flex-col md:flex-row items-center gap-6 mt-4">
-            <button className="bg-orange-500 hover:bg-highlight-blue text-white px-4 py-2 text-lg rounded-md transition-transform duration-300 hover:scale-105 shadow-lg flex items-center gap-2">
+          {/* CTA Button */}
+          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 mt-4">
+            <button className="bg-orange-500 hover:bg-highlight-blue text-white px-5 py-2.5 text-lg rounded-md transition-transform duration-300 hover:scale-105 shadow-lg flex items-center gap-2">
               Get Started
-              <span className=" flex items-center justify-center">→</span>
+              <span className="flex items-center justify-center">→</span>
             </button>
-
-            {/* Social proof avatars */}
-            <div className="hidden items-center gap-4">
-              <div className="flex -space-x-3">
-                <img
-                  src="https://placehold.co/40x40/010e5a/ffffff?text=1"
-                  alt="User 1"
-                  className="w-10 h-10 rounded-full border-2 border-white object-cover"
-                />
-                <img
-                  src="https://placehold.co/40x40/00042f/ffffff?text=2"
-                  alt="User 2"
-                  className="w-10 h-10 rounded-full border-2 border-white object-cover"
-                />
-                <img
-                  src="https://placehold.co/40x40/0066ff/ffffff?text=3"
-                  alt="User 3"
-                  className="w-10 h-10 rounded-full border-2 border-white object-cover"
-                />
-                <img
-                  src="https://placehold.co/40x40/071495/ffffff?text=4"
-                  alt="User 4"
-                  className="w-10 h-10 rounded-full border-2 border-white object-cover"
-                />
-              </div>
-              <div className="text-left">
-                <p
-                  className="text-sm font-handwriting"
-                  style={{ fontFamily: "cursive" }}
-                >
-                  30+ PROFESSIONALS ARE
-                  <br />
-                  ALREADY SIGNED UP
-                </p>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* Video/Image placeholder */}
-        <div className="w-full max-w-4xl mt-4">
-          <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border-8 border-white">
-            {/* YouTube Embed */}
+        {/* Video */}
+        <div className="w-full max-w-4xl mt-2 md:mt-4 mb-0">
+          <div className="relative aspect-video rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border-4 md:border-8 border-white">
             <iframe
               className="absolute inset-0 w-full h-full"
               src={`https://www.youtube.com/embed/${youtubeVideoId}`}

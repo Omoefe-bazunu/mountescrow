@@ -4,7 +4,7 @@ export default function OurStory() {
       className="py-16 bg-primary-blue"
       style={{
         backgroundImage:
-          "url('https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FourStoryBgImage.jpg?alt=media&token=852e5021-97fb-4afa-bca7-f5fc80274372')",
+          "url('https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FourStoryBgImage.jpg?alt=media&token=e02be423-c968-45a8-b404-59cbf071e050')",
         backgroundSize: "cover",
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center",

@@ -295,7 +295,7 @@ export function SignUpForm() {
 
         <Button
           type="submit"
-          className="w-full"
+          className="w-full bg-orange-500 text-white hover:bg-highlight-blue transition-colors hover:text-white"
           disabled={loading || !form.watch("acceptTerms")}
         >
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

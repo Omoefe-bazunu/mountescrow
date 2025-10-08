@@ -235,7 +235,7 @@ export default function DisputeResolutionPage() {
                                 href={pdfUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center px-4 py-2 bg-primary-blue text-white rounded-md hover:bg-primary-dark transition-colors"
+                                className="inline-flex items-center justify-center px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-highlight-blue transition-colors"
                               >
                                 View Full {key} PDF
                               </a>

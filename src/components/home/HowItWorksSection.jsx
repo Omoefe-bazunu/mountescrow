@@ -106,7 +106,7 @@ export default function HowItWorksSection() {
       <section
         id="how-it-works"
         ref={sectionRef}
-        className="py-20 text-center max-w-screen-xl mx-auto px-4 md:px-8"
+        className="pb-20 pt-28 md:pt-20 text-center max-w-screen-xl mx-auto px-4 md:px-8"
       >
         <div className="max-w-5xl mx-auto mt-[120px] md:mt-[140px]">
           <h2

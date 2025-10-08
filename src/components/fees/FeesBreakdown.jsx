@@ -121,14 +121,13 @@ export default function FeesBreakdown() {
                 visible: { opacity: 1, y: 0 },
               }}
             >
-              Upon initiating a transaction, sellers and brokers have the
-              freedom to specify their preferred disbursement method. Once all
-              transaction terms are met and verified, Mountescrow will credit
-              the seller’s wallet. From there, the seller can easily request a
-              withdrawal or their funds. The processing time for withdrawals is
-              the same as the next amount for transactions involving shared
-              escrow fees. The agreed-upon amount will be deducted transparently
-              from either the purchase accountability throughout the process.
+              When a transaction begins, sellers and brokers can choose how
+              they’d like to receive their funds. Once all terms are fulfilled
+              and verified, Mountescrow credits the seller’s wallet. From there,
+              the seller can easily request a withdrawal. Withdrawal processing
+              follows the same timeline as standard transactions involving
+              shared escrow fees. All agreed fees are deducted transparently,
+              ensuring full accountability at every stage of the process.
             </motion.p>
           </motion.div>
         </motion.div>

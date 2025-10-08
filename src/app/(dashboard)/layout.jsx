@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import {
@@ -245,7 +246,13 @@ export default function DashboardLayout({ children }) {
                     className="flex items-center gap-2 text-lg font-semibold mb-4"
                     onClick={() => setIsSheetOpen(false)}
                   >
-                    <span>Mountescrow</span>
+                    <Image
+                      src="https://firebasestorage.googleapis.com/v0/b/mountescrow-1ac4f.firebasestorage.app/o/staticImages%2FWEBlogoFooter.png?alt=media&token=107f6897-d8f0-42e6-a6f8-e6e232d335d2"
+                      alt="Mountescrow Logo"
+                      width={312}
+                      height={44.2}
+                      className="object-contain w-44 md:w-[312px] h-auto"
+                    />
                   </Link>
                   {navItems.map((item) => (
                     <Link
@@ -289,7 +296,7 @@ export default function DashboardLayout({ children }) {
             </Sheet>
 
             <div className="w-full flex-1">
-              <h3 className="font-semibold">DASHBOARD</h3>
+              <h3 className="font-semibold text-primary-blue">DASHBOARD</h3>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

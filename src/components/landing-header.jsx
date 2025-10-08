@@ -48,10 +48,18 @@ export function LandingHeader() {
     if (user) {
       return (
         <>
-          <Button variant="ghost" asChild>
+          <Button
+            variant="ghost"
+            asChild
+            className="text-lg text-white font-headline bg-orange-500 hover:bg-highlight-blue transition-colors hover:text-white"
+          >
             <Link href="/dashboard">Dashboard</Link>
           </Button>
-          <Button onClick={handleLogout} variant="destructive">
+          <Button
+            onClick={handleLogout}
+            variant="destructive"
+            className="text-lg font-headline"
+          >
             <LogOut className="mr-2 h-4 w-4" /> Logout
           </Button>
         </>
@@ -59,16 +67,18 @@ export function LandingHeader() {
     }
     return (
       <>
-        <Button variant="ghost" asChild className="text-lg text-primary-blue">
+        <Button
+          variant="ghost"
+          asChild
+          className="text-lg text-white font-headline bg-primary-blue hover:bg-highlight-blue transition-colors hover:text-white  "
+        >
           <Link href="/login">Login</Link>
         </Button>
         <Button
           asChild
-          className="bg-orange-500 text-lg hover:bg-highlight-blue transition-colors hover:text-white text-white"
+          className="bg-orange-500 font-headline text-lg hover:bg-highlight-blue transition-colors hover:text-white text-white"
         >
-          <Link href="/signup">
-            Sign Up <ArrowRight className="ml-2 h-4 w-4" />
-          </Link>
+          <Link href="/signup">Sign Up</Link>
         </Button>
       </>
     );
@@ -79,9 +89,9 @@ export function LandingHeader() {
     const wrapperProps = isMobile ? { asChild: true } : {};
 
     const linkClass =
-      "text-primary-blue text-lg hover:text-highlight-blue transition-colors font-medium";
+      "text-primary-blue text-lg hover:text-highlight-blue transition-colors font-medium font-headline";
     const mobileLinkClass =
-      "block w-full text-secondary-blue hover:text-highlight-blue transition-colors font-medium ext-left p-2 rounded-md hover:bg-muted";
+      "block w-full text-secondary-blue hover:text-highlight-blue transition-colors font-headline font-medium ext-left p-2 rounded-md hover:bg-muted";
     const navLinkStyles = isMobile ? mobileLinkClass : linkClass;
 
     return (
