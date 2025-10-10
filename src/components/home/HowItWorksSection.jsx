@@ -123,7 +123,7 @@ export default function HowItWorksSection() {
             }`}
             style={{ animationDelay: "0.2s" }}
           >
-            Each transaction follows a secure, transparent, and automated flow —
+            Each transaction follows a secure, transparent, and automated flow,
             protecting both buyer and seller every step of the way.
           </p>
 

@@ -79,7 +79,6 @@ export default function FeesBreakdown() {
             </motion.h3>
             <motion.ul className="text-lg text-white list-disc list-inside mt-2 max-w-2xl space-y-1">
               {[
-                "Credit & Debit Card",
                 "Bank Transfer",
                 "If agreed to pay all or some of the fee, it’s automatically added to the purchase price of the item you are buying",
               ].map((item, i) => (

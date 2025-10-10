@@ -117,7 +117,7 @@ export default function WhatYouCanBuySection() {
             sectionInView ? "animate-fadeUp" : "opacity-0"
           }`}
         >
-          Goods, Services, and More. All Safely on Mountescrow
+          Goods, Services, and More, All Safely on Mountescrow.
         </h2>
 
         <p
@@ -126,7 +126,7 @@ export default function WhatYouCanBuySection() {
           }`}
           style={{ animationDelay: "0.2s" }}
         >
-          Whether it’s products, services, or digital assets, MountEscrow
+          Whether it’s products, services, or digital assets, Mountescrow
           provides a safe, trusted space for every transaction.
         </p>
 

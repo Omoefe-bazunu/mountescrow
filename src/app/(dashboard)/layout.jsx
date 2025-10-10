@@ -247,7 +247,7 @@ export default function DashboardLayout({ children }) {
                     onClick={() => setIsSheetOpen(false)}
                   >
                     <Image
-                      src="https://firebasestorage.googleapis.com/v0/b/mountescrow-1ac4f.firebasestorage.app/o/staticImages%2FWEBlogoFooter.png?alt=media&token=107f6897-d8f0-42e6-a6f8-e6e232d335d2"
+                      src="https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FWEBlogoFooter.png?alt=media&token=bd662b35-e0a2-4f3c-8835-6fd32ef06a57"
                       alt="Mountescrow Logo"
                       width={312}
                       height={44.2}

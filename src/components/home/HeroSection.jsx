@@ -59,7 +59,7 @@ export default function HeroSection() {
           <h1 className="text-white font-bold text-3xl sm:text-4xl md:text-6xl lg:text-7xl mb-4 md:mb-6 leading-tight">
             Every Transaction
             <span className="text-orange-500">
-              {" "}
+              <br />
               Absolute Trust <br />
               <span className="text-white">Every time</span>
             </span>

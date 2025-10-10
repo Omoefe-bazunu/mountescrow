@@ -99,7 +99,7 @@ export default function ConfidenceSection() {
           }`}
           style={{ animationDelay: "0.2s" }}
         >
-          Whether you are buying, hiring, or renting, or exchanging value in any
+          Whether you are buying, hiring, renting, or exchanging value in any
           form, Mountescrow guarantees trust through impartial protection. Every
           step is transparently monitored, ensuring all parties feel secure and
           achieve complete satisfaction.
