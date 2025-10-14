@@ -79,7 +79,7 @@ export default function VerifyAccountPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-primary text-white py-2 rounded hover:bg-purple-900"
+          className="w-full bg-orange-500 text-white py-2 rounded hover:bg-highlight-blue transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Verifying..." : "Verify Account"}
         </button>
