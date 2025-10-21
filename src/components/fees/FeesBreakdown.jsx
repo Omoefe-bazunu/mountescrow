@@ -2,18 +2,72 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function FeesBreakdown() {
+  const pricingStructure = [
+    {
+      range: "₦0 – ₦1M",
+      buyerFee: "5%",
+      sellerFee: "5%",
+      totalFee: "10%",
+      rationale:
+        "Covers operational cost of small deals. High volume tier (freelancers, rentals, trade)",
+    },
+    {
+      range: "₦1M – ₦5M",
+      buyerFee: "2.5%",
+      sellerFee: "2.5%",
+      totalFee: "5%",
+      rationale: "For micro-SMEs, auto dealers, service providers",
+    },
+    {
+      range: "₦5M – ₦50M",
+      buyerFee: "2%",
+      sellerFee: "2%",
+      totalFee: "4%",
+      rationale: "Growing SMEs, professionals, car lots, building materials",
+    },
+    {
+      range: "₦50M – ₦200M",
+      buyerFee: "1.5%",
+      sellerFee: "1.5%",
+      totalFee: "3%",
+      rationale: "Construction, mid-scale real estate, procurement",
+    },
+    {
+      range: "₦200M – ₦1B",
+      buyerFee: "1%",
+      sellerFee: "1%",
+      totalFee: "2%",
+      rationale: "Government contractors, large estate projects",
+    },
+    {
+      range: "₦1B+",
+      buyerFee: "0.5%",
+      sellerFee: "0.5%",
+      totalFee: "1% (capped)",
+      rationale: "Ultra-high-net-worth deals; reinforces trust & exclusivity",
+    },
+  ];
+
   return (
     <motion.div
       className="w-full bg-primary-blue text-white"
-      // style={{
-      //   backgroundImage:
-      //     "url('https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FfeesbreakdownBgImage.jpg?alt=media&token=fa1a900a-7233-4ae5-8074-e3d333a6af84')",
-      //   backgroundSize: "cover",
-      //   backgroundRepeat: "no-repeat",
-      //   backgroundPosition: "center",
-      // }}
       data-ai-hint="abstract pattern"
       initial={{ opacity: 0, y: 60 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -31,9 +85,8 @@ export default function FeesBreakdown() {
             visible: { transition: { staggerChildren: 0.2 } },
           }}
         >
-          {/* Title */}
           <motion.h2
-            className="font-headline font-semibold text-3xl md:text-4xl  mb-2"
+            className="font-headline font-semibold text-3xl md:text-4xl mb-2"
             variants={{
               hidden: { opacity: 0, y: 20 },
               visible: { opacity: 1, y: 0 },
@@ -41,8 +94,6 @@ export default function FeesBreakdown() {
           >
             Fee Breakdown
           </motion.h2>
-
-          {/* Intro paragraph */}
           <motion.p
             className="text-lg text-white max-w-2xl"
             variants={{
@@ -59,8 +110,53 @@ export default function FeesBreakdown() {
             offering flexibility and fairness. Our pricing is among the most
             competitive in the industry.
           </motion.p>
-
-          {/* Buyers section */}
+          <motion.div
+            className="mt-4"
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0 },
+            }}
+          >
+            <Select>
+              <SelectTrigger className="w-[200px] bg-white text-primary-blue">
+                <SelectValue placeholder="View Pricing Structure" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-primary-blue">
+                        Deal Value (₦)
+                      </TableHead>
+                      <TableHead className="text-primary-blue">
+                        Buyer Fee
+                      </TableHead>
+                      <TableHead className="text-primary-blue">
+                        Seller Fee
+                      </TableHead>
+                      <TableHead className="text-primary-blue">
+                        Total Fee
+                      </TableHead>
+                      <TableHead className="text-primary-blue">
+                        Strategic Rationale
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pricingStructure.map((tier, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{tier.range}</TableCell>
+                        <TableCell>{tier.buyerFee}</TableCell>
+                        <TableCell>{tier.sellerFee}</TableCell>
+                        <TableCell>{tier.totalFee}</TableCell>
+                        <TableCell>{tier.rationale}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </SelectContent>
+            </Select>
+          </motion.div>
           <motion.div
             className="mt-8"
             variants={{
@@ -95,8 +191,6 @@ export default function FeesBreakdown() {
               ))}
             </motion.ul>
           </motion.div>
-
-          {/* Sellers section */}
           <motion.div
             className="mt-8"
             variants={{

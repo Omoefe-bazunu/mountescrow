@@ -152,7 +152,7 @@ export default function ConfidenceSection() {
         {/* Circular image (unchanged) */}
         <div className="w-fit h-fit mx-auto mb-8 absolute -bottom-[230px] md:-bottom-[200px] transform -translate-x-1/2 animate-heartbeat">
           <img
-            src="https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FCONFIDENCE.jpeg?alt=media&token=8ae8e7ae-5e72-412b-abf7-a6fe5156c347"
+            src="https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2Fconfid%20(1).png?alt=media&token=bc947be7-240f-4c1b-9254-1799848a907e"
             alt="A person joyfully looking at a laptop, symbolizing a successful payment."
             width={300}
             height={300}
