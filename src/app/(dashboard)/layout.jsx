@@ -43,13 +43,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import {
-  onAuthStateChanged,
-  signOut,
-  sendEmailVerification,
-} from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
@@ -68,63 +62,37 @@ const navItems = [
 ];
 
 export default function DashboardLayout({ children }) {
-  const pathname = usePathname();
+  const { user, loading, isEmailVerified, logout, refresh } = useAuth();
   const router = useRouter();
-  const { toast } = useToast();
-  const [user, setUser] = useState(null);
-  const [isVerified, setIsVerified] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [Loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        try {
-          const usersRef = collection(db, "users");
-          const q = query(
-            usersRef,
-            where("email", "==", currentUser.email?.toLowerCase())
-          );
-          const querySnapshot = await getDocs(q);
-          if (!querySnapshot.empty) {
-            const userDoc = querySnapshot.docs[0];
-            setIsVerified(userDoc.data().isVerified || false);
-          } else {
-            setIsVerified(false);
-            toast({
-              variant: "destructive",
-              title: "User not found",
-              description: "No account found with this email.",
-            });
-            await signOut(auth);
-            router.push("/login");
-          }
-        } catch (error) {
-          console.error("Error fetching verification status:", error);
-          setIsVerified(false);
-        }
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const res = await fetch("/api/users/me");
+      if (res.ok) {
+        const data = await res.json();
+        setIsVerified(data.isVerified);
       } else {
         router.push("/login");
       }
       setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [router, toast]);
+    };
+    fetchUser();
+  }, [router]);
 
   const handleLogout = async () => {
-    await signOut(auth);
+    await logout();
     router.push("/login");
-  };
-
-  const getInitials = (name) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .substring(0, 2)
-      .toUpperCase();
   };
 
   if (loading) {
@@ -139,8 +107,10 @@ export default function DashboardLayout({ children }) {
     );
   }
 
+  if (!user) return null;
+
   const EmailVerificationBanner = () => {
-    if (!user || isVerified) return null;
+    if (!user || isEmailVerified) return null;
 
     const handleResend = async () => {
       if (user) {
@@ -308,7 +278,8 @@ export default function DashboardLayout({ children }) {
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user?.photoURL || ""} alt="User avatar" />
                     <AvatarFallback>
-                      {getInitials(user?.displayName)}
+                      {/* {getInitials(user?.displayName) ||  "Initials"} */}
+                      {"Initials"}
                     </AvatarFallback>
                   </Avatar>
                 </Button>

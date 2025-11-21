@@ -28,8 +28,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { createProposal } from "@/services/proposal.service";
-import { useAuth } from "@/hooks/useAuth";
-import { auth } from "@/lib/firebase";
+import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileUpload } from "@/components/ui/file-upload";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -77,7 +76,6 @@ export function CreateProposalForm() {
   const { toast } = useToast();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const fallbackUser = auth.currentUser;
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -176,8 +174,8 @@ export function CreateProposalForm() {
         dueDate: milestone.dueDate,
       }));
 
-      // Create proposal and get email data
-      const { proposalId, emailData } = await createProposal({
+      // Create proposal - backend handles everything including email
+      const { proposalId } = await createProposal({
         projectTitle: values.projectTitle,
         description: values.description,
         counterpartyEmail: values.counterpartyEmail,
@@ -188,20 +186,6 @@ export function CreateProposalForm() {
         escrowFeePayer: Number(values.escrowFeePayer),
         files: projectFiles,
       });
-
-      // Send email notification
-      const emailEndpoint =
-        emailData.type === "invitation"
-          ? "/api/email/proposal-invitation"
-          : "/api/email/proposal-created";
-
-      const res = await fetch(emailEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emailData: { ...emailData, proposalId } }),
-      });
-
-      if (!res.ok) throw new Error("Failed to send email notification");
 
       toast({
         title: "Proposal Sent!",
@@ -351,7 +335,7 @@ export function CreateProposalForm() {
                       <SelectValue placeholder="Select fee payment split" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="bg-white">
                     <SelectItem value="100">Buyer pays 100%</SelectItem>
                     <SelectItem value="75">
                       Buyer pays 75%, Seller pays 25%

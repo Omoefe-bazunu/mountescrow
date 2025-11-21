@@ -1,154 +1,90 @@
 "use client";
 
 import { useState, useEffect, createContext, useContext } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+
+// Don't use NEXT_PUBLIC_API_URL - use Next.js API routes instead
+// This avoids CSP issues and works better with cookies
 
 const AuthContext = createContext({
   user: null,
-  wallet: null,
   loading: true,
   isEmailVerified: false,
-  isKycApproved: false,
-  refreshWallet: async () => {},
+  csrfToken: null,
+  logout: async () => {},
+  refresh: async () => {},
 });
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [wallet, setWallet] = useState(null);
+  const [csrfToken, setCsrfToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchWallet = async (uid) => {
+  const fetchUser = async () => {
     try {
-      console.log("Fetching wallet for UID:", uid);
-      const idToken = await auth.currentUser.getIdToken();
+      console.log("🔍 Checking authentication...");
 
-      const response = await fetch(`/api/wallet/refresh-balance?uid=${uid}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
+      // Use Next.js API route instead of direct backend call
+      const res = await fetch("/api/auth/check", {
+        credentials: "include",
+        cache: "no-store",
       });
 
-      if (!response.ok) {
-        // If wallet doesn't exist (404), that's okay - user just hasn't created one yet
-        if (response.status === 404) {
-          console.log("Wallet not found - user hasn't created one yet");
-          setWallet(null);
-          return;
-        }
-        throw new Error("Failed to fetch wallet");
+      console.log("📡 Auth check status:", res.status);
+
+      if (!res.ok) {
+        console.log("❌ Not authenticated (normal on first load)");
+        throw new Error("Not authenticated");
       }
 
-      const walletData = await response.json();
-      console.log("Wallet fetched:", walletData);
-      setWallet(walletData);
-    } catch (error) {
-      console.error("Failed to fetch wallet:", error);
-      setWallet(null);
-      // Don't re-throw for 404s or wallet not found scenarios
-      if (
-        !error.message.includes("404") &&
-        !error.message.includes("not found")
-      ) {
-        throw error;
-      }
+      const data = await res.json();
+      console.log("✅ User authenticated:", data.user);
+
+      setUser(data.user);
+      setCsrfToken(data.csrfToken);
+    } catch (err) {
+      console.log("No active session");
+      setUser(null);
+      setCsrfToken(null);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const refreshWallet = async () => {
-    if (user) {
-      console.log("Refreshing wallet for UID:", user.uid);
-      await fetchWallet(user.uid);
+  const logout = async () => {
+    try {
+      // Use Next.js API route instead of direct backend call
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      setUser(null);
+      setCsrfToken(null);
+      console.log("✅ Logged out successfully");
+    } catch (error) {
+      console.error("Logout error:", error);
     }
   };
 
   useEffect(() => {
-    console.log("Setting up onAuthStateChanged listener");
-    console.log("Firebase auth instance:", auth);
-
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      console.log("onAuthStateChanged fired, currentUser:", currentUser);
-      console.log("Current user UID:", currentUser?.uid);
-      console.log("Current user email:", currentUser?.email);
-      console.log("Current user emailVerified:", currentUser?.emailVerified);
-
-      if (currentUser) {
-        try {
-          await currentUser.getIdToken(true);
-          await currentUser.reload();
-          const refreshedUser = auth.currentUser;
-
-          console.log("User reloaded successfully");
-          console.log("Refreshed user:", refreshedUser);
-          console.log("Refreshed emailVerified:", refreshedUser?.emailVerified);
-
-          setUser(refreshedUser);
-        } catch (error) {
-          console.error("Error reloading user:", error);
-          setUser(currentUser);
-        }
-      } else {
-        console.log("No user found, setting user to null");
-        setUser(null);
-      }
-
-      setLoading(false);
-    });
-
-    const timeout = setTimeout(() => {
-      console.warn("Auth loading timeout, forcing loading to false");
-      console.log("Auth state at timeout - user:", auth.currentUser);
-      setLoading(false);
-    }, 10000);
-
-    return () => {
-      unsubscribe();
-      clearTimeout(timeout);
-    };
+    fetchUser();
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      console.log("User available, fetching wallet for:", user.uid);
-      fetchWallet(user.uid).catch((error) => {
-        // Only log actual errors, not expected 404s
-        if (
-          !error.message.includes("404") &&
-          !error.message.includes("not found")
-        ) {
-          console.error("Unexpected wallet fetch error:", error);
-        }
-      });
-    } else {
-      console.log("No user, clearing wallet");
-      setWallet(null);
-    }
-  }, [user]);
+  const isEmailVerified = user?.isVerified || false;
 
-  const isEmailVerified = !!user?.emailVerified;
-  const isKycApproved = wallet?.kycStatus === "approved";
-
-  const value = {
-    user,
-    wallet,
-    loading,
-    isEmailVerified,
-    isKycApproved,
-    refreshWallet,
-  };
-
-  console.log("AuthProvider state:", {
-    user: user
-      ? { uid: user.uid, email: user.email, emailVerified: user.emailVerified }
-      : null,
-    wallet,
-    loading,
-    isEmailVerified,
-    isKycApproved,
-  });
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        isEmailVerified,
+        csrfToken,
+        logout,
+        refresh: fetchUser,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {

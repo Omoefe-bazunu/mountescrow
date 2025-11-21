@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getDealById, fundDeal } from "@/services/deal.service";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Card,
   CardContent,
@@ -17,7 +17,6 @@ import { format } from "date-fns";
 import { AlertTriangle, Wallet, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { auth } from "@/lib/firebase";
 import { MilestoneCard } from "./_components/milestone-card";
 import { Progress } from "@/components/ui/progress";
 
@@ -25,92 +24,88 @@ export default function DealDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const id = params.id;
+  const { user, loading: authLoading } = useAuth();
 
+  const id = params.id;
   const [deal, setDeal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
-  const [user, setUser] = useState(null);
 
   const fetchDeal = async () => {
     if (!id) return;
     setLoading(true);
     setError(null);
     try {
-      const fetchedDeal = await getDealById(id);
-      if (fetchedDeal) {
-        setDeal(fetchedDeal);
-      } else {
-        setError("Deal not found or you don't have permission to view it.");
+      const res = await fetch(`/api/deals/${id}`, { credentials: "include" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to fetch deal");
       }
+      const data = await res.json();
+      setDeal(data.deal);
     } catch (err) {
       console.error("Error fetching deal:", err);
-      setError("An error occurred while fetching the deal.");
+      setError("Deal not found or you don't have permission to view it.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        fetchDeal();
-      } else {
-        router.push("/login");
-      }
-    });
-    return () => unsubscribe();
-  }, [id, router]);
+    if (user) {
+      fetchDeal();
+    } else if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [id, user, authLoading, router]);
 
   const handleFundDeal = async () => {
-    if (!deal || !user || !user.email || !user.displayName) return;
+    if (!deal) return;
     setIsProcessing(true);
     try {
-      const buyerEscrowFee = deal.escrowFee * (deal.escrowFeePayer / 100);
-      const totalToFund = deal.totalAmount + buyerEscrowFee;
+      const res = await fetch(`/api/deals/${deal.id}/fund`, {
+        method: "POST",
+        credentials: "include",
+      });
 
-      const result = await fundDeal(
-        deal.id,
-        user.uid,
-        totalToFund,
-        user.email,
-        user.displayName
-      );
-
-      if (result.success && result.redirect_url) {
-        toast({
-          title: "Redirecting for Payment",
-          description:
-            "You will be redirected to Flutterwave to complete the payment.",
-        });
-        window.location.href = result.redirect_url;
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Payment Initiation Error",
-          description:
-            result.message || "Could not initiate payment. Please try again.",
-        });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Funding failed");
       }
+
+      toast({
+        title: "Deal Funded Successfully!",
+        description: "Funds have been deducted and the seller notified.",
+      });
+
+      await fetchDeal(); // Refresh deal
     } catch (error) {
-      console.error("Error funding deal:", error);
       toast({
         variant: "destructive",
-        title: "Funding Error",
-        description:
-          error.message ||
-          "Could not fund the deal. Please check your balance and try again.",
+        title: "Funding Failed",
+        description: error.message || "Could not fund the deal.",
       });
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const onMilestoneUpdate = async () => {
-    await fetchDeal();
+  const onMilestoneUpdate = () => {
+    fetchDeal(); // Refresh on milestone changes
   };
+
+  const toDate = (ts) => (ts?.seconds ? new Date(ts.seconds * 1000) : null);
+
+  const completedMilestones =
+    deal?.milestones.filter((m) => m.status === "Completed").length || 0;
+  const totalMilestones = deal?.milestones.length || 0;
+  const progressPercentage =
+    totalMilestones > 0 ? (completedMilestones / totalMilestones) * 100 : 0;
+
+  const isBuyer =
+    user && (user.uid === deal?.buyerId || user.email === deal?.buyerEmail);
+  const isSeller = user?.email === deal?.sellerEmail;
 
   const getStatusVariant = (status) => {
     switch (status) {
@@ -122,28 +117,12 @@ export default function DealDetailPage() {
         return "default";
       case "In Dispute":
         return "destructive";
-      case "Pending Transfer":
-        return "outline";
       default:
         return "outline";
     }
   };
 
-  const toDate = (timestamp) => {
-    if (!timestamp || !timestamp.seconds) return null;
-    return new Date(timestamp.seconds * 1000);
-  };
-
-  const completedMilestones =
-    deal?.milestones.filter((m) => m.status === "Completed").length || 0;
-  const totalMilestones = deal?.milestones.length || 0;
-  const progressPercentage =
-    totalMilestones > 0 ? (completedMilestones / totalMilestones) * 100 : 0;
-
-  const isBuyer = user?.uid === deal?.buyerId;
-  const isSeller = user?.email === deal?.sellerEmail;
-
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-48 w-full" />
@@ -179,8 +158,8 @@ export default function DealDetailPage() {
               <CardTitle className="font-headline font-semibold text-3xl">
                 {deal.projectTitle}
               </CardTitle>
-              <CardDescription className="mt-2 flex items-center gap-2">
-                Deal created on{" "}
+              <CardDescription className="mt-2">
+                Created on{" "}
                 {toDate(deal.createdAt)
                   ? format(toDate(deal.createdAt), "PPP")
                   : "N/A"}
@@ -194,17 +173,19 @@ export default function DealDetailPage() {
             </Badge>
           </div>
         </CardHeader>
+
         <CardContent>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">Progress</span>
               <span className="text-sm font-medium">
-                {completedMilestones} / {totalMilestones} Milestones Completed
+                {completedMilestones} / {totalMilestones} Completed
               </span>
             </div>
             <Progress value={progressPercentage} className="w-full" />
           </div>
         </CardContent>
+
         {isBuyer && deal.status === "Awaiting Funding" && (
           <CardFooter>
             <Button

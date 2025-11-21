@@ -18,9 +18,7 @@ import { useState } from "react";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { useAuth } from "@/contexts/AuthContext";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -32,8 +30,8 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const { refresh } = useAuth(); // Get refresh from context
 
-  // no generic here
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -45,55 +43,40 @@ export function LoginForm() {
   async function onSubmit(values) {
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: values.email,
+          password: values.password,
+        }),
+      });
 
-      // Query Firestore for user document
-      const usersRef = collection(db, "users");
-      const q = query(
-        usersRef,
-        where("email", "==", values.email.toLowerCase())
-      );
-      const querySnapshot = await getDocs(q);
+      const data = await res.json();
 
-      if (querySnapshot.empty) {
-        toast({
-          variant: "destructive",
-          title: "User not found",
-          description: "No account found with this email.",
-        });
-        await auth.signOut();
-        setLoading(false);
-        return;
+      if (!res.ok) {
+        throw new Error(data.error || "Login failed");
       }
 
-      const userDoc = querySnapshot.docs[0];
-      const isVerified = userDoc.data().isVerified;
-
-      if (!isVerified) {
-        toast({
-          variant: "destructive",
-          title: "Email not verified",
-          description:
-            "Please check your inbox to verify your email address before logging in.",
-        });
-        await auth.signOut();
-        setLoading(false);
-        return;
-      }
+      // Success: refresh auth state (sets user + csrfToken from cookies)
+      await refresh();
 
       toast({
         title: "Logged in successfully",
         description: "Welcome back! Redirecting you to the dashboard.",
       });
+
       router.push("/dashboard");
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: error.code
-          ? error.code.replace("auth/", "").replace(/-/g, " ")
-          : "Invalid credentials.",
+        title: "Login Failed",
+        description:
+          error.message === "Email not verified"
+            ? "Please verify your email before logging in."
+            : error.message || "Invalid email or password.",
       });
+    } finally {
       setLoading(false);
     }
   }
@@ -143,7 +126,7 @@ export function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 "
+                  className="absolute inset-y-0 right-0 flex items-center pr-3"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (

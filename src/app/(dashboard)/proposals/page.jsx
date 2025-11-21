@@ -11,8 +11,6 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getProposals } from "@/services/proposal.service.js";
-import { auth } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
 import {
   Table,
   TableBody,
@@ -24,29 +22,32 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ProposalsPage() {
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        fetchProposals(currentUser);
-      } else {
-        setProposals([]);
-        setLoading(false);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [user, authLoading, router]);
 
-  const fetchProposals = async (currentUser) => {
+  // Fetch proposals when user is loaded
+  useEffect(() => {
+    if (user) {
+      fetchProposals();
+    }
+  }, [user]);
+
+  const fetchProposals = async () => {
     setLoading(true);
     try {
-      const userProposals = await getProposals(currentUser);
+      const userProposals = await getProposals();
       setProposals(userProposals);
     } catch (error) {
       console.error("Error fetching proposals:", error);
@@ -77,6 +78,18 @@ export default function ProposalsPage() {
     if (user?.email === proposal.sellerEmail) return "Seller";
     return "N/A";
   };
+
+  if (!user) {
+    return (
+      <Card className="my-0 mx-auto w-full max-w-[100vw]">
+        <CardContent className="p-6">
+          <div className="flex justify-center">
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="my-0 mx-auto w-full max-w-[100vw]">

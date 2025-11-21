@@ -84,8 +84,7 @@ export function MilestoneCard({
       await approveAndReleaseMilestone(dealId, milestoneIndex);
       toast({
         title: "Milestone Approved!",
-        description:
-          "Payment has been released and the next milestone is funded.",
+        description: "Payment has been released to the seller's wallet.",
       });
       onUpdate();
     } catch (error) {
@@ -93,7 +92,28 @@ export function MilestoneCard({
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Could not approve milestone.",
+        description: error.message || "Could not approve milestone.",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRequestRevision = async (reason) => {
+    setIsProcessing(true);
+    try {
+      await requestMilestoneRevision(dealId, milestoneIndex, reason);
+      toast({
+        title: "Revision Requested",
+        description: "The seller has been notified to revise their work.",
+      });
+      onUpdate();
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Could not request revision.",
       });
     } finally {
       setIsProcessing(false);
@@ -114,11 +134,7 @@ export function MilestoneCard({
     isSeller &&
     dealStatus === "In Progress" &&
     (milestone.status === "Funded" ||
-      milestone.status === "Revision Requested") &&
-    milestoneIndex ===
-      deal.milestones.findIndex((m) =>
-        ["Funded", "Revision Requested"].includes(m.status)
-      );
+      milestone.status === "Revision Requested");
 
   return (
     <Card className="overflow-hidden">
@@ -205,7 +221,10 @@ export function MilestoneCard({
       <CardFooter className="bg-muted/50 p-4 flex justify-end gap-2">
         {canSubmitWork && (
           <Button onClick={() => setIsSubmitting(true)} disabled={isProcessing}>
-            <Upload className="mr-2 h-4 w-4" /> Submit Work
+            <Upload className="mr-2 h-4 w-4" />
+            {milestone.status === "Revision Requested"
+              ? "Resubmit Work"
+              : "Submit Work"}
           </Button>
         )}
 
@@ -227,6 +246,20 @@ export function MilestoneCard({
               Approve & Release Payment
             </Button>
           </>
+        )}
+
+        {milestone.status === "Revision Requested" && (
+          <div className="w-full text-sm text-muted-foreground">
+            <p>
+              Need help? Contact support at{" "}
+              <a
+                href="mailto:support@mountescrow.com"
+                className="text-primary underline"
+              >
+                support@mountescrow.com
+              </a>
+            </p>
+          </div>
         )}
       </CardFooter>
 

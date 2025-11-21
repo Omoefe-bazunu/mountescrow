@@ -2,7 +2,6 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { v4 as uuidv4 } from "uuid";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,13 +19,6 @@ import { useState } from "react";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  createUserWithEmailAndPassword,
-  updateProfile,
-  deleteUser,
-} from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
 
 const formSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters."),
@@ -35,7 +27,7 @@ const formSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters."),
   phone: z.string().min(10, "Please enter a valid phone number."),
   acceptTerms: z.boolean().refine((val) => val === true, {
-    message: "You must accept the terms and conditions to create an account.",
+    message: "You must accept the terms and conditions.",
   }),
 });
 
@@ -59,7 +51,6 @@ export function SignUpForm() {
 
   async function onSubmit(values) {
     setLoading(true);
-    let user = null;
 
     try {
       const cleanPhone = values.phone.replace(/\s+/g, "");
@@ -67,104 +58,36 @@ export function SignUpForm() {
         throw new Error("Invalid phone number format");
       }
 
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        values.email,
-        values.password
-      );
-      user = userCredential.user;
-
-      const displayName = `${values.firstName.trim()} ${values.lastName.trim()}`;
-      await updateProfile(user, { displayName });
-
-      const verificationToken = uuidv4().split("-")[0]; // short unique code
-
-      await setDoc(doc(db, "users", user.uid), {
-        uid: user.uid,
-        email: values.email,
-        displayName,
-        phone: cleanPhone,
-        isVerified: false,
-        verificationToken,
-        tokenCreatedAt: new Date(),
-        createdAt: new Date(),
-        kycStatus: "pending",
-        acceptedTerms: values.acceptTerms,
-        termsAcceptedAt: new Date(),
-      });
-
-      // Fixed email sending with better error handling
-      const emailResponse = await fetch("/api/send", {
+      const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          firstName: values.firstName.trim(),
+          lastName: values.lastName.trim(),
           email: values.email,
-          firstName: values.firstName,
-          verificationCode: verificationToken,
+          password: values.password,
+          phone: cleanPhone,
+          acceptTerms: values.acceptTerms,
         }),
       });
 
-      // Parse the response body
-      const emailResult = await emailResponse.json();
+      const data = await res.json();
 
-      if (!emailResponse.ok) {
-        console.error("Email API error:", emailResult);
-        throw new Error(
-          emailResult.error?.message ||
-            emailResult.error ||
-            "Failed to send verification email"
-        );
+      if (!res.ok) {
+        throw new Error(data.error || "Signup failed");
       }
 
       toast({
-        title: "Account created successfully!",
-        description:
-          "We've sent a verification code to your email. Please enter it to verify your account.",
+        title: "Account created!",
+        description: "Check your email for the verification code.",
       });
 
-      await auth.signOut();
       router.push("/verify-account");
     } catch (error) {
-      console.error("Signup error:", error);
-
-      // Clean up user if created
-      if (user) {
-        try {
-          await deleteUser(user);
-          console.log("User deleted after signup error");
-        } catch (deleteError) {
-          console.error(
-            "Failed to delete user after signup error:",
-            deleteError
-          );
-        }
-      }
-
-      let errorMessage = "Something went wrong. Please try again.";
-
-      // Handle Firebase auth errors
-      if (error.code) {
-        switch (error.code) {
-          case "auth/email-already-in-use":
-            errorMessage = "This email is already registered.";
-            break;
-          case "auth/weak-password":
-            errorMessage = "Password is too weak.";
-            break;
-          case "auth/invalid-email":
-            errorMessage = "Invalid email address.";
-            break;
-          default:
-            errorMessage = error.message || errorMessage;
-        }
-      } else {
-        errorMessage = error.message || errorMessage;
-      }
-
       toast({
         variant: "destructive",
         title: "Signup Failed",
-        description: errorMessage,
+        description: error.message || "Please try again.",
       });
     } finally {
       setLoading(false);
@@ -202,6 +125,7 @@ export function SignUpForm() {
             )}
           />
         </div>
+
         <FormField
           control={form.control}
           name="email"
@@ -215,6 +139,7 @@ export function SignUpForm() {
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="password"
@@ -232,8 +157,7 @@ export function SignUpForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-secondary-blue"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3"
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -246,6 +170,7 @@ export function SignUpForm() {
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="phone"

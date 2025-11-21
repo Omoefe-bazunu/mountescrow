@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getDeals } from "@/services/deal.service";
+import { useAuth } from "@/contexts/AuthContext"; // Your JWT context
 import {
   Card,
   CardHeader,
@@ -22,32 +22,29 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 
 export default function DealsPage() {
+  const { user, loading: authLoading } = useAuth();
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        fetchDeals(currentUser);
-      } else {
-        setLoading(false);
-      }
-    });
+    if (user) {
+      fetchDeals();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [user, authLoading]);
 
-    return () => unsubscribe();
-  }, []);
-
-  const fetchDeals = async (user) => {
+  const fetchDeals = async () => {
     setLoading(true);
     try {
-      const userDeals = await getDeals(user);
-      setDeals(userDeals);
+      const res = await fetch("/api/deals", {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch deals");
+      const data = await res.json();
+      setDeals(data.deals || []);
     } catch (error) {
       console.error("Error fetching deals:", error);
     } finally {
@@ -70,6 +67,28 @@ export default function DealsPage() {
     }
   };
 
+  const isBuyer = (deal) =>
+    deal.buyerId === user?.uid || deal.buyerEmail === user?.email;
+
+  if (authLoading || loading) {
+    return (
+      <Card className="my-0">
+        <CardHeader>
+          <CardTitle className="font-headline font-semibold text-2xl">
+            Deals
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="my-0">
       <CardHeader>
@@ -79,13 +98,7 @@ export default function DealsPage() {
         <CardDescription>Track and manage your active deals.</CardDescription>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        ) : deals.length > 0 ? (
+        {deals.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -102,9 +115,7 @@ export default function DealsPage() {
                   <TableCell className="font-medium">
                     {deal.projectTitle}
                   </TableCell>
-                  <TableCell>
-                    {deal.buyerId === user?.uid ? "Buyer" : "Seller"}
-                  </TableCell>
+                  <TableCell>{isBuyer(deal) ? "Buyer" : "Seller"}</TableCell>
                   <TableCell className="text-right">
                     ₦{(deal.totalAmount + deal.escrowFee).toFixed(2)}
                   </TableCell>

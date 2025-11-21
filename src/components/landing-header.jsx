@@ -3,8 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import React, { useState, useEffect } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,22 +15,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { useAuth } from "@/contexts/AuthContext"; // Your JWT context
 
 export function LandingHeader() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
   const handleLogout = async () => {
-    await signOut(auth);
+    await logout();
     router.push("/");
   };
 
@@ -45,6 +35,7 @@ export function LandingHeader() {
         </div>
       );
     }
+
     if (user) {
       return (
         <>
@@ -65,12 +56,13 @@ export function LandingHeader() {
         </>
       );
     }
+
     return (
       <>
         <Button
           variant="ghost"
           asChild
-          className="text-lg text-white font-headline bg-primary-blue hover:bg-highlight-blue transition-colors hover:text-white  "
+          className="text-lg text-white font-headline bg-primary-blue hover:bg-highlight-blue transition-colors hover:text-white"
         >
           <Link href="/login">Login</Link>
         </Button>
@@ -91,7 +83,7 @@ export function LandingHeader() {
     const linkClass =
       "text-primary-blue text-lg hover:text-highlight-blue transition-colors font-medium font-headline";
     const mobileLinkClass =
-      "block w-full text-secondary-blue hover:text-highlight-blue transition-colors font-headline font-medium ext-left p-2 rounded-md hover:bg-muted";
+      "block w-full text-secondary-blue hover:text-highlight-blue transition-colors font-headline font-medium text-left p-2 rounded-md hover:bg-muted";
     const navLinkStyles = isMobile ? mobileLinkClass : linkClass;
 
     return (

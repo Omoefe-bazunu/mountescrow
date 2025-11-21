@@ -20,7 +20,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import {
-  Clock,
   DollarSign,
   FileText,
   User,
@@ -35,7 +34,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { auth } from "@/lib/firebase";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ProposalDetailPage() {
   const params = useParams();
@@ -48,68 +47,58 @@ export default function ProposalDetailPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [downloadingFiles, setDownloadingFiles] = useState(new Set());
-  const [currentUser, setCurrentUser] = useState(null);
 
+  // Use the useAuth hook
+  const { user, loading: authLoading } = useAuth();
+
+  // Redirect to login if not authenticated
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setCurrentUser(user);
-      if (user && id) {
-        const fetchProposal = async () => {
-          setLoading(true);
-          setError(null);
-          try {
-            const fetchedProposal = await getProposalById(id);
-            if (fetchedProposal) {
-              setProposal(fetchedProposal);
-            } else {
-              setError(
-                "Proposal not found or you don't have permission to view it."
-              );
-            }
-          } catch (err) {
-            console.error("Error fetching proposal:", err);
-            setError("An error occurred while fetching the proposal.");
-          } finally {
-            setLoading(false);
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [user, authLoading, router]);
+
+  // Fetch proposal when user is loaded
+  useEffect(() => {
+    if (user) {
+      const fetchProposal = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const fetchedProposal = await getProposalById(id);
+          if (fetchedProposal) {
+            setProposal(fetchedProposal);
+          } else {
+            setError(
+              "Proposal not found or you don't have permission to view it."
+            );
           }
-        };
-        fetchProposal();
-      } else if (!user) {
-        router.push("/login");
-      }
-    });
-    return () => unsubscribe();
-  }, [id, router]);
+        } catch (err) {
+          console.error("Error fetching proposal:", err);
+          setError("An error occurred while fetching the proposal.");
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchProposal();
+    }
+  }, [id, user]);
 
   const handleAccept = async () => {
     if (!proposal) return;
     setIsProcessing(true);
     try {
+      // Step 1: Update proposal status to Accepted
       await updateProposalStatus(proposal.id, "Accepted");
-      const dealId = await createDealFromProposal(proposal); // Create deal
-      const payload = {
-        recipientEmail:
-          proposal.creatorRole === "buyer"
-            ? proposal.sellerEmail
-            : proposal.buyerEmail,
-        projectTitle: proposal.projectTitle,
-        totalAmount: Number(proposal.totalAmount) || 0,
-        status: "Awaiting Funding",
-        dealId,
-      };
-      const res = await fetch("/api/email/deal-created", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const errorData = await res.text();
-        throw new Error(`Failed to send deal creation email: ${errorData}`);
-      }
+
+      // Step 2: Create deal from proposal
+      const dealId = await createDealFromProposal(proposal.id);
+
       toast({
         title: "Proposal Accepted!",
-        description: "A new deal has been created. The buyer will be notified.",
+        description: "A new deal has been created. The buyer can now fund it.",
       });
+
       router.push(`/deals/${dealId}`);
     } catch (error) {
       console.error("Error accepting proposal:", error);
@@ -124,24 +113,25 @@ export default function ProposalDetailPage() {
   };
 
   const handleAcceptAndFund = async () => {
-    if (!proposal || !currentUser) return;
+    if (!proposal || !user) return;
     setIsProcessing(true);
     try {
-      const { dealId } = await acceptAndFundSellerInitiatedProposal(
+      // Call the accept-and-fund endpoint which handles everything
+      const result = await acceptAndFundSellerInitiatedProposal(
         proposal.id,
-        currentUser.uid
+        user.uid
       );
+
       toast({
         title: "Proposal Accepted & Funded!",
-        description:
-          "The deal has been created and funded. Work can now begin.",
+        description: `The deal has been created and funded. ₦${result.deductedAmount?.toFixed(2) || 0} deducted from your wallet.`,
       });
-      router.push(`/deals/${dealId}`);
+
+      router.push(`/deals/${result.dealId}`);
     } catch (error) {
       console.error("Error accepting and funding proposal:", error);
       const errorMessage =
-        error.message ||
-        "Could not accept and fund the proposal. Please check your KYC status and balance.";
+        error.message || "Could not accept and fund the proposal.";
       toast({
         variant: "destructive",
         title: "Error",
@@ -151,7 +141,6 @@ export default function ProposalDetailPage() {
       setIsProcessing(false);
     }
   };
-
   const handleDecline = async () => {
     if (!proposal) return;
     setIsProcessing(true);
@@ -247,14 +236,28 @@ export default function ProposalDetailPage() {
   };
 
   const toDate = (timestamp) => {
-    if (!timestamp || !timestamp.seconds) return null;
-    return new Date(timestamp.seconds * 1000);
-  };
+    if (!timestamp) return null;
 
-  const isSeller = currentUser?.email === proposal?.sellerEmail;
+    // Firestore Timestamp object (has .toDate() method)
+    if (typeof timestamp?.toDate === "function") {
+      return timestamp.toDate();
+    }
+
+    // Firestore Timestamp as plain object { seconds/nanoseconds }
+    const seconds = timestamp?.seconds || timestamp?._seconds;
+    const nanoseconds = timestamp?.nanoseconds || timestamp?._nanoseconds || 0;
+
+    if (seconds != null) {
+      return new Date(seconds * 1000 + Math.round(nanoseconds / 1000000));
+    }
+
+    // ISO string or anything else
+    const date = new Date(timestamp);
+    return isNaN(date.getTime()) ? null : date;
+  };
+  const isSeller = user?.email === proposal?.sellerEmail;
   const isBuyer =
-    currentUser?.uid === proposal?.buyerId ||
-    currentUser?.email === proposal?.buyerEmail;
+    user?.uid === proposal?.buyerId || user?.email === proposal?.buyerEmail;
   const showSellerActionButtons = isSeller && proposal?.status === "Pending";
   const showBuyerAcceptAndFundButton =
     isBuyer && proposal?.status === "AwaitingBuyerAcceptance";
@@ -266,7 +269,7 @@ export default function ProposalDetailPage() {
     ? proposal.escrowFee * ((100 - proposal.escrowFeePayer) / 100)
     : 0;
 
-  if (loading) {
+  if (loading || authLoading || !user) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-48 w-full" />
@@ -430,7 +433,7 @@ export default function ProposalDetailPage() {
                     <span>
                       {toDate(milestone.dueDate)
                         ? format(toDate(milestone.dueDate), "PPP")
-                        : format(new Date(milestone.dueDate), "PPP")}
+                        : "N/A"}
                     </span>
                   </div>
                 </div>
