@@ -25,15 +25,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 
 export default function TransactionsPage() {
-  const { user, loading: authLoading } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,30 +36,19 @@ export default function TransactionsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
-    if (user) {
-      fetchTransactions();
-    } else if (!authLoading) {
-      setLoading(false);
-    }
-  }, [user, authLoading]);
+    fetchTransactions();
+  }, []);
 
   const fetchTransactions = async () => {
-    if (!user) return;
     setLoading(true);
     try {
-      const txQuery = query(
-        collection(db, "transactions"),
-        where("userId", "==", user.uid),
-        orderBy("createdAt", "desc")
-      );
-      const txSnapshot = await getDocs(txQuery);
-      const txData = txSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setTransactions(txData);
-    } catch (error) {
-      console.error("Error fetching transactions:", error);
+      const res = await fetch("/api/transactions");
+      if (res.ok) {
+        const data = await res.json();
+        setTransactions(data.transactions || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch transactions:", err);
     } finally {
       setLoading(false);
     }
@@ -74,30 +58,28 @@ export default function TransactionsPage() {
     return transactions.filter((tx) => {
       const searchMatch =
         searchTerm === "" ||
-        tx.description.toLowerCase().includes(searchTerm.toLowerCase());
+        (tx.description?.toLowerCase().includes(searchTerm.toLowerCase()) ??
+          false);
       const typeMatch = typeFilter === "all" || tx.type === typeFilter;
       const statusMatch =
-        statusFilter === "all" || tx.status.toLowerCase() === statusFilter;
+        statusFilter === "all" ||
+        tx.status?.toLowerCase() === statusFilter.toLowerCase();
       return searchMatch && typeMatch && statusMatch;
     });
   }, [transactions, searchTerm, typeFilter, statusFilter]);
 
   const getTxTypeVariant = (type) => {
     switch (type) {
-      case "DEPOSIT":
+      case "credit":
       case "MILESTONE_PAYMENT":
         return "default";
+      case "debit":
       case "WITHDRAWAL":
       case "ESCROW_FUNDING":
         return "destructive";
       default:
         return "secondary";
     }
-  };
-
-  const toDate = (timestamp) => {
-    if (!timestamp || !timestamp.seconds) return null;
-    return new Date(timestamp.seconds * 1000);
   };
 
   return (
@@ -124,12 +106,8 @@ export default function TransactionsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="DEPOSIT">Deposit</SelectItem>
-              <SelectItem value="WITHDRAWAL">Withdrawal</SelectItem>
-              <SelectItem value="ESCROW_FUNDING">Escrow Funding</SelectItem>
-              <SelectItem value="MILESTONE_PAYMENT">
-                Milestone Payment
-              </SelectItem>
+              <SelectItem value="credit">Deposit</SelectItem>
+              <SelectItem value="debit">Withdrawal</SelectItem>
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -139,13 +117,13 @@ export default function TransactionsPage() {
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="success">Success</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="processing">Processing</SelectItem>
               <SelectItem value="failed">Failed</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        {loading || authLoading ? (
+        {loading ? (
           <div className="space-y-2">
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-12 w-full" />
@@ -166,30 +144,33 @@ export default function TransactionsPage() {
               {filteredTransactions.map((tx) => (
                 <TableRow key={tx.id}>
                   <TableCell>
-                    {toDate(tx.createdAt)
-                      ? format(toDate(tx.createdAt), "PPP")
+                    {tx.createdAt
+                      ? format(new Date(tx.createdAt), "PPP")
                       : "N/A"}
                   </TableCell>
                   <TableCell>
                     <Badge variant={getTxTypeVariant(tx.type)}>
-                      {tx.type.replace(/_/g, " ")}
+                      {tx.type === "credit" ? "Deposit" : "Withdrawal"}
                     </Badge>
                   </TableCell>
-                  <TableCell>{tx.description}</TableCell>
+                  <TableCell>{tx.description || "Transaction"}</TableCell>
                   <TableCell>
                     <Badge
                       variant={
-                        tx.status === "SUCCESS" ? "default" : "destructive"
+                        tx.status?.toLowerCase() === "success" ||
+                        tx.status?.toLowerCase() === "completed"
+                          ? "default"
+                          : tx.status?.toLowerCase() === "failed"
+                            ? "destructive"
+                            : "secondary"
                       }
                     >
-                      {tx.status}
+                      {tx.status || "pending"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {["DEPOSIT", "MILESTONE_PAYMENT"].includes(tx.type)
-                      ? "+"
-                      : "-"}
-                    ₦{tx.amount.toFixed(2)}
+                    {tx.type === "credit" ? "+" : "-"}₦
+                    {Number(tx.amount || 0).toFixed(2)}
                   </TableCell>
                 </TableRow>
               ))}
@@ -197,7 +178,7 @@ export default function TransactionsPage() {
           </Table>
         ) : (
           <div className="text-center py-12 text-muted-foreground">
-            <p>No transactions found for the selected filters.</p>
+            <p>No transactions found.</p>
           </div>
         )}
       </CardContent>

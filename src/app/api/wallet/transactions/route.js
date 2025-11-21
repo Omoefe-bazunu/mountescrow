@@ -1,4 +1,6 @@
 // app/api/wallet/transactions/route.js
+
+// We currently don't use this. What we are using is api/transactions/route.js
 import { NextResponse } from "next/server";
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";

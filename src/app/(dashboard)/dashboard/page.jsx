@@ -7,6 +7,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
+import { format } from "date-fns";
 import {
   Table,
   TableHeader,
@@ -25,7 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
 
 export default function DashboardPage() {
-  const { user, wallet, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [stats, setStats] = useState({
     activeDeals: 0,
     pendingProposals: 0,
@@ -75,7 +76,26 @@ export default function DashboardPage() {
     }
   };
 
-  const toDate = (ts) => (ts?.seconds ? new Date(ts.seconds * 1000) : null);
+  const toDate = (input) => {
+    if (!input) return null;
+
+    try {
+      if (input.seconds) {
+        return new Date(input.seconds * 1000);
+      }
+      if (input._seconds) {
+        // Firestore timestamp format
+        return new Date(input._seconds * 1000);
+      }
+      if (typeof input === "string" || typeof input === "number") {
+        return new Date(input);
+      }
+      return null;
+    } catch (error) {
+      console.error("Date conversion error:", error);
+      return null;
+    }
+  };
 
   if (authLoading || loading) {
     return (
@@ -107,16 +127,12 @@ export default function DashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold font-headline">
               ₦
-              {wallet?.balance?.toLocaleString(undefined, {
+              {user?.walletBalance?.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               }) ?? "0.00"}
             </div>
-            <p className="text-xs opacity-90 mt-2">
-              {wallet?.updatedAt
-                ? `${formatDistanceToNow(toDate(wallet.updatedAt))} ago`
-                : "Available funds"}
-            </p>
+            <p className="text-xs opacity-90 mt-2">Available funds</p>
           </CardContent>
         </Card>
 
@@ -197,7 +213,7 @@ export default function DashboardPage() {
                     </TableCell>
                     <TableCell>
                       {toDate(tx.createdAt)
-                        ? formatDistanceToNow(toDate(tx.createdAt)) + " ago"
+                        ? format(toDate(tx.createdAt), "PPP")
                         : "N/A"}
                     </TableCell>
                     <TableCell className="text-right font-medium">
