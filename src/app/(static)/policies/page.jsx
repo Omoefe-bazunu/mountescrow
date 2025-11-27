@@ -4,70 +4,50 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { FilePlus2, Trash2 } from "lucide-react";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} from "firebase/storage";
-import { db, storage, auth } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
-
-const initialPolicyData = {
-  "Refund & Privacy Policy": {
-    summary:
-      "Mountescrow does not sell or share user data with third parties. We respect your privacy and uphold data protection regulations. We also have a flexible Refund policy that allows for compensation of either parties to a transaction in the event of a dispute. The complete privacy policy and refund policy are available in the PDF document below. Please click to view the full details.",
-  },
-  "Terms of Use": {
-    summary:
-      "These Terms of Use govern your use and participation in Mountescrow's services. Below is a summary of key points. For the complete terms and conditions, please refer to the PDF document below.",
-  },
-};
+import { useAuth } from "@/contexts/AuthContext";
 
 const ADMIN_EMAILS = ["raniem57@gmail.com", "mountescrow@gmail.com"];
 
 export default function DisputeResolutionPage() {
-  const [policyData, setPolicyData] = useState(initialPolicyData);
+  const [policyData, setPolicyData] = useState({});
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const { user, csrfToken } = useAuth();
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setIsAdmin(user ? ADMIN_EMAILS.includes(user.email) : false);
-    });
+    // Check if user is admin using JWT token data
+    if (user && user.email) {
+      setIsAdmin(ADMIN_EMAILS.includes(user.email));
+    } else {
+      setIsAdmin(false);
+    }
+  }, [user]);
 
-    fetchPdfUrls();
-    return () => unsubscribe();
+  useEffect(() => {
+    fetchPolicies();
   }, []);
 
-  const fetchPdfUrls = async () => {
+  const fetchPolicies = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const updatedData = { ...initialPolicyData };
+      const response = await fetch("/api/policies", {
+        credentials: "include",
+      });
 
-      await Promise.all(
-        Object.keys(updatedData).map(async (policy) => {
-          const path = `policy-docs/${policy
-            .toLowerCase()
-            .replace(/\s+/g, "-")}.pdf`;
-          try {
-            const url =
-              (await getDownloadURL(ref(storage, path))) +
-              `?alt=media&token=${Date.now()}`;
+      if (!response.ok) {
+        throw new Error("Failed to fetch policies");
+      }
 
-            updatedData[policy] = { ...updatedData[policy], pdfUrl: url };
-          } catch (error) {
-            console.log(`PDF not found for ${policy}:`, error);
-            updatedData[policy] = { ...updatedData[policy], pdfUrl: undefined };
-          }
-        })
-      );
-
-      setPolicyData(updatedData);
+      const data = await response.json();
+      setPolicyData(data.policies);
     } catch (error) {
-      console.error("Failed to fetch PDFs:", error);
+      console.error("Failed to fetch policies:", error);
+      setError("Failed to load policies. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -78,53 +58,82 @@ export default function DisputeResolutionPage() {
 
     if (!file.type.includes("pdf")) {
       setError("Only PDF files are allowed");
+      setTimeout(() => setError(null), 3000);
       return;
     }
 
     try {
-      setLoading(true);
-      const path = `policy-docs/${policyName
-        .toLowerCase()
-        .replace(/\s+/g, "-")}.pdf`;
-      const storageRef = ref(storage, path);
+      setUploading(true);
+      setError(null);
 
-      await uploadBytes(storageRef, file, {
-        cacheControl: "public, max-age=31536000",
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("policyName", policyName);
+
+      const response = await fetch("/api/policies/upload", {
+        method: "POST",
+        headers: {
+          "X-CSRF-Token": csrfToken,
+        },
+        credentials: "include",
+        body: formData,
       });
 
-      const url = await getDownloadURL(storageRef);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to upload PDF");
+      }
 
-      setPolicyData((prev) => ({
-        ...prev,
-        [policyName]: { ...prev[policyName], pdfUrl: url },
-      }));
+      const data = await response.json();
+
+      // Refresh policies to get the new URL
+      await fetchPolicies();
+
+      setError(null);
     } catch (error) {
       console.error("Failed to upload PDF:", error);
-      setError("Failed to upload PDF. Please try again.");
+      setError(error.message || "Failed to upload PDF. Please try again.");
+      setTimeout(() => setError(null), 5000);
     } finally {
-      setLoading(false);
+      setUploading(false);
     }
   };
 
   const handleDeletePdf = async (policyName) => {
+    if (!confirm("Are you sure you want to delete this policy PDF?")) {
+      return;
+    }
+
     try {
-      setLoading(true);
-      const path = `policy-docs/${policyName
-        .toLowerCase()
-        .replace(/\s+/g, "-")}.pdf`;
-      const storageRef = ref(storage, path);
+      setUploading(true);
+      setError(null);
 
-      await deleteObject(storageRef);
+      const response = await fetch(
+        `/api/policies/${encodeURIComponent(policyName)}`,
+        {
+          method: "DELETE",
+          headers: {
+            "X-CSRF-Token": csrfToken,
+          },
+          credentials: "include",
+        }
+      );
 
-      setPolicyData((prev) => ({
-        ...prev,
-        [policyName]: { ...prev[policyName], pdfUrl: undefined },
-      }));
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete PDF");
+      }
+
+      // Refresh policies
+      await fetchPolicies();
+
+      setError(null);
     } catch (error) {
       console.error("Failed to delete PDF:", error);
-      setError("Failed to delete PDF. Please try again.");
+      setError(error.message || "Failed to delete PDF. Please try again.");
+      setTimeout(() => setError(null), 5000);
     } finally {
-      setLoading(false);
+      setUploading(false);
     }
   };
 
@@ -150,6 +159,12 @@ export default function DisputeResolutionPage() {
           </div>
         )}
 
+        {uploading && (
+          <div className="mb-4 p-4 bg-blue-100 text-blue-700 rounded-md">
+            Processing... Please wait.
+          </div>
+        )}
+
         {loading ? (
           <div className="space-y-6">
             <Skeleton className="h-10 w-2/3 mx-auto" />
@@ -161,7 +176,7 @@ export default function DisputeResolutionPage() {
           </div>
         ) : (
           <Tabs
-            defaultValue="Refund & Privacy Policy"
+            defaultValue={Object.keys(policyData)[0] || ""}
             className="w-full text-left"
           >
             <TabsList className="flex flex-col bg-accent-blue h-fit lg:flex-row gap-2 lg:gap-4 justify-center items-center lg:items-stretch">
@@ -184,7 +199,7 @@ export default function DisputeResolutionPage() {
               ))}
             </TabsList>
 
-            <div className="mt-8">
+            <div className="mt-8 bg-white">
               {Object.entries(policyData).map(
                 ([key, { summary, pdfUrl }], idx) => (
                   <TabsContent key={key} value={key}>
@@ -206,21 +221,29 @@ export default function DisputeResolutionPage() {
                                   htmlFor={`file-upload-${key}`}
                                   className="cursor-pointer"
                                 >
-                                  <FilePlus2 className="h-5 w-5 text-primary-blue" />
+                                  <FilePlus2 className="h-5 w-5 text-primary-blue hover:text-primary-blue/80" />
                                   <input
                                     id={`file-upload-${key}`}
                                     type="file"
                                     accept=".pdf"
                                     className="hidden"
-                                    onChange={(e) =>
-                                      e.target.files?.[0] &&
-                                      handleFileUpload(key, e.target.files[0])
-                                    }
+                                    disabled={uploading}
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        handleFileUpload(key, file);
+                                      }
+                                      // Reset input
+                                      e.target.value = "";
+                                    }}
                                   />
                                 </label>
                                 {pdfUrl && (
-                                  <button onClick={() => handleDeletePdf(key)}>
-                                    <Trash2 className="h-5 w-5 text-destructive" />
+                                  <button
+                                    onClick={() => handleDeletePdf(key)}
+                                    disabled={uploading}
+                                  >
+                                    <Trash2 className="h-5 w-5 text-destructive hover:text-destructive/80" />
                                   </button>
                                 )}
                               </div>
@@ -243,7 +266,7 @@ export default function DisputeResolutionPage() {
                           ) : (
                             <div className="mt-4 text-gray-500">
                               {isAdmin
-                                ? "No PDF uploaded yet"
+                                ? "No PDF uploaded yet. Click the + icon to upload."
                                 : "PDF currently unavailable"}
                             </div>
                           )}

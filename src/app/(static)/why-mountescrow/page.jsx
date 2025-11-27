@@ -37,7 +37,7 @@ export default function WhyMountescrowPage() {
             </motion.h2>
 
             <motion.p
-              className="text-secondary-blue text-lg mb-4 font-body"
+              className="text-secondary-blue text-lg mb-4 font-headline"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ duration: 1, delay: 0.4 }}

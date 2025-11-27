@@ -18,38 +18,42 @@ export async function GET(request, { params }) {
   }
 
   const data = await res.json();
+  const proposal = data.proposal || data;
 
-  // Convert Firestore timestamp objects to ISO strings for proper serialization
-  if (data.createdAt && typeof data.createdAt === "object") {
-    if (data.createdAt._seconds || data.createdAt.seconds) {
-      const seconds = data.createdAt._seconds || data.createdAt.seconds;
-      const nanoseconds =
-        data.createdAt._nanoseconds || data.createdAt.nanoseconds || 0;
-      data.createdAt = new Date(
+  // Helper function to convert Firestore timestamp to ISO string
+  function convertTimestamp(timestamp) {
+    if (!timestamp) return null;
+
+    // Already a string (ISO format)
+    if (typeof timestamp === "string") {
+      return timestamp;
+    }
+
+    // Firestore timestamp object
+    const seconds = timestamp._seconds || timestamp.seconds;
+    const nanoseconds = timestamp._nanoseconds || timestamp.nanoseconds || 0;
+
+    if (seconds != null) {
+      return new Date(
         seconds * 1000 + Math.round(nanoseconds / 1000000)
       ).toISOString();
     }
+
+    return null;
+  }
+
+  // Convert all timestamps
+  if (proposal.createdAt) {
+    proposal.createdAt = convertTimestamp(proposal.createdAt);
   }
 
   // Convert milestone due dates
-  if (data.milestones && Array.isArray(data.milestones)) {
-    data.milestones = data.milestones.map((milestone) => {
-      if (milestone.dueDate && typeof milestone.dueDate === "object") {
-        if (milestone.dueDate._seconds || milestone.dueDate.seconds) {
-          const seconds =
-            milestone.dueDate._seconds || milestone.dueDate.seconds;
-          const nanoseconds =
-            milestone.dueDate._nanoseconds ||
-            milestone.dueDate.nanoseconds ||
-            0;
-          milestone.dueDate = new Date(
-            seconds * 1000 + Math.round(nanoseconds / 1000000)
-          ).toISOString();
-        }
-      }
-      return milestone;
-    });
+  if (proposal.milestones && Array.isArray(proposal.milestones)) {
+    proposal.milestones = proposal.milestones.map((milestone) => ({
+      ...milestone,
+      dueDate: convertTimestamp(milestone.dueDate),
+    }));
   }
 
-  return NextResponse.json(data, { status: res.status });
+  return NextResponse.json({ proposal }, { status: 200 });
 }

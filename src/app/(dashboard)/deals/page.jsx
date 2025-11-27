@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext"; // Your JWT context
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Card,
   CardHeader,
@@ -22,6 +22,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+
+const formatNumber = (num) => {
+  return new Intl.NumberFormat("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
+};
 
 export default function DealsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -72,7 +79,7 @@ export default function DealsPage() {
 
   if (authLoading || loading) {
     return (
-      <Card className="my-0">
+      <Card className="my-0 bg-white">
         <CardHeader>
           <CardTitle className="font-headline font-semibold text-2xl">
             Deals
@@ -90,11 +97,9 @@ export default function DealsPage() {
   }
 
   return (
-    <Card className="my-0">
+    <Card className="my-0 bg-white font-headline">
       <CardHeader>
-        <CardTitle className="font-headline font-semibold text-2xl">
-          Deals
-        </CardTitle>
+        <CardTitle className=" font-semibold text-2xl">Deals</CardTitle>
         <CardDescription>Track and manage your active deals.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -105,7 +110,7 @@ export default function DealsPage() {
                 <TableHead>Project Title</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead className="text-right">Total Amount</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="text-right pr-4">Status</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
@@ -117,9 +122,9 @@ export default function DealsPage() {
                   </TableCell>
                   <TableCell>{isBuyer(deal) ? "Buyer" : "Seller"}</TableCell>
                   <TableCell className="text-right">
-                    ₦{(deal.totalAmount + deal.escrowFee).toFixed(2)}
+                    ₦{formatNumber(deal.totalAmount + deal.escrowFee)}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-right">
                     <Badge variant={getStatusVariant(deal.status)}>
                       {deal.status}
                     </Badge>

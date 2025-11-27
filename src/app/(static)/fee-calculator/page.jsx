@@ -73,7 +73,7 @@ export default function FeeCalculatorPage() {
   return (
     <>
       <div
-        className="font-body"
+        className="font-headline"
         style={{
           backgroundImage:
             "url('https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FhowMountescrowWorksImage.jpg?alt=media&token=cedd54b5-52ea-462e-9df5-363b79a82276')",
@@ -131,14 +131,14 @@ export default function FeeCalculatorPage() {
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                     />
-                    <Select defaultValue="ngn">
+                    {/* <Select defaultValue="ngn">
                       <SelectTrigger className="w-[100px]">
                         <SelectValue placeholder="Currency" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ngn">NGN</SelectItem>
                       </SelectContent>
-                    </Select>
+                    </Select> */}
                   </div>
                 </motion.div>
                 <motion.div

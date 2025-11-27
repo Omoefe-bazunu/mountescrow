@@ -35,6 +35,7 @@ export default function VerifyAccountPage() {
         toast({
           title: "✅ Email Verified!",
           description: "Logging you in...",
+          className: "bg-white border-primary-blue font-headline",
         });
 
         // Wait a moment for cookies to be set
@@ -65,7 +66,7 @@ export default function VerifyAccountPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div className="min-h-screen font-headline flex items-center justify-center bg-gray-100 px-4">
       <form
         onSubmit={handleSubmit}
         className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md space-y-6"

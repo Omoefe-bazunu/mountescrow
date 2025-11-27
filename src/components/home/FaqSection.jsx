@@ -71,11 +71,11 @@ export default function FaqSection() {
       </div>
 
       {/* Questions & Answers */}
-      <div className="max-w-4xl mx-auto space-y-4 font-body">
+      <div className="max-w-4xl mx-auto space-y-4 font-headline">
         {faqData[activeTab].map((item, idx) => (
           <div
             key={idx}
-            className="bg-card rounded shadow overflow-hidden border border-border"
+            className="bg-white rounded shadow overflow-hidden border border-border"
           >
             <button
               onClick={() => setOpenIndex(openIndex === idx ? null : idx)}

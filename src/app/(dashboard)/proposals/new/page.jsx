@@ -9,9 +9,9 @@ import {
 
 export default function NewProposalPage() {
   return (
-    <Card className="my-0">
+    <Card className="my-0 bg-white font-headline">
       <CardHeader>
-        <CardTitle className="font-headline text-primary-blue font-semibold text-3xl">
+        <CardTitle className=" text-primary-blue font-semibold text-3xl">
           Create New Proposal
         </CardTitle>
         <CardDescription>

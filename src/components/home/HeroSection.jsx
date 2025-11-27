@@ -66,10 +66,9 @@ export default function HeroSection() {
           </h1>
 
           {/* CTA Button */}
-          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 mt-4">
+          <div className="flex font-headline flex-col md:flex-row items-center gap-4 md:gap-6 mt-4">
             <button className="bg-orange-500 hover:bg-highlight-blue text-white px-5 py-2.5 text-lg rounded-md transition-transform duration-300 hover:scale-105 shadow-lg flex items-center gap-2">
-              Get Started
-              <span className="flex items-center justify-center">→</span>
+              <a href="/dashboard">Get Started</a>
             </button>
           </div>
         </div>

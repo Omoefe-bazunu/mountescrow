@@ -48,7 +48,7 @@ export default function UseCasesSection() {
             <h3 className="text-primary-blue uppercase font-semibold mb-2 font-headline text-2xl">
               Escrow Payment Invite
             </h3>
-            <p className="text-secondary-blue flex-grow font-body">
+            <p className="text-secondary-blue flex-grow font-headline">
               Simply set up and share a payment link with the buyer. Mountescrow
               takes care of the rest - receive and secure the funds until the
               buyer and the seller meet transaction terms.
@@ -87,7 +87,7 @@ export default function UseCasesSection() {
             <h3 className="text-primary-blue uppercase font-semibold mb-2 font-headline text-2xl">
               B2B ESCROW API INTEGRATION
             </h3>
-            <p className="text-secondary-blue flex-grow font-body">
+            <p className="text-secondary-blue flex-grow font-headline">
               Integrate Mountescrow escrow service into your business platform
               to securely safeguard funds until specific conditions are met. Our
               B2B API is highly customizable to meet unique needs of diverse

@@ -64,6 +64,7 @@ export function LoginForm() {
       toast({
         title: "Logged in successfully",
         description: "Welcome back! Redirecting you to the dashboard.",
+        className: "font-headline",
       });
 
       router.push("/dashboard");

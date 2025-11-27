@@ -118,11 +118,11 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 space-y-4 md:space-y-0 md:gap-8 mb-4">
+      <div className="grid font-headline md:grid-cols-2 lg:grid-cols-3 space-y-4 md:space-y-0 md:gap-8 mb-4">
         <Card className="bg-primary-blue text-white my-0">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div className="text-xl font-semibold">Wallet Balance</div>
-            <DollarSign className="h-5 w-5" />
+            <p> ₦</p>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold font-headline">
@@ -165,7 +165,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="font-headline bg-white">
         <CardHeader className="flex flex-row items-center">
           <div className="grid gap-2">
             <CardTitle className="font-headline text-primary-blue font-semibold text-xl">

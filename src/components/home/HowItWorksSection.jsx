@@ -118,7 +118,7 @@ export default function HowItWorksSection() {
           </h2>
 
           <p
-            className={`text-muted-foreground max-w-2xl mx-auto mb-10 font-body ${
+            className={`text-muted-foreground max-w-2xl mx-auto mb-10 font-headline ${
               sectionInView ? "animate-slideInUp" : "opacity-0"
             }`}
             style={{ animationDelay: "0.2s" }}
@@ -150,7 +150,7 @@ export default function HowItWorksSection() {
                 <h3 className="text-sm font-semibold font-headline text-primary-blue mb-1">
                   {step.main}
                 </h3>
-                <p className="text-gray-700 text-sm font-body leading-relaxed">
+                <p className="text-gray-700 text-sm font-headline leading-relaxed">
                   {step.text}
                 </p>
               </div>

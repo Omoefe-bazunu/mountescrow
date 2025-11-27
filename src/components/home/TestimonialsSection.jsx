@@ -3,14 +3,6 @@
 import { useEffect, useState } from "react";
 import { Star, PlusCircle, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { db, storage } from "@/lib/firebase";
-import {
-  collection,
-  addDoc,
-  onSnapshot,
-  serverTimestamp,
-} from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const styles = `
   @keyframes slideIn {
@@ -63,20 +55,24 @@ export default function TestimonialsSection() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch testimonials in real time
+  // Fetch testimonials from server
   useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, "testimonials"),
-      (snapshot) => {
-        const fetched = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setTestimonials(fetched);
-        setCurrentIndex(0);
+    const fetchTestimonials = async () => {
+      try {
+        const response = await fetch("/api/testimonials");
+        if (response.ok) {
+          const data = await response.json();
+          setTestimonials(data.testimonials || []);
+          setCurrentIndex(0);
+        } else {
+          console.error("Failed to fetch testimonials");
+        }
+      } catch (error) {
+        console.error("Error fetching testimonials:", error);
       }
-    );
-    return () => unsubscribe();
+    };
+
+    fetchTestimonials();
   }, []);
 
   // Auto-slide carousel
@@ -105,28 +101,38 @@ export default function TestimonialsSection() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+
     try {
-      let photoUrl = "";
+      // Create FormData for file upload
+      const submitData = new FormData();
+      submitData.append("authorName", formData.authorName);
+      submitData.append("authorTitle", formData.authorTitle);
+      submitData.append("review", formData.review);
+      submitData.append("rating", formData.rating.toString());
+
       if (formData.photo) {
-        const userId = user?.uid || "guest";
-        const photoRef = ref(
-          storage,
-          `testimonials/${userId}/${Date.now()}_${formData.photo.name}`
-        );
-        await uploadBytes(photoRef, formData.photo);
-        photoUrl = await getDownloadURL(photoRef);
+        submitData.append("photo", formData.photo);
       }
 
-      await addDoc(collection(db, "testimonials"), {
-        authorName: formData.authorName,
-        authorTitle: formData.authorTitle,
-        review: formData.review,
-        rating: Number(formData.rating),
-        photoUrl,
-        userId: user?.uid || "guest",
-        createdAt: serverTimestamp(),
+      const response = await fetch("/api/testimonials", {
+        method: "POST",
+        body: submitData,
+        credentials: "include",
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to submit testimonial");
+      }
+
+      // Refresh testimonials
+      const testimonialsResponse = await fetch("/api/testimonials");
+      if (testimonialsResponse.ok) {
+        const data = await testimonialsResponse.json();
+        setTestimonials(data.testimonials || []);
+      }
+
+      // Reset form and close modal
       setFormData({
         authorName: "",
         authorTitle: "",
@@ -137,6 +143,7 @@ export default function TestimonialsSection() {
       setShowModal(false);
     } catch (err) {
       console.error("Error adding testimonial:", err);
+      alert(err.message || "Failed to submit testimonial");
     } finally {
       setIsSubmitting(false);
     }
@@ -150,6 +157,15 @@ export default function TestimonialsSection() {
         fill={i < rating ? "currentColor" : "none"}
       />
     ));
+
+  // Handle image error safely
+  const handleImageError = (e) => {
+    e.target.style.display = "none";
+    const fallback = e.target.nextSibling;
+    if (fallback && fallback.style) {
+      fallback.style.display = "flex";
+    }
+  };
 
   const current = testimonials[currentIndex];
   const next = testimonials[(currentIndex + 1) % testimonials.length];
@@ -171,7 +187,7 @@ export default function TestimonialsSection() {
         HEAR FROM OUR USERS
       </h2>
       <p
-        className="text-muted-foreground max-w-3xl mx-auto mb-12 font-body animate-fadeIn"
+        className="text-muted-foreground max-w-3xl mx-auto mb-12 font-headline animate-fadeIn"
         style={{ animationDelay: "0.2s" }}
       >
         Hear from those who already use Mountescrow to power safe and secure
@@ -182,7 +198,7 @@ export default function TestimonialsSection() {
       {user ? (
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 mx-auto mb-10 bg-orange-500 hover:bg-highlight-blue text-white px-5 py-3 rounded-full transition-all"
+          className="flex items-center font-headline gap-2 mx-auto mb-10 bg-orange-500 hover:bg-highlight-blue text-white px-5 py-3 rounded-full transition-all"
         >
           <PlusCircle size={18} />
           Add Your Testimonial
@@ -220,10 +236,14 @@ export default function TestimonialsSection() {
                   src={current.photoUrl}
                   alt={current.authorName}
                   className="object-cover w-full h-full bg-slate-600"
+                  onError={handleImageError}
                 />
+                <div className="hidden w-full h-full bg-gray-200 items-center justify-center text-gray-500">
+                  {current.authorName?.charAt(0) || "U"}
+                </div>
               </div>
-              <p className="text-card-foreground italic mb-4 text-lg font-body">
-                “{current.review}”
+              <p className="text-card-foreground italic mb-4 text-lg font-headline">
+                "{current.review}"
               </p>
               <div className="flex flex-col items-center">
                 <div className="flex justify-center mb-2">
@@ -252,10 +272,14 @@ export default function TestimonialsSection() {
                     src={next.photoUrl}
                     alt={next.authorName}
                     className="object-cover w-full h-full"
+                    onError={handleImageError}
                   />
+                  <div className="hidden w-full h-full bg-gray-200 items-center justify-center text-gray-500 text-sm">
+                    {next.authorName?.charAt(0) || "U"}
+                  </div>
                 </div>
                 <p className="text-sm italic text-gray-600 line-clamp-3">
-                  “{next.review}”
+                  "{next.review}"
                 </p>
               </div>
             </div>
@@ -302,15 +326,21 @@ export default function TestimonialsSection() {
                 required
                 className="border rounded-lg p-2 h-24 resize-none"
               />
-              <input
-                type="number"
-                name="rating"
-                value={formData.rating}
-                onChange={handleInputChange}
-                min="1"
-                max="5"
-                className="border rounded-lg p-2"
-              />
+              <div className="flex items-center gap-2">
+                <label className="text-sm">Rating:</label>
+                <select
+                  name="rating"
+                  value={formData.rating}
+                  onChange={handleInputChange}
+                  className="border rounded-lg p-2"
+                >
+                  {[1, 2, 3, 4, 5].map((num) => (
+                    <option key={num} value={num}>
+                      {num} Star{num !== 1 ? "s" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <input
                 type="file"
                 accept="image/*"
@@ -320,7 +350,7 @@ export default function TestimonialsSection() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-primary-blue text-white rounded-lg py-2 hover:bg-primary/80 transition-all"
+                className="bg-primary-blue text-white rounded-lg py-2 hover:bg-primary/80 transition-all disabled:opacity-50"
               >
                 {isSubmitting ? "Submitting..." : "Submit Testimonial"}
               </button>

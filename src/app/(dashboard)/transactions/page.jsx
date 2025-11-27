@@ -83,7 +83,7 @@ export default function TransactionsPage() {
   };
 
   return (
-    <Card className="my-0">
+    <Card className="my-0 font-headline bg-white border-t-4 border-t-primary-blue px-0 lg:px-4">
       <CardHeader>
         <CardTitle className="font-headline font-semibold text-2xl">
           Transactions
@@ -93,10 +93,10 @@ export default function TransactionsPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col sm:flex-row items-center gap-4 mb-4 p-4 bg-muted rounded-lg">
+        <div className="flex flex-col sm:flex-row items-center gap-4 mb-4 bg-muted rounded-lg">
           <Input
             placeholder="Search by description..."
-            className="max-w-xs bg-background"
+            className="w-full lg:max-w-xs bg-background"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -104,7 +104,7 @@ export default function TransactionsPage() {
             <SelectTrigger className="w-full sm:w-[180px] bg-background">
               <SelectValue placeholder="Filter by Type" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white">
               <SelectItem value="all">All Types</SelectItem>
               <SelectItem value="credit">Deposit</SelectItem>
               <SelectItem value="debit">Withdrawal</SelectItem>
@@ -114,7 +114,7 @@ export default function TransactionsPage() {
             <SelectTrigger className="w-full sm:w-[180px] bg-background">
               <SelectValue placeholder="Filter by Status" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white">
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="success">Success</SelectItem>
               <SelectItem value="processing">Processing</SelectItem>
@@ -169,7 +169,7 @@ export default function TransactionsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {tx.type === "credit" ? "+" : "-"}₦
+                    {tx.type === "credit" ? "+ " : "- "}₦
                     {Number(tx.amount || 0).toFixed(2)}
                   </TableCell>
                 </TableRow>

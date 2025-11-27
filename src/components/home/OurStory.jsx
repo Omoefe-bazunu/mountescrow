@@ -16,7 +16,7 @@ export default function OurStory() {
           OUR STORY
         </h2>
         <div className="px-8 md:px-16 mx-auto">
-          <p className="font-body text-lg text-center md:text-left">
+          <p className="font-headline text-lg text-center md:text-left">
             Mountescrow was founded with a bold vision: to transform digital
             transactions into a secure, transparent, and empowering ecosystem
             for buyers and sellers alike. We understand the hurdles of online
@@ -24,7 +24,7 @@ export default function OurStory() {
             need for seamless payment safety. This drove us to create a solution
             that fosters confidence and eliminates uncertainty in every deal.
           </p>
-          <p className="font-body text-lg mt-4 text-center md:text-left">
+          <p className="font-headline text-lg mt-4 text-center md:text-left">
             Mountescrow acts as a steadfast partner, ensuring funds are
             protected until transaction terms are met. Fostering collaboration
             and trust between parties. Beyond single transactions, we are

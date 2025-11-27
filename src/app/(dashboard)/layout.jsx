@@ -17,6 +17,9 @@ import {
   MailWarning,
   Verified,
   Menu,
+  PersonStanding,
+  PersonStandingIcon,
+  CircleUser,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,6 +53,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LandingHeader } from "@/components/landing-header";
 import { Footer } from "@/components/footer";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { Separator } from "@/components/ui/separator";
 
 const navItems = [
   { href: "/dashboard", icon: Home, label: "Dashboard" },
@@ -59,6 +63,7 @@ const navItems = [
   { href: "/wallet", icon: Wallet, label: "Wallet" },
   { href: "/disputes", icon: Shield, label: "Disputes" },
   { href: "/kyc", icon: Verified, label: "KYC" },
+  { href: "/profile", icon: CircleUser, label: "Profile" },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -140,7 +145,7 @@ export default function DashboardLayout({ children }) {
   return (
     <>
       <LandingHeader />
-      <div className="grid min-h-screen w-full max-w-[100vw] overflow-x-hidden md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] bg-background">
+      <div className="grid font-headline min-h-screen w-full max-w-[100vw] overflow-x-hidden md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] bg-background">
         <div className="hidden border-r bg-secondary-blue text-white md:block">
           <div className="flex h-full max-h-screen flex-col gap-2">
             <div className="flex-1">
@@ -189,7 +194,7 @@ export default function DashboardLayout({ children }) {
         </div>
 
         <div className="flex flex-col w-full">
-          <header className="flex h-16 items-center gap-4 border-b bg-card px-4 lg:px-6 sticky top-0 z-10">
+          <header className="flex h-16 bg-white items-center gap-4 border-b bg-card px-4 lg:px-6 sticky top-0 z-10">
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
               <SheetTrigger asChild>
                 <Button
@@ -275,20 +280,20 @@ export default function DashboardLayout({ children }) {
                   size="icon"
                   className="rounded-full bg-primary-blue hover:bg-highlight-blue text-white"
                 >
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.photoURL || ""} alt="User avatar" />
-                    <AvatarFallback>
-                      {/* {getInitials(user?.displayName) ||  "Initials"} */}
-                      {"Initials"}
-                    </AvatarFallback>
+                  <Avatar className="h-8 w-8 flex items-center justify-center text-white font-bold">
+                    <CircleUser size={20} />
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>
+                <DropdownMenuLabel className="font-light">
                   {user?.displayName || "My Account"}
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
+                <Separator />
+                <DropdownMenuLabel className="font-light">
+                  {user?.email || "Email"}
+                </DropdownMenuLabel>
+                <Separator />
                 <DropdownMenuItem
                   onClick={handleLogout}
                   className="cursor-pointer"

@@ -411,7 +411,7 @@ export default function WalletPage() {
 
   if (kycStatus !== "approved") {
     return (
-      <Card>
+      <Card className="bg-white">
         <CardHeader>
           <CardTitle>KYC Required</CardTitle>
           <CardDescription>
@@ -428,18 +428,20 @@ export default function WalletPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="my-0">
+    <div className="space-y-6 font-headline">
+      <Card className="my-0 bg-white p-4 border-b-4 border-b-primary-blue">
         <CardHeader>
           <div className="flex flex-col md:flex-row justify-between items-start gap-4">
             <div>
-              <CardTitle className="font-headline text-2xl">Wallet</CardTitle>
+              <CardTitle className="font-headline font-bold text-2xl">
+                Wallet
+              </CardTitle>
               <CardDescription>
                 Manage your funds and view transaction history.
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <div className="bg-green-500 rounded-lg py-1 px-4 text-center text-white">
+              <div className="bg-green-600 rounded-lg flex items-center justify-center px-4 text-sm  text-center text-white">
                 KYC Verified
               </div>
               <Button
@@ -449,9 +451,9 @@ export default function WalletPage() {
                 disabled={isRefreshing}
               >
                 {isRefreshing ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className=" h-4 w-4 animate-spin" />
                 ) : (
-                  <RefreshCw className="mr-2 h-4 w-4" />
+                  <RefreshCw className=" text-center h-4 w-4" />
                 )}
                 Refresh
               </Button>
@@ -509,7 +511,7 @@ export default function WalletPage() {
               <p className="text-sm text-secondary-blue mb-2">
                 To deposit funds, transfer money to this account:
               </p>
-              <div className="space-y-3">
+              <div className="">
                 <div className="flex items-center justify-between p-3 bg-background rounded-md">
                   <span className="text-secondary-blue text-sm">
                     Account Number
@@ -533,7 +535,7 @@ export default function WalletPage() {
                 <div className="flex items-center justify-between p-3 bg-background rounded-md">
                   <span className="text-secondary-blue text-sm">Bank Name</span>
                   <strong className="font-mono">
-                    {virtualAccount.bankName}
+                    {virtualAccount.bankName} MFB
                   </strong>
                 </div>
               </div>
@@ -556,8 +558,7 @@ export default function WalletPage() {
         </CardContent>
       </Card>
 
-      {/* Rest of your component remains the same */}
-      <Card>
+      <Card className="p-0 py-4 md:p-4 bg-white">
         <CardHeader>
           <CardTitle>Transaction History</CardTitle>
           <CardDescription>Recent transactions on your wallet</CardDescription>
@@ -570,48 +571,71 @@ export default function WalletPage() {
               ))}
             </div>
           ) : transactions.length > 0 ? (
-            <Table>
+            <Table className="text-xs">
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
+                  <TableHead className="pl-4">Description</TableHead>
                   <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right pr-4 ">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {transactions.map((transaction, index) => (
                   <TableRow key={transaction.id || index}>
-                    <TableCell>
+                    <TableCell className="w-4">
                       {transaction.date
                         ? new Date(transaction.date).toLocaleString()
                         : "N/A"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="pl-4">
                       {transaction.description ||
                         transaction.narration ||
                         "Transaction"}
                     </TableCell>
                     <TableCell
                       className={
-                        transaction.type === "credit" || transaction.amount > 0
-                          ? "text-green-500"
-                          : "text-red-500"
+                        transaction.type === "debit" ||
+                        transaction.amount < 0 ||
+                        transaction.direction === "outgoing"
+                          ? "text-red-600 font-medium"
+                          : "text-green-600 font-medium"
                       }
                     >
-                      {transaction.type === "credit" || transaction.amount > 0
-                        ? "+"
-                        : "-"}
-                      ₦
-                      {Math.abs(Number(transaction.amount) || 0).toLocaleString(
-                        undefined,
-                        {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        }
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {transaction.type === "debit" ||
+                        transaction.amount < 0 ||
+                        transaction.direction === "outgoing" ? (
+                          <>
+                            <ArrowDown className="h-4 w-4 text-red-600" />
+                            <span>
+                              -₦
+                              {Math.abs(
+                                Number(transaction.amount || 0)
+                              ).toLocaleString("en-NG", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <ArrowUp className="h-4 w-4 text-green-600" />
+                            <span>
+                              +₦
+                              {Number(transaction.amount || 0).toLocaleString(
+                                "en-NG",
+                                {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                }
+                              )}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-right">
                       <Badge
                         variant={
                           transaction.status === "success" ||

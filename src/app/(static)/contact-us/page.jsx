@@ -42,11 +42,11 @@ export default function ContactUsPage() {
             >
               Contact Details
             </motion.h2>
-            <p className="max-w-xs mb-6 text-center text-primary-foreground/80 font-body">
+            <p className="max-w-xs mb-6 text-center text-primary-foreground/80 font-headline">
               Get in touch with us using the following details or fill the form
               to leave a message. We love to hear from you.
             </p>
-            <div className="space-y-6 flex flex-col items-center justify-center font-body">
+            <div className="space-y-6 flex flex-col items-center justify-center font-headline">
               {[
                 { Icon: Phone, text: "+234 - 904 - 3970 - 401" },
                 { Icon: Mail, text: "support@mountescrow.com" },
@@ -90,7 +90,7 @@ export default function ContactUsPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2 }}
             viewport={{ once: true }}
-            className="space-y-4 font-body text-secondary-blue"
+            className="space-y-4 font-headline text-secondary-blue"
           >
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>

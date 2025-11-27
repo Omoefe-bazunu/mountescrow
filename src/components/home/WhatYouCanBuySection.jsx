@@ -121,7 +121,7 @@ export default function WhatYouCanBuySection() {
         </h2>
 
         <p
-          className={`text-white max-w-3xl mx-auto mb-12 font-body ${
+          className={`text-white max-w-3xl mx-auto mb-12 font-headline ${
             sectionInView ? "animate-fadeUp" : "opacity-0"
           }`}
           style={{ animationDelay: "0.2s" }}
@@ -152,7 +152,7 @@ export default function WhatYouCanBuySection() {
                 <h3 className="text-primary-blue font-semibold font-headline text-2xl mb-3">
                   {card.title}
                 </h3>
-                <ul className="list-disc list-inside text-secondary-blue text-sm space-y-1 font-body">
+                <ul className="list-disc list-inside text-secondary-blue text-sm space-y-1 font-headline">
                   {card.items.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}

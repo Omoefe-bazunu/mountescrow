@@ -10,7 +10,7 @@ import Link from "next/link";
 
 export default function LoginPage() {
   return (
-    <div className="mx-auto w-screen flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8 ">
+    <div className="mx-auto font-headline w-screen flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8 ">
       <Card className="w-full max-w-md mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
         <CardHeader className="text-center">
           <CardTitle className=" text-2xl font-semibold text-primary-blue">

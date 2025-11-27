@@ -20,6 +20,13 @@ import { useToast } from "@/hooks/use-toast";
 import { MilestoneCard } from "./_components/milestone-card";
 import { Progress } from "@/components/ui/progress";
 
+const formatNumber = (num) => {
+  return new Intl.NumberFormat("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
+};
+
 export default function DealDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -95,7 +102,49 @@ export default function DealDetailPage() {
     fetchDeal(); // Refresh on milestone changes
   };
 
-  const toDate = (ts) => (ts?.seconds ? new Date(ts.seconds * 1000) : null);
+  // const toDate = (ts) => (ts?.seconds ? new Date(ts.seconds * 1000) : null);
+
+  const formatDate = (timestamp) => {
+    if (!timestamp) return "N/A";
+
+    try {
+      // Handle ISO string (from backend)
+      if (typeof timestamp === "string") {
+        const date = new Date(timestamp);
+        if (!isNaN(date.getTime())) {
+          return format(date, "PPP");
+        }
+      }
+
+      // Handle Firestore Timestamp objects with toDate() method
+      if (timestamp.toDate && typeof timestamp.toDate === "function") {
+        return format(timestamp.toDate(), "PPP");
+      }
+
+      // Handle objects with 'seconds' property (Firestore Timestamp serialized)
+      if (timestamp.seconds !== undefined) {
+        const date = new Date(timestamp.seconds * 1000);
+        return format(date, "PPP");
+      }
+
+      // Handle objects with '_seconds' property
+      if (timestamp._seconds !== undefined) {
+        const date = new Date(timestamp._seconds * 1000);
+        return format(date, "PPP");
+      }
+
+      // Handle regular Date objects
+      const date = new Date(timestamp);
+      if (!isNaN(date.getTime())) {
+        return format(date, "PPP");
+      }
+
+      return "N/A";
+    } catch (error) {
+      console.error("Date formatting error:", error);
+      return "N/A";
+    }
+  };
 
   const completedMilestones =
     deal?.milestones.filter((m) => m.status === "Completed").length || 0;
@@ -150,8 +199,8 @@ export default function DealDetailPage() {
   if (!deal) return null;
 
   return (
-    <div className="space-y-6">
-      <Card className="my-0">
+    <div className="space-y-4 font-headline">
+      <Card className="my-0 bg-white">
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -160,8 +209,8 @@ export default function DealDetailPage() {
               </CardTitle>
               <CardDescription className="mt-2">
                 Created on{" "}
-                {toDate(deal.createdAt)
-                  ? format(toDate(deal.createdAt), "PPP")
+                {formatDate(deal.createdAt)
+                  ? formatDate(deal.createdAt)
                   : "N/A"}
               </CardDescription>
             </div>
@@ -210,7 +259,6 @@ export default function DealDetailPage() {
       </Card>
 
       <div>
-        <h3 className="text-xl font-semibold mb-4 font-headline">Milestones</h3>
         <div className="space-y-4">
           {deal.milestones.map((milestone, index) => (
             <MilestoneCard
@@ -227,25 +275,29 @@ export default function DealDetailPage() {
         </div>
       </div>
 
-      <Card className="my-0">
+      <Card className="my-0 bg-white">
         <CardHeader>
-          <CardTitle className="font-headline text-xl">Summary</CardTitle>
+          <CardTitle className="font-headline font-bold text-xl">
+            Summary
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Total Project Amount</span>
-            <span className="font-medium">₦{deal.totalAmount.toFixed(2)}</span>
+            <span className="font-medium">
+              ₦{formatNumber(deal.totalAmount)}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Escrow Fee (Total)</span>
-            <span className="font-medium">₦{deal.escrowFee.toFixed(2)}</span>
+            <span className="font-medium">₦{formatNumber(deal.escrowFee)}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground ml-4">
               • Buyer pays ({deal.escrowFeePayer}%)
             </span>
             <span className="font-medium">
-              ₦{(deal.escrowFee * (deal.escrowFeePayer / 100)).toFixed(2)}
+              ₦{formatNumber(deal.escrowFee * (deal.escrowFeePayer / 100))}
             </span>
           </div>
           <div className="flex justify-between text-sm">
@@ -254,8 +306,8 @@ export default function DealDetailPage() {
             </span>
             <span className="font-medium">
               ₦
-              {(deal.escrowFee * ((100 - deal.escrowFeePayer) / 100)).toFixed(
-                2
+              {formatNumber(
+                deal.escrowFee * ((100 - deal.escrowFeePayer) / 100)
               )}
             </span>
           </div>
@@ -263,10 +315,9 @@ export default function DealDetailPage() {
             <span>Buyer Funds</span>
             <span>
               ₦
-              {(
-                deal.totalAmount +
-                deal.escrowFee * (deal.escrowFeePayer / 100)
-              ).toFixed(2)}
+              {formatNumber(
+                deal.totalAmount + deal.escrowFee * (deal.escrowFeePayer / 100)
+              )}
             </span>
           </div>
         </CardContent>

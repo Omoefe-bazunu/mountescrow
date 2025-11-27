@@ -29,6 +29,14 @@ import { useToast } from "@/hooks/use-toast";
 import { Button as UIButton } from "@/components/ui/button";
 import { SubmitWorkDialog } from "./submit-work-dialog";
 import { RequestRevisionDialog } from "./request-revision-dialog";
+import { Separator } from "@/components/ui/separator";
+
+const formatNumber = (num) => {
+  return new Intl.NumberFormat("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
+};
 
 export function MilestoneCard({
   milestone,
@@ -59,6 +67,31 @@ export function MilestoneCard({
       default:
         return "outline";
     }
+  };
+
+  const formatDate = (dateInput) => {
+    if (!dateInput) return "N/A";
+
+    let date;
+
+    // Handle string (ISO format from Firestore)
+    if (typeof dateInput === "string") {
+      date = new Date(dateInput);
+    }
+    // Handle Firestore Timestamp object
+    else if (dateInput.toDate) {
+      date = dateInput.toDate();
+    }
+    // Handle { seconds, nanoseconds } object
+    else if (dateInput.seconds != null) {
+      date = new Date(dateInput.seconds * 1000);
+    }
+    // Handle already a Date
+    else if (dateInput instanceof Date) {
+      date = dateInput;
+    }
+
+    return date && !isNaN(date) ? format(date, "PPP") : "N/A";
   };
 
   const getStatusIcon = (status) => {
@@ -120,15 +153,7 @@ export function MilestoneCard({
     }
   };
 
-  const toDate = (timestamp) => {
-    if (!timestamp || !timestamp.seconds) {
-      if (timestamp instanceof Date) return timestamp;
-      return null;
-    }
-    return new Date(timestamp.seconds * 1000);
-  };
-
-  const dueDate = toDate(milestone.dueDate);
+  const dueDate = milestone.dueDate;
 
   const canSubmitWork =
     isSeller &&
@@ -137,7 +162,8 @@ export function MilestoneCard({
       milestone.status === "Revision Requested");
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden bg-white">
+      <h3 className="text-xl font-semibold font-headline m-4">Milestones</h3>
       <CardHeader className="flex flex-row items-start justify-between bg-muted/50 p-4">
         <div className="grid gap-0.5">
           <CardTitle className="text-xl flex items-center gap-3">
@@ -145,7 +171,7 @@ export function MilestoneCard({
           </CardTitle>
           <CardDescription className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            Due on {dueDate ? format(dueDate, "PPP") : "N/A"}
+            Due on {dueDate ? formatDate(dueDate) : "N/A"}
           </CardDescription>
         </div>
         <Badge
@@ -156,17 +182,18 @@ export function MilestoneCard({
           {milestone.status}
         </Badge>
       </CardHeader>
-      <CardContent className="p-6 space-y-4">
+      <Separator />
+      <CardContent className="p-4 space-y-4">
         <p className="text-muted-foreground flex items-start gap-2">
           <MessageSquare className="h-4 w-4 mt-1 shrink-0" />{" "}
           <span>{milestone.description}</span>
         </p>
         <div className="font-bold text-lg text-primary">
-          ₦{milestone.amount.toFixed(2)}
+          ₦{formatNumber(milestone.amount)}
         </div>
-
+        <Separator />
         {milestone.submission?.message && (
-          <div className="p-4 bg-muted rounded-lg text-sm">
+          <div className=" bg-muted rounded-lg text-sm ">
             <p className="font-semibold mb-2">Seller's Submission:</p>
             <p className="text-muted-foreground">
               {milestone.submission.message}

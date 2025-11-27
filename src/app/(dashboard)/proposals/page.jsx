@@ -25,6 +25,13 @@ import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
+const formatNumber = (num) => {
+  return new Intl.NumberFormat("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
+};
+
 export default function ProposalsPage() {
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +99,7 @@ export default function ProposalsPage() {
   }
 
   return (
-    <Card className="my-0 mx-auto w-full max-w-[100vw]">
+    <Card className="my-0 mx-auto font-headline bg-white w-full max-w-[100vw]">
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
@@ -155,7 +162,7 @@ export default function ProposalsPage() {
                       {getRoleForProposal(proposal)}
                     </TableCell>
                     <TableCell className="text-right">
-                      ₦{(proposal.totalAmount + proposal.escrowFee).toFixed(2)}
+                      ₦{formatNumber(proposal.totalAmount + proposal.escrowFee)}
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant={getStatusVariant(proposal.status)}>

@@ -36,6 +36,13 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
+const formatNumber = (num) => {
+  return new Intl.NumberFormat("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
+};
+
 export default function ProposalDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -300,7 +307,7 @@ export default function ProposalDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="my-0">
+      <Card className="my-0 bg-white">
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -342,7 +349,7 @@ export default function ProposalDetailPage() {
       </Card>
 
       {proposal.files && proposal.files.length > 0 && (
-        <Card className="my-0">
+        <Card className="my-0 bg-white">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
@@ -410,9 +417,9 @@ export default function ProposalDetailPage() {
 
       <div>
         <h3 className="text-xl font-semibold mb-4 font-headline">Milestones</h3>
-        <div className="space-y-4">
+        <div className="space-y-4 ">
           {proposal.milestones.map((milestone, index) => (
-            <Card key={index} className="my-0">
+            <Card key={index} className="my-0 bg-white">
               <CardHeader>
                 <CardTitle className="text-xl">{milestone.title}</CardTitle>
               </CardHeader>
@@ -423,9 +430,8 @@ export default function ProposalDetailPage() {
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-primary" />
                     <strong>Amount:</strong>
-                    <span>₦{milestone.amount.toFixed(2)}</span>
+                    <span>₦{formatNumber(milestone.amount)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-primary" />
@@ -443,15 +449,17 @@ export default function ProposalDetailPage() {
         </div>
       </div>
 
-      <Card className="my-0">
+      <Card className="my-0 bg-white">
         <CardHeader>
-          <CardTitle className="font-headline text-xl">Summary</CardTitle>
+          <CardTitle className="font-headline font-bold text-xl">
+            Summary
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Total Amount</span>
             <span className="font-medium">
-              ₦{proposal.totalAmount.toFixed(2)}
+              ₦{formatNumber(proposal.totalAmount)}
             </span>
           </div>
           <div className="flex justify-between">
@@ -460,7 +468,7 @@ export default function ProposalDetailPage() {
               {((proposal.escrowFee / proposal.totalAmount) * 100).toFixed(0)}%)
             </span>
             <span className="font-medium">
-              ₦{proposal.escrowFee.toFixed(2)}
+              ₦{formatNumber(proposal.escrowFee)}
             </span>
           </div>
           <div className="flex justify-between text-sm">
@@ -468,7 +476,7 @@ export default function ProposalDetailPage() {
               • Buyer pays ({proposal.escrowFeePayer}%)
             </span>
             <span className="font-medium">
-              ₦{buyerEscrowFeePortion.toFixed(2)}
+              ₦{formatNumber(buyerEscrowFeePortion)}
             </span>
           </div>
           <div className="flex justify-between text-sm">
@@ -476,12 +484,12 @@ export default function ProposalDetailPage() {
               • Seller pays ({100 - proposal.escrowFeePayer}%)
             </span>
             <span className="font-medium">
-              ₦{sellerEscrowFeePortion.toFixed(2)}
+              ₦{formatNumber(sellerEscrowFeePortion)}
             </span>
           </div>
           <div className="flex justify-between font-bold text-lg">
             <span>Total Project Value</span>
-            <span>₦{proposal.totalAmount.toFixed(2)}</span>
+            <span>₦{formatNumber(proposal.totalAmount)}</span>
           </div>
         </CardContent>
         {(showSellerActionButtons || showBuyerAcceptAndFundButton) && (

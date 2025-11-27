@@ -153,6 +153,7 @@ export default function KycPage() {
         toast({
           title: "KYC Verified ✅",
           description: "Your identity has been verified successfully!",
+          className: "bg-white border border-primary-blue",
         });
 
         // Redirect to wallet
@@ -239,8 +240,8 @@ export default function KycPage() {
 
   if (status === "approved") {
     return (
-      <div className="space-y-6 max-w-2xl mx-auto">
-        <Card>
+      <div className="space-y-6 max-w-2xl mx-auto font-headline">
+        <Card className="bg-white">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>KYC Verification</CardTitle>
@@ -274,8 +275,8 @@ export default function KycPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      <Card>
+    <div className="space-y-6 max-w-2xl mx-auto font-headline">
+      <Card className="bg-white">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Complete KYC Verification</CardTitle>
@@ -398,7 +399,7 @@ export default function KycPage() {
                 <SelectTrigger>
                   <SelectValue placeholder="Select gender" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   <SelectItem value="M">Male</SelectItem>
                   <SelectItem value="F">Female</SelectItem>
                 </SelectContent>
@@ -412,7 +413,7 @@ export default function KycPage() {
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full mt-6"
               disabled={submitting}
               size="lg"
             >
@@ -430,7 +431,7 @@ export default function KycPage() {
       </Card>
 
       {/* Information Card */}
-      <Card>
+      <Card className="bg-white">
         <CardHeader>
           <CardTitle className="text-lg">
             Why do we need this information?

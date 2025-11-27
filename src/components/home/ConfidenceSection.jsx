@@ -94,7 +94,7 @@ export default function ConfidenceSection() {
 
         {/* Paragraph */}
         <p
-          className={`text-primary-blue max-w-3xl mx-auto mb-6 font-body ${
+          className={`text-primary-blue max-w-3xl mx-auto mb-6 ${
             mounted ? "animate-fadeInUp" : "opacity-0"
           }`}
           style={{ animationDelay: "0.2s" }}
@@ -109,12 +109,12 @@ export default function ConfidenceSection() {
         <Button
           size="lg"
           asChild
-          className={`bg-orange-500 hover:bg-highlight-blue text-white transition-transform duration-300 hover:scale-105 hover:shadow-lg ${
+          className={`bg-orange-500 hover:bg-highlight-blue text-white px-5 py-2.5 text-lg rounded-md transition-transform duration-300 hover:scale-105 shadow-lg flex items-center gap-2 ${
             mounted ? "animate-fadeInUp" : "opacity-0"
           }`}
           style={{ animationDelay: "0.4s" }}
         >
-          <a href="/signup">Get Started</a>
+          <a href="/dashboard">Get Started</a>
         </Button>
 
         {/* Cards */}
@@ -144,7 +144,7 @@ export default function ConfidenceSection() {
               style={{ animationDelay: `${0.3 + idx * 0.2}s` }}
             >
               <p className="text-primary font-semibold mb-2">{card.title}</p>
-              <p className="text-muted-foreground font-body">{card.text}</p>
+              <p className="text-muted-foreground ">{card.text}</p>
             </div>
           ))}
         </div>

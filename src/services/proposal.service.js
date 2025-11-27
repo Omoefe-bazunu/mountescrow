@@ -1,4 +1,4 @@
-// services/proposal.service.js
+// services/proposal.service.js - REVERT TO PROXY VERSION
 
 // Helper to get CSRF token from cookies
 function getCsrfToken() {
@@ -7,7 +7,7 @@ function getCsrfToken() {
   return csrfCookie ? csrfCookie.split("=")[1] : null;
 }
 
-// Helper for API calls with credentials (using Next.js API routes)
+// Helper for API calls (using Next.js API routes as proxy)
 async function apiCall(endpoint, options = {}) {
   const csrfToken = getCsrfToken();
 
@@ -20,7 +20,7 @@ async function apiCall(endpoint, options = {}) {
     headers["x-csrf-token"] = csrfToken;
   }
 
-  // Only add Content-Type if not FormData (browser sets it automatically for FormData)
+  // Only add Content-Type if not FormData
   if (!(options.body instanceof FormData) && options.body) {
     headers["Content-Type"] = "application/json";
   }
@@ -29,7 +29,7 @@ async function apiCall(endpoint, options = {}) {
   const response = await fetch(endpoint, {
     ...options,
     headers,
-    credentials: "include", // Important for cookies
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -42,9 +42,6 @@ async function apiCall(endpoint, options = {}) {
   return response.json();
 }
 
-/**
- * Create a new proposal
- */
 export async function createProposal(data) {
   const {
     projectTitle,
@@ -58,7 +55,6 @@ export async function createProposal(data) {
     files,
   } = data;
 
-  // Create FormData for file upload
   const formData = new FormData();
   formData.append("projectTitle", projectTitle);
   formData.append("description", description);
@@ -69,7 +65,6 @@ export async function createProposal(data) {
   formData.append("escrowFee", escrowFee.toString());
   formData.append("escrowFeePayer", escrowFeePayer.toString());
 
-  // Append files
   if (files && files.length > 0) {
     files.forEach((file) => {
       formData.append("files", file);
@@ -89,9 +84,6 @@ export async function createProposal(data) {
   };
 }
 
-/**
- * Get all proposals for the current user
- */
 export async function getProposals() {
   const result = await apiCall("/api/proposals", {
     method: "GET",
@@ -100,9 +92,6 @@ export async function getProposals() {
   return result.proposals || [];
 }
 
-/**
- * Get a single proposal by ID
- */
 export async function getProposalById(id) {
   try {
     const result = await apiCall(`/api/proposals/${id}`, {
@@ -116,9 +105,6 @@ export async function getProposalById(id) {
   }
 }
 
-/**
- * Update proposal status
- */
 export async function updateProposalStatus(
   proposalId,
   status,
@@ -136,10 +122,6 @@ export async function updateProposalStatus(
   };
 }
 
-/*
- Accept and fund a seller-initiated proposal
- */
-
 export async function acceptAndFundSellerInitiatedProposal(
   proposalId,
   buyerId
@@ -149,6 +131,5 @@ export async function acceptAndFundSellerInitiatedProposal(
     body: JSON.stringify({ buyerId }),
   });
 
-  // Return the full result including dealId, deductedAmount, newBalance
   return result;
 }

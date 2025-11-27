@@ -40,6 +40,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const formatNumber = (num) => {
+  return new Intl.NumberFormat("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
+};
+
 const milestoneSchema = z.object({
   title: z.string().min(1, "Title is required"),
   amount: z.coerce.number().min(0.01, "Amount must be greater than 0"),
@@ -61,12 +68,12 @@ const formSchema = z.object({
 });
 
 function getEscrowFeePercentage(amount) {
-  if (amount <= 1_000_000) return 0.1;
-  if (amount <= 5_000_000) return 0.05;
-  if (amount <= 50_000_000) return 0.04;
-  if (amount <= 200_000_000) return 0.03;
-  if (amount <= 1_000_000_000) return 0.02;
-  return 0.01;
+  if (amount <= 1_000_000) return 0.1; // 10% total (5% buyer + 5% seller)
+  if (amount <= 5_000_000) return 0.05; // 5% total (2.5% + 2.5%)
+  if (amount <= 50_000_000) return 0.04; // 4% total (2% + 2%)
+  if (amount <= 200_000_000) return 0.03; // 3% total (1.5% + 1.5%)
+  if (amount <= 1_000_000_000) return 0.02; // 2% total (1% + 1%)
+  return 0.01; // 1% total (0.5% + 0.5%)
 }
 
 export function CreateProposalForm() {
@@ -190,6 +197,7 @@ export function CreateProposalForm() {
       toast({
         title: "Proposal Sent!",
         description: "Your proposal has been created successfully.",
+        className: "bg-white border-pimary-blue",
       });
 
       form.reset();
@@ -204,6 +212,7 @@ export function CreateProposalForm() {
       toast({
         variant: "destructive",
         title: "Error",
+        className: "bg-white border-pimary-blue",
         description: errorMessage,
       });
     } finally {
@@ -223,7 +232,10 @@ export function CreateProposalForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-8 font-headline"
+      >
         <div className="space-y-4">
           <FormField
             control={form.control}
@@ -474,7 +486,7 @@ export function CreateProposalForm() {
                               </Button>
                             </FormControl>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
+                          <PopoverContent className="w-auto bg-white border-primary-blue p-0">
                             <Calendar
                               mode="single"
                               selected={field.value}
@@ -519,26 +531,26 @@ export function CreateProposalForm() {
           <CardContent className="space-y-4">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>₦{totalAmount.toFixed(2)}</span>
+              <span>₦{formatNumber(totalAmount)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">
                 Escrow Fee - Total (
                 {(getEscrowFeePercentage(totalAmount) * 100).toFixed(1)}%)
               </span>
-              <span>₦{escrowFee.toFixed(2)}</span>
+              <span>₦{formatNumber(escrowFee)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground ml-4">• Buyer pays</span>
-              <span>₦{buyerEscrowFeePortion.toFixed(2)}</span>
+              <span>₦{formatNumber(buyerEscrowFeePortion)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground ml-4">• Seller pays</span>
-              <span>₦{sellerEscrowFeePortion.toFixed(2)}</span>
+              <span>₦{formatNumber(sellerEscrowFeePortion)}</span>
             </div>
             <div className="flex justify-between pt-2 border-t font-medium">
               <span>Project Value</span>
-              <span>₦{totalAmount.toFixed(2)}</span>
+              <span>₦{formatNumber(totalAmount)}</span>
             </div>
           </CardContent>
         </Card>

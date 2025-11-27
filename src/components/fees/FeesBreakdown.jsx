@@ -74,7 +74,7 @@ export default function FeesBreakdown() {
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
     >
-      <div className="container max-w-screen-xl mx-auto px-4 md:px-8 py-16 font-body">
+      <div className="container max-w-screen-xl mx-auto px-4 md:px-8 py-16 font-headline">
         <motion.div
           className="mt-6"
           initial="hidden"

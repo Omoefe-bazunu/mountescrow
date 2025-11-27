@@ -80,6 +80,7 @@ export function SignUpForm() {
       toast({
         title: "Account created!",
         description: "Check your email for the verification code.",
+        className: "font-headline",
       });
 
       router.push("/verify-account");
