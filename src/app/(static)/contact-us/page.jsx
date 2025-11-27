@@ -7,8 +7,68 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mail, MapPin, Phone } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ContactUsPage() {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    message: "",
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send message");
+      }
+
+      toast({
+        title: "Message Sent!",
+        description: "We'll get back to you soon.",
+      });
+
+      // Reset form
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        message: "",
+      });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: err.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-muted/40 flex items-center justify-center p-4">
       <motion.div
@@ -86,6 +146,7 @@ export default function ContactUsPage() {
           className="p-6 md:p-8 flex-1 w-full md:w-1/2"
         >
           <motion.form
+            onSubmit={handleSubmit}
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2 }}
@@ -99,6 +160,9 @@ export default function ContactUsPage() {
                 type="text"
                 placeholder="E.g. Omoofe Bazunu"
                 className="bg-muted"
+                value={formData.name}
+                onChange={handleChange}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -108,6 +172,9 @@ export default function ContactUsPage() {
                 type="email"
                 placeholder="E.g. raniem57@gmail.com"
                 className="bg-muted"
+                value={formData.email}
+                onChange={handleChange}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -117,6 +184,9 @@ export default function ContactUsPage() {
                 type="tel"
                 placeholder="E.g. +2349043970401"
                 className="bg-muted"
+                value={formData.phone}
+                onChange={handleChange}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -125,14 +195,18 @@ export default function ContactUsPage() {
                 id="message"
                 placeholder="Write your message here"
                 className="bg-muted min-h-[100px]"
+                value={formData.message}
+                onChange={handleChange}
+                required
               />
             </div>
             <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
               <Button
                 type="submit"
+                disabled={loading}
                 className="w-full bg-orange-500 hover:bg-highlight-blue text-white"
               >
-                Send Message
+                {loading ? "Sending..." : "Send Message"}
               </Button>
             </motion.div>
           </motion.form>

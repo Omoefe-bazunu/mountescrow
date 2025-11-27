@@ -14,11 +14,29 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
-import { AlertTriangle, Wallet, Loader2 } from "lucide-react";
+import { AlertTriangle, Wallet, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { MilestoneCard } from "./_components/milestone-card";
 import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const formatNumber = (num) => {
   return new Intl.NumberFormat("en-NG", {
@@ -38,6 +56,14 @@ export default function DealDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
+  const [hasOpenDispute, setHasOpenDispute] = useState(false);
+
+  // Dispute modal
+  const [open, setOpen] = useState(false);
+  const [milestoneIndex, setMilestoneIndex] = useState("");
+  const [reason, setReason] = useState("");
+  const [files, setFiles] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchDeal = async () => {
     if (!id) return;
@@ -49,22 +75,28 @@ export default function DealDetailPage() {
         const err = await res.json();
         throw new Error(err.error || "Failed to fetch deal");
       }
-      const data = await res.json();
-      setDeal(data.deal);
+      const { deal } = await res.json();
+      setDeal(deal);
+
+      // Check for open dispute
+      const checkRes = await fetch(`/api/disputes/check?dealId=${id}`, {
+        credentials: "include",
+      });
+      if (checkRes.ok) {
+        const { hasOpenDispute } = await checkRes.json();
+        setHasOpenDispute(hasOpenDispute);
+      }
     } catch (err) {
-      console.error("Error fetching deal:", err);
-      setError("Deal not found or you don't have permission to view it.");
+      console.error(err);
+      setError("Deal not found or you don't have permission.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (user) {
-      fetchDeal();
-    } else if (!authLoading && !user) {
-      router.push("/login");
-    }
+    if (user) fetchDeal();
+    else if (!authLoading && !user) router.push("/login");
   }, [id, user, authLoading, router]);
 
   const handleFundDeal = async () => {
@@ -75,89 +107,95 @@ export default function DealDetailPage() {
         method: "POST",
         credentials: "include",
       });
-
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Funding failed");
       }
-
       toast({
         title: "Deal Funded Successfully!",
-        description: "Funds have been deducted and the seller notified.",
+        description: "Funds deducted and seller notified.",
       });
-
-      await fetchDeal(); // Refresh deal
-    } catch (error) {
+      fetchDeal();
+    } catch (e) {
       toast({
         variant: "destructive",
         title: "Funding Failed",
-        description: error.message || "Could not fund the deal.",
+        description: e.message,
       });
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const onMilestoneUpdate = () => {
-    fetchDeal(); // Refresh on milestone changes
-  };
+  const handleRaiseDispute = async () => {
+    if (!milestoneIndex || !reason.trim()) {
+      toast({ variant: "destructive", title: "Required fields missing" });
+      return;
+    }
 
-  // const toDate = (ts) => (ts?.seconds ? new Date(ts.seconds * 1000) : null);
+    setSubmitting(true);
+    const form = new FormData();
+    form.append("dealId", deal.id);
+    form.append("projectTitle", deal.projectTitle);
+    form.append("milestoneIndex", milestoneIndex);
+    form.append("reason", reason);
 
-  const formatDate = (timestamp) => {
-    if (!timestamp) return "N/A";
+    files.forEach((f) => form.append("files", f));
 
     try {
-      // Handle ISO string (from backend)
-      if (typeof timestamp === "string") {
-        const date = new Date(timestamp);
-        if (!isNaN(date.getTime())) {
-          return format(date, "PPP");
-        }
-      }
+      const res = await fetch("/api/disputes", {
+        method: "POST",
+        credentials: "include",
+        body: form,
+      });
 
-      // Handle Firestore Timestamp objects with toDate() method
-      if (timestamp.toDate && typeof timestamp.toDate === "function") {
-        return format(timestamp.toDate(), "PPP");
-      }
+      if (!res.ok) throw new Error((await res.json()).error || "Failed");
 
-      // Handle objects with 'seconds' property (Firestore Timestamp serialized)
-      if (timestamp.seconds !== undefined) {
-        const date = new Date(timestamp.seconds * 1000);
-        return format(date, "PPP");
-      }
-
-      // Handle objects with '_seconds' property
-      if (timestamp._seconds !== undefined) {
-        const date = new Date(timestamp._seconds * 1000);
-        return format(date, "PPP");
-      }
-
-      // Handle regular Date objects
-      const date = new Date(timestamp);
-      if (!isNaN(date.getTime())) {
-        return format(date, "PPP");
-      }
-
-      return "N/A";
-    } catch (error) {
-      console.error("Date formatting error:", error);
-      return "N/A";
+      toast({
+        title: "Dispute raised",
+        description: "Other party & admin notified.",
+      });
+      setOpen(false);
+      setHasOpenDispute(true);
+      setReason("");
+      setFiles([]);
+      setMilestoneIndex("");
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Failed",
+        description: e.message,
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const completedMilestones =
+  const onMilestoneUpdate = () => fetchDeal();
+
+  const formatDate = (ts) => {
+    if (!ts) return "N/A";
+    let date;
+    if (typeof ts === "string") date = new Date(ts);
+    else if (ts.toDate) date = ts.toDate();
+    else if (ts.seconds) date = new Date(ts.seconds * 1000);
+    else date = new Date(ts);
+    return isNaN(date) ? "N/A" : format(date, "PPP");
+  };
+
+  const completed =
     deal?.milestones.filter((m) => m.status === "Completed").length || 0;
-  const totalMilestones = deal?.milestones.length || 0;
-  const progressPercentage =
-    totalMilestones > 0 ? (completedMilestones / totalMilestones) * 100 : 0;
+  const total = deal?.milestones.length || 0;
+  const progress = total ? (completed / total) * 100 : 0;
 
   const isBuyer =
     user && (user.uid === deal?.buyerId || user.email === deal?.buyerEmail);
   const isSeller = user?.email === deal?.sellerEmail;
+  const canRaiseDispute =
+    (isBuyer || isSeller) && deal?.status !== "Completed" && !hasOpenDispute;
 
-  const getStatusVariant = (status) => {
-    switch (status) {
+  const getStatusVariant = (s) => {
+    switch (s) {
       case "Awaiting Funding":
         return "secondary";
       case "In Progress":
@@ -199,7 +237,8 @@ export default function DealDetailPage() {
   if (!deal) return null;
 
   return (
-    <div className="space-y-4 font-headline">
+    <div className="space-y-6 font-headline">
+      {/* Deal Header */}
       <Card className="my-0 bg-white">
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -208,10 +247,7 @@ export default function DealDetailPage() {
                 {deal.projectTitle}
               </CardTitle>
               <CardDescription className="mt-2">
-                Created on{" "}
-                {formatDate(deal.createdAt)
-                  ? formatDate(deal.createdAt)
-                  : "N/A"}
+                Created on {formatDate(deal.createdAt)}
               </CardDescription>
             </div>
             <Badge
@@ -228,10 +264,10 @@ export default function DealDetailPage() {
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">Progress</span>
               <span className="text-sm font-medium">
-                {completedMilestones} / {totalMilestones} Completed
+                {completed} / {total} Completed
               </span>
             </div>
-            <Progress value={progressPercentage} className="w-full" />
+            <Progress value={progress} className="w-full" />
           </div>
         </CardContent>
 
@@ -258,23 +294,40 @@ export default function DealDetailPage() {
         )}
       </Card>
 
-      <div>
-        <div className="space-y-4">
-          {deal.milestones.map((milestone, index) => (
-            <MilestoneCard
-              key={index}
-              milestone={milestone}
-              dealId={deal.id}
-              milestoneIndex={index}
-              isBuyer={isBuyer}
-              isSeller={isSeller}
-              dealStatus={deal.status}
-              onUpdate={onMilestoneUpdate}
-            />
-          ))}
-        </div>
+      {/* Milestones */}
+      <div className="space-y-4">
+        {deal.milestones.map((milestone, i) => (
+          <MilestoneCard
+            key={i}
+            milestone={milestone}
+            dealId={deal.id}
+            milestoneIndex={i}
+            isBuyer={isBuyer}
+            isSeller={isSeller}
+            dealStatus={deal.status}
+            onUpdate={onMilestoneUpdate}
+          />
+        ))}
       </div>
 
+      {/* Raise Dispute Button */}
+      {canRaiseDispute && (
+        <Card>
+          <CardContent className="pt-6">
+            <Button
+              variant="destructive"
+              size="lg"
+              className="w-full"
+              onClick={() => setOpen(true)}
+            >
+              <AlertCircle className="mr-2 h-5 w-5" />
+              Raise a Dispute
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Summary */}
       <Card className="my-0 bg-white">
         <CardHeader>
           <CardTitle className="font-headline font-bold text-xl">
@@ -322,6 +375,75 @@ export default function DealDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dispute Modal */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Raise Dispute</DialogTitle>
+            <DialogDescription>
+              Report an issue with <strong>{deal.projectTitle}</strong>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <strong>Buyer:</strong> {deal.buyerEmail}
+              </div>
+              <div>
+                <strong>Seller:</strong> {deal.sellerEmail}
+              </div>
+            </div>
+
+            <div>
+              <Label>Disputed Milestone</Label>
+              <Select value={milestoneIndex} onValueChange={setMilestoneIndex}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select milestone" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  {deal.milestones.map((m, i) => (
+                    <SelectItem key={i} value={String(i)}>
+                      Milestone {i + 1}: {m.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Description of the issue</Label>
+              <Textarea
+                placeholder="Explain what went wrong..."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                rows={6}
+              />
+            </div>
+
+            <div>
+              <Label>Attach proof (optional)</Label>
+              <Input
+                type="file"
+                multiple
+                accept="image/*,.pdf"
+                onChange={(e) => setFiles(Array.from(e.target.files || []))}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRaiseDispute} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Submit Dispute
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
