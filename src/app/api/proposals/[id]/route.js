@@ -1,4 +1,4 @@
-// app/api/proposals/[id]/route.js
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";

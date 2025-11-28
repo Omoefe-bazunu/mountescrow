@@ -19,7 +19,7 @@ export function Footer() {
                 className="object-contain w-44 md:w-[312px] h-auto"
               />
             </Link>
-            <p className="text-sm text-primary-foreground/80 text-left font-body">
+            <p className="text-sm text-primary-foreground/80 text-left font-headline">
               We are an independent escrow service provider working with
               licensed payment processors to ensure both buyers and sellers are
               happy with their transactions.
@@ -63,25 +63,25 @@ export function Footer() {
             <p className="font-headline text-2xl">USEFUL LINKS</p>
             <Link
               href="/why-mountescrow"
-              className="block text-sm hover:underline text-primary-foreground/80 font-body"
+              className="block text-sm hover:underline text-primary-foreground/80 font-headline"
             >
               Why Mountescrow?
             </Link>
             <Link
               href="/how-it-works"
-              className="block text-sm hover:underline text-primary-foreground/80 font-body"
+              className="block text-sm hover:underline text-primary-foreground/80 font-headline"
             >
               How It Works
             </Link>
             <Link
               href="/products"
-              className="block text-sm hover:underline text-primary-foreground/80 font-body"
+              className="block text-sm hover:underline text-primary-foreground/80 font-headline"
             >
               Products
             </Link>
             <Link
               href="/policies"
-              className="block text-sm hover:underline text-primary-foreground/80 font-body"
+              className="block text-sm hover:underline text-primary-foreground/80 font-headline"
             >
               Policies
             </Link>
@@ -90,7 +90,7 @@ export function Footer() {
           {/* Column 3 - Contact + CTA */}
           <div className="flex flex-col justify-start items-start space-y-4">
             <p className="font-headline text-2xl">CONTACT US</p>
-            <p className="text-sm text-primary-foreground/80 font-body">
+            <p className="text-sm text-primary-foreground/80 font-headline">
               Got enquiries or want to make a suggestion? We are open and happy
               to hear from you.
             </p>
