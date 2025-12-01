@@ -113,6 +113,7 @@ export default function DealDetailPage() {
       }
       toast({
         title: "Deal Funded Successfully!",
+        className: "bg-white",
         description: "Funds deducted and seller notified.",
       });
       fetchDeal();
@@ -120,11 +121,21 @@ export default function DealDetailPage() {
       toast({
         variant: "destructive",
         title: "Funding Failed",
+        className: "bg-white",
         description: e.message,
       });
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const getEscrowFeePercentage = (amount) => {
+    if (amount <= 1_000_000) return 0.1;
+    if (amount <= 5_000_000) return 0.05;
+    if (amount <= 50_000_000) return 0.04;
+    if (amount <= 200_000_000) return 0.03;
+    if (amount <= 1_000_000_000) return 0.02;
+    return 0.01;
   };
 
   const handleRaiseDispute = async () => {
@@ -164,6 +175,7 @@ export default function DealDetailPage() {
       toast({
         variant: "destructive",
         title: "Failed",
+        className: "bg-white",
         description: e.message,
       });
     } finally {
@@ -284,10 +296,9 @@ export default function DealDetailPage() {
                 <Wallet className="mr-2 h-4 w-4" />
               )}
               Fund Deal Now (₦
-              {(
-                deal.totalAmount +
-                deal.escrowFee * (deal.escrowFeePayer / 100)
-              ).toFixed(2)}
+              {formatNumber(
+                deal.totalAmount + deal.escrowFee * (deal.escrowFeePayer / 100)
+              )}
               )
             </Button>
           </CardFooter>
@@ -341,10 +352,16 @@ export default function DealDetailPage() {
               ₦{formatNumber(deal.totalAmount)}
             </span>
           </div>
+
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Escrow Fee (Total)</span>
+            <span className="text-muted-foreground">
+              Escrow Fee (
+              {(getEscrowFeePercentage(deal.totalAmount) * 100).toFixed(1)}% +
+              7.5% VAT)
+            </span>
             <span className="font-medium">₦{formatNumber(deal.escrowFee)}</span>
           </div>
+
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground ml-4">
               • Buyer pays ({deal.escrowFeePayer}%)
@@ -353,6 +370,7 @@ export default function DealDetailPage() {
               ₦{formatNumber(deal.escrowFee * (deal.escrowFeePayer / 100))}
             </span>
           </div>
+
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground ml-4">
               • Seller pays ({100 - deal.escrowFeePayer}%)
@@ -364,6 +382,7 @@ export default function DealDetailPage() {
               )}
             </span>
           </div>
+
           <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
             <span>Buyer Funds</span>
             <span>

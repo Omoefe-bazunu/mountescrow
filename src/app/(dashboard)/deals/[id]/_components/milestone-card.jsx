@@ -125,6 +125,7 @@ export function MilestoneCard({
       toast({
         variant: "destructive",
         title: "Error",
+        className: "bg-white",
         description: error.message || "Could not approve milestone.",
       });
     } finally {
@@ -145,6 +146,7 @@ export function MilestoneCard({
       console.error(error);
       toast({
         variant: "destructive",
+        className: "bg-white",
         title: "Error",
         description: error.message || "Could not request revision.",
       });

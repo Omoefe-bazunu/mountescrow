@@ -56,6 +56,7 @@ export function RequestRevisionDialog({
       await requestMilestoneRevision(dealId, milestoneIndex, values.message);
       toast({
         title: "Revision Requested",
+        className: "bg-white",
         description: "The seller has been notified to revise their work.",
       });
       onSuccess();
@@ -64,6 +65,7 @@ export function RequestRevisionDialog({
       console.error("Error requesting revision:", error);
       toast({
         variant: "destructive",
+        className: "bg-white",
         title: "Error",
         description: "Failed to request revision.",
       });
