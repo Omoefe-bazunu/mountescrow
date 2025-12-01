@@ -202,6 +202,15 @@ export default function ProposalDetailPage() {
     }
   };
 
+  const getEscrowFeePercentage = (amount) => {
+    if (amount <= 1_000_000) return 0.1;
+    if (amount <= 5_000_000) return 0.05;
+    if (amount <= 50_000_000) return 0.04;
+    if (amount <= 200_000_000) return 0.03;
+    if (amount <= 1_000_000_000) return 0.02;
+    return 0.01;
+  };
+
   const getFileIcon = (fileName) => {
     const extension = fileName.split(".").pop()?.toLowerCase();
     if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension || "")) {
@@ -462,32 +471,41 @@ export default function ProposalDetailPage() {
               ₦{formatNumber(proposal.totalAmount)}
             </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">
-              Escrow Fee (
-              {((proposal.escrowFee / proposal.totalAmount) * 100).toFixed(0)}%)
-            </span>
-            <span className="font-medium">
-              ₦{formatNumber(proposal.escrowFee)}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground ml-4">
-              • Buyer pays ({proposal.escrowFeePayer}%)
-            </span>
-            <span className="font-medium">
-              ₦{formatNumber(buyerEscrowFeePortion)}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground ml-4">
-              • Seller pays ({100 - proposal.escrowFeePayer}%)
-            </span>
-            <span className="font-medium">
-              ₦{formatNumber(sellerEscrowFeePortion)}
-            </span>
-          </div>
-          <div className="flex justify-between font-bold text-lg">
+
+          {proposal.escrowFee && (
+            <>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">
+                  Escrow Fee (
+                  {(getEscrowFeePercentage(proposal.totalAmount) * 100).toFixed(
+                    1
+                  )}
+                  % + 7.5% VAT)
+                </span>
+                <span className="font-medium">
+                  ₦{formatNumber(proposal.escrowFee)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground ml-4">
+                  • Buyer pays ({proposal.escrowFeePayer}%)
+                </span>
+                <span className="font-medium">
+                  ₦{formatNumber(buyerEscrowFeePortion)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground ml-4">
+                  • Seller pays ({100 - proposal.escrowFeePayer}%)
+                </span>
+                <span className="font-medium">
+                  ₦{formatNumber(sellerEscrowFeePortion)}
+                </span>
+              </div>
+            </>
+          )}
+
+          <div className="flex justify-between font-bold text-lg pt-4 border-t">
             <span>Total Project Value</span>
             <span>₦{formatNumber(proposal.totalAmount)}</span>
           </div>
