@@ -153,7 +153,9 @@ export function LandingHeader() {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <SheetHeader>
-                <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
+                <SheetTitle className="sr-only font-headline">
+                  Mobile Menu
+                </SheetTitle>
               </SheetHeader>
               <nav className="flex flex-col gap-4 mt-8">
                 <NavLinks isMobile />

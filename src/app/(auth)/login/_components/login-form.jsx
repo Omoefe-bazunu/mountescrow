@@ -64,7 +64,7 @@ export function LoginForm() {
       toast({
         title: "Logged in successfully",
         description: "Welcome back! Redirecting you to the dashboard.",
-        className: "font-headline",
+        className: "font-headline bg-white",
       });
 
       router.push("/dashboard");
@@ -72,6 +72,7 @@ export function LoginForm() {
       toast({
         variant: "destructive",
         title: "Login Failed",
+        className: "bg-white",
         description:
           error.message === "Email not verified"
             ? "Please verify your email before logging in."
@@ -110,7 +111,7 @@ export function LoginForm() {
               <div className="flex items-center justify-between">
                 <FormLabel>Password</FormLabel>
                 <Link
-                  href="#"
+                  href="/reset-password"
                   className="text-sm font-medium text-red-500 hover:text-red-700 hover:underline"
                 >
                   Forgot password?

@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
@@ -216,11 +217,36 @@ export default function DashboardPage() {
                         ? format(toDate(tx.createdAt), "PPP")
                         : "N/A"}
                     </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {["DEPOSIT", "MILESTONE_PAYMENT"].includes(tx.type)
-                        ? "+"
-                        : "-"}
-                      ₦{tx.amount.toFixed(2)}
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1.5 font-medium">
+                        {/* Force credit = green, everything else = red – exactly like Wallet page */}
+                        {tx.type === "credit" ||
+                        tx.type === "DEPOSIT" ||
+                        tx.type === "MILESTONE_PAYMENT" ||
+                        tx.direction === "incoming" ? (
+                          <>
+                            <ArrowUp className="h-4 w-4 text-green-600" />
+                            <span className="text-green-600">
+                              +₦
+                              {Number(tx.amount || 0).toLocaleString("en-NG", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <ArrowDown className="h-4 w-4 text-red-600" />
+                            <span className="text-red-600">
+                              -₦
+                              {Number(tx.amount || 0).toLocaleString("en-NG", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

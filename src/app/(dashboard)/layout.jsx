@@ -193,8 +193,8 @@ export default function DashboardLayout({ children }) {
           </div>
         </div>
 
-        <div className="flex flex-col w-full">
-          <header className="flex h-16 bg-white items-center gap-4 border-b bg-card px-4 lg:px-6 sticky top-0 z-10">
+        <div className="flex font-headline flex-col w-full">
+          <header className="flex font-headline h-16 bg-white items-center gap-4 border-b bg-card px-4 lg:px-6 sticky top-0 z-10">
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
               <SheetTrigger asChild>
                 <Button
@@ -234,7 +234,7 @@ export default function DashboardLayout({ children }) {
                       key={item.label}
                       href={item.href}
                       className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-white transition-all hover:bg-highlight-blue",
+                        "flex font-headline items-center gap-3 rounded-lg px-3 py-2 text-white transition-all hover:bg-highlight-blue",
                         pathname === item.href && "bg-muted text-white"
                       )}
                       onClick={() => setIsSheetOpen(false)}
@@ -285,7 +285,7 @@ export default function DashboardLayout({ children }) {
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="font-headline">
                 <DropdownMenuLabel className="font-light">
                   {user?.displayName || "My Account"}
                 </DropdownMenuLabel>

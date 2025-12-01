@@ -20,20 +20,28 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-const formSchema = z.object({
-  firstName: z.string().min(2, "First name must be at least 2 characters."),
-  lastName: z.string().min(2, "Last name must be at least 2 characters."),
-  email: z.string().email("Please enter a valid email address."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
-  phone: z.string().min(10, "Please enter a valid phone number."),
-  acceptTerms: z.boolean().refine((val) => val === true, {
-    message: "You must accept the terms and conditions.",
-  }),
-});
+// Add confirmPassword that must match password
+const formSchema = z
+  .object({
+    firstName: z.string().min(2, "First name must be at least 2 characters."),
+    lastName: z.string().min(2, "Last name must be at least 2 characters."),
+    email: z.string().email("Please enter a valid email address."),
+    password: z.string().min(8, "Password must be at least 8 characters."),
+    confirmPassword: z.string(),
+    phone: z.string().min(10, "Please enter a valid phone number."),
+    acceptTerms: z.boolean().refine((val) => val === true, {
+      message: "You must accept the terms and conditions.",
+    }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 export function SignUpForm() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -44,6 +52,7 @@ export function SignUpForm() {
       lastName: "",
       email: "",
       password: "",
+      confirmPassword: "",
       phone: "",
       acceptTerms: false,
     },
@@ -65,7 +74,7 @@ export function SignUpForm() {
           firstName: values.firstName.trim(),
           lastName: values.lastName.trim(),
           email: values.email,
-          password: values.password,
+          password: values.password, // confirmPassword NOT sent
           phone: cleanPhone,
           acceptTerms: values.acceptTerms,
         }),
@@ -73,14 +82,12 @@ export function SignUpForm() {
 
       const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.error || "Signup failed");
-      }
+      if (!res.ok) throw new Error(data.error || "Signup failed");
 
       toast({
         title: "Account created!",
         description: "Check your email for the verification code.",
-        className: "font-headline",
+        className: "font-headline bg-white",
       });
 
       router.push("/verify-account");
@@ -88,6 +95,7 @@ export function SignUpForm() {
       toast({
         variant: "destructive",
         title: "Signup Failed",
+        className: "bg-white",
         description: error.message || "Please try again.",
       });
     } finally {
@@ -98,6 +106,7 @@ export function SignUpForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {/* Existing fields unchanged */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -161,6 +170,38 @@ export function SignUpForm() {
                   className="absolute inset-y-0 right-0 flex items-center pr-3"
                 >
                   {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Confirm Password field */}
+        <FormField
+          control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm Password</FormLabel>
+              <div className="relative">
+                <FormControl>
+                  <Input
+                    type={showConfirm ? "text" : "password"}
+                    placeholder="••••••••"
+                    {...field}
+                  />
+                </FormControl>
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3"
+                >
+                  {showConfirm ? (
                     <EyeOff className="h-5 w-5" />
                   ) : (
                     <Eye className="h-5 w-5" />

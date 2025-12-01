@@ -121,22 +121,29 @@ export function CreateProposalForm() {
     name: "escrowFeePayer",
   });
 
-  const { totalAmount, escrowFee } = useMemo(() => {
-    const total = watchedMilestones.reduce((sum, m) => {
-      const amount = Number(m?.amount) || 0;
-      return sum + amount;
-    }, 0);
-    const fee = total * getEscrowFeePercentage(total);
-    return { totalAmount: total, escrowFee: fee };
+  const { totalAmount, escrowFee, escrowFeeWithVAT } = useMemo(() => {
+    const total = watchedMilestones.reduce(
+      (sum, m) => sum + (Number(m?.amount) || 0),
+      0
+    );
+    const baseFee = total * getEscrowFeePercentage(total);
+    const vat = baseFee * 0.075; // 7.5% VAT
+    const totalFee = baseFee + vat;
+
+    return {
+      totalAmount: total,
+      escrowFee: baseFee,
+      escrowFeeWithVAT: totalFee,
+    };
   }, [watchedMilestones]);
 
   const buyerEscrowFeePortion = useMemo(() => {
-    return escrowFee * (Number(watchedEscrowFeePayer) / 100);
-  }, [escrowFee, watchedEscrowFeePayer]);
+    return escrowFeeWithVAT * (Number(watchedEscrowFeePayer) / 100);
+  }, [escrowFeeWithVAT, watchedEscrowFeePayer]);
 
   const sellerEscrowFeePortion = useMemo(() => {
-    return escrowFee * (1 - Number(watchedEscrowFeePayer) / 100);
-  }, [escrowFee, watchedEscrowFeePayer]);
+    return escrowFeeWithVAT * (1 - Number(watchedEscrowFeePayer) / 100);
+  }, [escrowFeeWithVAT, watchedEscrowFeePayer]);
 
   const handleFilesChange = useCallback((files) => {
     setProjectFiles(files);
@@ -189,7 +196,7 @@ export function CreateProposalForm() {
         creatorRole: values.creatorRole,
         milestones,
         totalAmount,
-        escrowFee,
+        escrowFee: escrowFeeWithVAT,
         escrowFeePayer: Number(values.escrowFeePayer),
         files: projectFiles,
       });
@@ -535,10 +542,11 @@ export function CreateProposalForm() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">
-                Escrow Fee - Total (
+                Escrow Fee (
                 {(getEscrowFeePercentage(totalAmount) * 100).toFixed(1)}%)
+                Including 7.5% VAT
               </span>
-              <span>₦{formatNumber(escrowFee)}</span>
+              <span>₦{formatNumber(escrowFeeWithVAT)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground ml-4">• Buyer pays</span>

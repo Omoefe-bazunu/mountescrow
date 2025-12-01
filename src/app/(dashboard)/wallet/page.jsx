@@ -139,6 +139,7 @@ export default function WalletPage() {
       console.error("Failed to fetch banks:", err);
       toast({
         variant: "destructive",
+        className: "bg-white",
         title: "Error",
         description: "Failed to load banks list",
       });
@@ -175,6 +176,7 @@ export default function WalletPage() {
       toast({
         variant: "destructive",
         title: "Error",
+        className: "bg-white",
         description: "Please fill in all required fields",
       });
       return;
@@ -185,6 +187,7 @@ export default function WalletPage() {
       toast({
         variant: "destructive",
         title: "Error",
+        className: "bg-white",
         description: "Amount must be greater than 0",
       });
       return;
@@ -194,6 +197,7 @@ export default function WalletPage() {
       toast({
         variant: "destructive",
         title: "Error",
+        className: "bg-white",
         description: "Insufficient balance",
       });
       return;
@@ -212,6 +216,7 @@ export default function WalletPage() {
       if (response.ok && data.success) {
         toast({
           title: "Success",
+          className: "bg-white",
           description: data.message || "Withdrawal initiated successfully",
         });
 
@@ -235,6 +240,7 @@ export default function WalletPage() {
       toast({
         variant: "destructive",
         title: "Error",
+        className: "bg-white",
         description: error.message,
       });
     } finally {
@@ -259,7 +265,11 @@ export default function WalletPage() {
       }
     }
 
-    toast({ title: "Refreshed", description: "Wallet updated." });
+    toast({
+      title: "Refreshed",
+      className: "bg-white",
+      description: "Wallet updated.",
+    });
     setIsRefreshing(false);
   };
 
@@ -352,6 +362,7 @@ export default function WalletPage() {
 
         toast({
           title: "Virtual Account Created",
+          className: "bg-white",
           description: "Your virtual account has been successfully created.",
         });
       } else {
@@ -364,6 +375,7 @@ export default function WalletPage() {
       setCreateAccountStatus("failed");
       toast({
         variant: "destructive",
+        className: "bg-white",
         title: "Error",
         description: err.message,
       });
@@ -376,6 +388,7 @@ export default function WalletPage() {
     if (!text) {
       toast({
         variant: "destructive",
+        className: "bg-white",
         title: "Error",
         description: "No account number to copy",
       });
@@ -384,6 +397,7 @@ export default function WalletPage() {
     navigator.clipboard.writeText(text).then(() => {
       toast({
         title: "Copied!",
+        className: "bg-white",
         description: "Account number copied to clipboard.",
       });
     });
