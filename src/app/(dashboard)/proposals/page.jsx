@@ -55,7 +55,12 @@ export default function ProposalsPage() {
     setLoading(true);
     try {
       const userProposals = await getProposals();
-      setProposals(userProposals);
+      userProposals.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || a.createdAt || 0;
+        const dateB = b.createdAt?.toDate?.() || b.createdAt || 0;
+        return dateB - dateA;
+      });
+      setProposals([...userProposals]);
     } catch (error) {
       console.error("Error fetching proposals:", error);
     } finally {

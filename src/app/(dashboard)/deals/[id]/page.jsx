@@ -37,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 const formatNumber = (num) => {
   return new Intl.NumberFormat("en-NG", {
@@ -345,7 +346,7 @@ export default function DealDetailPage() {
             Summary
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-3">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Total Project Amount</span>
             <span className="font-medium">
@@ -353,38 +354,58 @@ export default function DealDetailPage() {
             </span>
           </div>
 
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">
-              Escrow Fee (
-              {(getEscrowFeePercentage(deal.totalAmount) * 100).toFixed(1)}% +
-              7.5% VAT)
-            </span>
-            <span className="font-medium">₦{formatNumber(deal.escrowFee)}</span>
+          <div className="space-y-1">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">
+                Escrow Fee (
+                {(getEscrowFeePercentage(deal.totalAmount) * 100).toFixed(1)}%)
+              </span>
+              <span className="font-medium">
+                ₦{formatNumber(deal.escrowFee / 1.075)}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">
+                VAT (7.5% of Escrow Fee)
+              </span>
+              <span>
+                ₦{formatNumber(deal.escrowFee - deal.escrowFee / 1.075)}
+              </span>
+            </div>
+            <div className="flex justify-between font-medium pt-1 border-t border-muted">
+              <span>Total Escrow Fee (incl. VAT)</span>
+              <span>₦{formatNumber(deal.escrowFee)}</span>
+            </div>
           </div>
 
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground ml-4">
-              • Buyer pays ({deal.escrowFeePayer}%)
-            </span>
-            <span className="font-medium">
-              ₦{formatNumber(deal.escrowFee * (deal.escrowFeePayer / 100))}
-            </span>
+          <Separator />
+
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground ml-4">
+                • Buyer pays ({deal.escrowFeePayer}%)
+              </span>
+              <span className="font-medium">
+                ₦{formatNumber(deal.escrowFee * (deal.escrowFeePayer / 100))}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground ml-4">
+                • Seller pays ({100 - deal.escrowFeePayer}%)
+              </span>
+              <span className="font-medium">
+                ₦
+                {formatNumber(
+                  deal.escrowFee * ((100 - deal.escrowFeePayer) / 100)
+                )}
+              </span>
+            </div>
           </div>
 
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground ml-4">
-              • Seller pays ({100 - deal.escrowFeePayer}%)
-            </span>
-            <span className="font-medium">
-              ₦
-              {formatNumber(
-                deal.escrowFee * ((100 - deal.escrowFeePayer) / 100)
-              )}
-            </span>
-          </div>
+          <Separator className="my-3" />
 
-          <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
-            <span>Buyer Funds</span>
+          <div className="flex justify-between font-bold text-lg">
+            <span>Amount Buyer Must Fund</span>
             <span>
               ₦
               {formatNumber(

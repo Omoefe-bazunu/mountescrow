@@ -28,8 +28,10 @@ import {
   Edit2,
   X,
   Check,
+  Key,
 } from "lucide-react";
 import { format } from "date-fns";
+import ChangePasswordModal from "@/components/ChangePasswordModal";
 
 export default function UserProfile() {
   const { user, loading: authLoading, refresh } = useAuth();
@@ -37,6 +39,7 @@ export default function UserProfile() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -465,6 +468,27 @@ export default function UserProfile() {
           </CardContent>
         </Card>
       )}
+      {/* Password Reset */}
+      <div className="mt-8 p-6 border bg-white rounded-lg">
+        <h3 className="text-lg font-semibold mb-4">Security</h3>
+        <Button
+          onClick={() => setShowChangePassword(true)}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
+          <Key className="h-4 w-4" />
+          Change Password
+        </Button>
+        <p className="text-sm text-gray-500 mt-2">
+          Update your password regularly to keep your account secure.
+        </p>
+      </div>
+      <div>
+        <ChangePasswordModal
+          open={showChangePassword}
+          onOpenChange={setShowChangePassword}
+        />
+      </div>
     </div>
   );
 }

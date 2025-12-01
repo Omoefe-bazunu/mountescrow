@@ -35,6 +35,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { Separator } from "@/components/ui/separator";
 
 const formatNumber = (num) => {
   return new Intl.NumberFormat("en-NG", {
@@ -464,49 +465,66 @@ export default function ProposalDetailPage() {
             Summary
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-3">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Total Amount</span>
+            <span className="text-muted-foreground">Total Project Amount</span>
             <span className="font-medium">
               ₦{formatNumber(proposal.totalAmount)}
             </span>
           </div>
 
-          {proposal.escrowFee && (
-            <>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  Escrow Fee (
-                  {(getEscrowFeePercentage(proposal.totalAmount) * 100).toFixed(
-                    1
-                  )}
-                  % + 7.5% VAT)
-                </span>
-                <span className="font-medium">
-                  ₦{formatNumber(proposal.escrowFee)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground ml-4">
-                  • Buyer pays ({proposal.escrowFeePayer}%)
-                </span>
-                <span className="font-medium">
-                  ₦{formatNumber(buyerEscrowFeePortion)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground ml-4">
-                  • Seller pays ({100 - proposal.escrowFeePayer}%)
-                </span>
-                <span className="font-medium">
-                  ₦{formatNumber(sellerEscrowFeePortion)}
-                </span>
-              </div>
-            </>
-          )}
+          <div className="space-y-1">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">
+                Escrow Fee (
+                {(getEscrowFeePercentage(proposal.totalAmount) * 100).toFixed(
+                  1
+                )}
+                %)
+              </span>
+              <span className="font-medium">
+                ₦{formatNumber(proposal.escrowFee / 1.075)}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">
+                VAT (7.5% of Escrow Fee)
+              </span>
+              <span>
+                ₦{formatNumber(proposal.escrowFee - proposal.escrowFee / 1.075)}
+              </span>
+            </div>
+            <div className="flex justify-between font-medium pt-1 border-t border-muted">
+              <span>Total Escrow Fee (incl. VAT)</span>
+              <span>₦{formatNumber(proposal.escrowFee)}</span>
+            </div>
+          </div>
 
-          <div className="flex justify-between font-bold text-lg pt-4 border-t">
-            <span>Total Project Value</span>
+          <Separator />
+
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground ml-4">
+                • Buyer pays ({proposal.escrowFeePayer}%)
+              </span>
+              <span className="font-medium">
+                ₦{formatNumber(buyerEscrowFeePortion)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground ml-4">
+                • Seller pays ({100 - proposal.escrowFeePayer}%)
+              </span>
+              <span className="font-medium">
+                ₦{formatNumber(sellerEscrowFeePortion)}
+              </span>
+            </div>
+          </div>
+
+          <Separator className="my-3" />
+
+          <div className="flex justify-between font-bold text-lg">
+            <span>Project Value (Excl. Escrow Fee)</span>
             <span>₦{formatNumber(proposal.totalAmount)}</span>
           </div>
         </CardContent>
