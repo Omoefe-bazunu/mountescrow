@@ -30,7 +30,7 @@ import { Button as UIButton } from "@/components/ui/button";
 import { SubmitWorkDialog } from "./submit-work-dialog";
 import { RequestRevisionDialog } from "./request-revision-dialog";
 import { Separator } from "@/components/ui/separator";
-import { CountdownTimer } from "@/components/Countdown-timer";
+import { CountdownTimer } from "@/components/countdown-timer";
 
 const formatNumber = (num) => {
   return new Intl.NumberFormat("en-NG", {
