@@ -1,3 +1,5 @@
+//(dashboard)/deals/[id]/submit-work-dialog/page.jsx
+
 "use client";
 
 import { useState } from "react";

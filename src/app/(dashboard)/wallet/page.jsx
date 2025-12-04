@@ -928,7 +928,7 @@ export default function WalletPage() {
               />
               {userData?.walletBalance && (
                 <p className="text-sm text-gray-500">
-                  Available: ₦
+                  Current Balance: ₦
                   {userData.walletBalance.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
@@ -982,7 +982,7 @@ export default function WalletPage() {
               )}
 
               {/* Show selected bank details */}
-              {withdrawForm.destinationBankName && (
+              {/* {withdrawForm.destinationBankName && (
                 <div className="flex items-center justify-between p-2 bg-gray-50 rounded-md text-sm">
                   <div>
                     <span className="text-gray-600">Selected: </span>
@@ -994,7 +994,7 @@ export default function WalletPage() {
                     Code: {withdrawForm.destinationBankCode}
                   </span>
                 </div>
-              )}
+              )} */}
             </div>
 
             {/* Account Number */}
