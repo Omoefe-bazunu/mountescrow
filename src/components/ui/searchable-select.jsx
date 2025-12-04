@@ -49,32 +49,27 @@ export function SearchableSelect({
     setSearchTerm("");
   };
 
-  // And update the options rendering to show more info:
-  {
-    filteredOptions.map((option) => (
-      <div
-        key={option.value}
-        className={cn(
-          "flex flex-col px-3 py-2 cursor-pointer hover:bg-gray-100 transition-colors",
-          value === option.value && "bg-blue-50"
-        )}
-        onClick={() => handleSelect(option)}
-      >
-        <div className="flex justify-between items-center">
-          <span className="font-medium">{option.label}</span>
+  <div className="py-1">
+    {filteredOptions.length === 0 ? (
+      <div className="px-3 py-2 text-gray-500 text-center">No banks found</div>
+    ) : (
+      filteredOptions.map((option) => (
+        <div
+          key={option.value}
+          className={cn(
+            "px-3 py-2 cursor-pointer hover:bg-gray-100 transition-colors flex justify-between items-center",
+            value === option.value && "bg-blue-50"
+          )}
+          onClick={() => handleSelect(option)}
+        >
+          <span>{option.label}</span>
           {value === option.value && (
             <Check className="h-4 w-4 text-blue-600" />
           )}
         </div>
-        {option.domBankCode && (
-          <span className="text-xs text-gray-500 mt-1">
-            Code: {option.domBankCode} →{" "}
-            {String(option.domBankCode).padStart(6, "0")}
-          </span>
-        )}
-      </div>
-    ));
-  }
+      ))
+    )}
+  </div>;
 
   return (
     <div className="relative" ref={dropdownRef}>

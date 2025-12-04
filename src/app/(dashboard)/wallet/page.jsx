@@ -125,43 +125,37 @@ export default function WalletPage() {
 
     loadUserData();
     fetchTransactions();
-    fetchBanks();
   }, [user, authLoading, router]);
 
-  // Add this function to fetch banks list
-  const fetchBanks = async () => {
-    setBanksLoading(true);
-    try {
-      const res = await fetch("/api/wallet/banks");
-      if (res.ok) {
+  useEffect(() => {
+    const loadBanks = async () => {
+      setBanksLoading(true);
+      try {
+        const res = await fetch("/api/banks", { credentials: "include" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        const banksList = data.data || [];
+        console.log("Banks API response:", data); // ← This must show { banks: [...] }
 
-        console.log("🏦 Banks data received:", banksList);
-
-        // Log sample banks to see their structure
-        banksList.slice(0, 5).forEach((bank) => {
-          console.log(`Bank: ${bank.bankName}`, {
-            bankCode: bank.bankCode,
-            domBankCode: bank.domBankCode,
-            type: bank.bankType,
-          });
+        if (Array.isArray(data.banks)) {
+          setBanks(data.banks);
+        } else {
+          console.error("Invalid banks format:", data);
+          setBanks([]);
+        }
+      } catch (err) {
+        console.error("Failed to load banks:", err);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not load banks",
         });
-
-        setBanks(banksList);
+      } finally {
+        setBanksLoading(false);
       }
-    } catch (err) {
-      console.error("Failed to fetch banks:", err);
-      toast({
-        variant: "destructive",
-        className: "bg-white",
-        title: "Error",
-        description: "Failed to load banks list",
-      });
-    } finally {
-      setBanksLoading(false);
-    }
-  };
+    };
+
+    loadBanks();
+  }, []);
 
   const fetchTransactions = async () => {
     if (!user) return;
@@ -225,96 +219,73 @@ export default function WalletPage() {
     return errors;
   };
 
-  // Update handleWithdraw to use validation
   const handleWithdraw = async (e) => {
     e.preventDefault();
 
-    console.clear();
-    console.log("💸 Withdrawal attempt:", withdrawForm);
+    // Get CSRF token from cookie
+    const csrfToken = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("csrf-token="))
+      ?.split("=")[1];
 
-    // Validation
-    const validationErrors = [];
-
-    // Validate amount
-    const amount = Number(withdrawForm.amount);
-    if (!amount || amount <= 0) {
-      validationErrors.push("Amount must be greater than 0");
-    }
-
-    if (amount > (userData?.walletBalance || 0)) {
-      validationErrors.push(
-        `Insufficient balance. Available: ₦${userData?.walletBalance?.toFixed(2) || "0.00"}`
-      );
-    }
-
-    // Validate account number
-    const cleanAccount = String(withdrawForm.destinationAccount).replace(
-      /\D/g,
-      ""
-    );
-    if (!/^\d{10}$/.test(cleanAccount)) {
-      validationErrors.push("Account number must be exactly 10 digits");
-    }
-
-    // Validate bank code - be more flexible with formatting
-    const cleanBankCode = String(withdrawForm.destinationBankCode).replace(
-      /\D/g,
-      ""
-    );
-    if (!cleanBankCode || cleanBankCode.length === 0) {
-      validationErrors.push("Please select a bank");
-    } else if (cleanBankCode.length !== 6) {
-      console.warn("⚠️ Bank code not 6 digits:", cleanBankCode);
-      // Don't fail here - let backend handle padding
-    }
-
-    if (validationErrors.length > 0) {
+    if (!csrfToken) {
       toast({
         variant: "destructive",
-        title: "Validation Error",
-        className: "bg-white",
-        description: validationErrors[0],
+        title: "Session Error",
+        description: "CSRF token missing. Please refresh the page.",
       });
       return;
     }
 
+    const amount = Number(withdrawForm.amount);
+    if (!amount || amount <= 0 || amount > (userData?.walletBalance || 0)) {
+      toast({
+        variant: "destructive",
+        description: "Invalid amount or insufficient balance",
+      });
+      return;
+    }
+
+    const cleanAccount = withdrawForm.destinationAccount.replace(/\D/g, "");
+    if (!/^\d{10}$/.test(cleanAccount)) {
+      toast({
+        variant: "destructive",
+        description: "Account number must be 10 digits",
+      });
+      return;
+    }
+
+    if (!withdrawForm.destinationBankCode) {
+      toast({ variant: "destructive", description: "Please select a bank" });
+      return;
+    }
+
     setWithdrawLoading(true);
-
-    // Prepare withdrawal data
-    const withdrawalData = {
-      amount: amount.toFixed(2),
-      destinationAccount: cleanAccount,
-      destinationBankCode: cleanBankCode.padStart(6, "0"), // Pad to 6 digits
-      destinationBankName: withdrawForm.destinationBankName,
-      narration:
-        withdrawForm.narration ||
-        `Withdrawal to ${withdrawForm.destinationBankName}`,
-    };
-
-    console.log("📤 Sending withdrawal request:", withdrawalData);
 
     try {
       const response = await fetch("/api/wallet/withdraw", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-csrf-token":
-            document.cookie.match(/csrf-token=([^;]+)/)?.[1] || "",
+          "x-csrf-token": csrfToken, // This is required
         },
-        body: JSON.stringify(withdrawalData),
+        credentials: "include", // Important for cookies
+        body: JSON.stringify({
+          amount: amount.toFixed(2),
+          destinationAccount: cleanAccount,
+          destinationBankCode: withdrawForm.destinationBankCode, // No padding
+          narration: withdrawForm.narration || "Wallet withdrawal",
+        }),
       });
 
       const data = await response.json();
-      console.log("📥 Withdrawal response:", data);
 
       if (response.ok && data.success) {
         toast({
-          title: "Success!",
-          className: "bg-white",
-          description: data.message || "Withdrawal initiated successfully",
+          title: "Withdrawal Initiated!",
+          description: "You’ll get an email when it’s completed.",
         });
-
-        // Reset form and close modal
+        setShowWithdrawModal(false);
         setWithdrawForm({
           amount: "",
           destinationAccount: "",
@@ -322,55 +293,19 @@ export default function WalletPage() {
           destinationBankName: "",
           narration: "",
         });
-        setShowWithdrawModal(false);
-
-        // Refresh data after a short delay
-        setTimeout(async () => {
-          await handleRefreshBalance();
-          await fetchTransactions();
+        setTimeout(() => {
+          handleRefreshBalance();
+          fetchTransactions();
         }, 2000);
       } else {
-        // Enhanced error handling
-        let errorMessage = data.error || data.message || "Withdrawal failed";
-        let userFriendlyMessage = errorMessage;
-
-        // Map FCMB error codes to user-friendly messages
-        if (
-          errorMessage.includes("Invalid Account") ||
-          errorMessage.includes("Invalid account") ||
-          data.code === "INVALID_ACCOUNT"
-        ) {
-          userFriendlyMessage =
-            "The account number is invalid. Please check and try again.";
-        } else if (
-          errorMessage.includes("Invalid bank code") ||
-          errorMessage.includes("Invalid Bank") ||
-          data.code === "INVALID_BANK_CODE"
-        ) {
-          userFriendlyMessage =
-            "The selected bank is not supported. Please choose a different bank.";
-        } else if (errorMessage.includes("Insufficient")) {
-          userFriendlyMessage = "Insufficient balance in your wallet.";
-        } else if (errorMessage.includes("Bank not found")) {
-          userFriendlyMessage =
-            "The selected bank is not available. Please choose another bank.";
-        }
-
-        console.error("❌ Withdrawal failed:", {
-          error: errorMessage,
-          code: data.code,
-          details: data.details,
-        });
-
-        throw new Error(userFriendlyMessage);
+        throw new Error(data.error || "Withdrawal failed");
       }
-    } catch (error) {
-      console.error("❌ Withdrawal error:", error);
+    } catch (err) {
+      console.error("Withdrawal error:", err);
       toast({
         variant: "destructive",
-        title: "Withdrawal Failed",
-        className: "bg-white",
-        description: error.message,
+        title: "Failed",
+        description: err.message || "Please try again",
       });
     } finally {
       setWithdrawLoading(false);
@@ -1007,49 +942,37 @@ export default function WalletPage() {
               <Label htmlFor="bank">Bank</Label>
               <SearchableSelect
                 options={banks.map((bank) => ({
-                  value: String(bank.bankCode), // Use bankCode for selection
-                  label: `${bank.bankName} (${bank.domBankCode || bank.bankCode})`,
-                  bankCode: bank.bankCode,
-                  domBankCode: bank.domBankCode,
-                  bankName: bank.bankName,
+                  value: bank.bankCode,
+                  label: bank.bankName,
                 }))}
                 value={withdrawForm.destinationBankCode}
                 onValueChange={(selectedValue) => {
-                  console.log("🏦 Bank selection changed:", selectedValue);
-
-                  const selectedBank = banks.find(
-                    (bank) => String(bank.bankCode) === selectedValue
-                  );
-
-                  if (selectedBank) {
-                    // ⚠️ CRITICAL: Process bank code correctly
-                    // Use domBankCode if available, otherwise use bankCode
-                    const rawCode =
-                      selectedBank.domBankCode || selectedBank.bankCode;
-
-                    // Remove any non-digits and pad to 6 digits
-                    const cleanCode = String(rawCode).replace(/\D/g, "");
-                    const paddedCode = cleanCode.padStart(6, "0");
-
-                    console.log("🔧 Bank code processed:", {
-                      bankName: selectedBank.bankName,
-                      rawCode: rawCode,
-                      cleanCode: cleanCode,
-                      paddedCode: paddedCode,
-                      hasDomBankCode: !!selectedBank.domBankCode,
-                    });
-
+                  const bank = banks.find((b) => b.bankCode === selectedValue);
+                  if (bank) {
                     setWithdrawForm({
                       ...withdrawForm,
-                      destinationBankCode: paddedCode, // Send already padded code
-                      destinationBankName: selectedBank.bankName,
+                      destinationBankCode: bank.bankCode,
+                      destinationBankName: bank.bankName,
                     });
                   }
                 }}
                 placeholder="Search and select bank..."
                 disabled={banksLoading}
-                className="w-full"
               />
+
+              {/* Show selected bank */}
+              {withdrawForm.destinationBankName && (
+                <div className="mt-2 p-3 bg-gray-50 rounded-md text-sm">
+                  <div className="flex justify-between">
+                    <span className="font-medium">
+                      {withdrawForm.destinationBankName}
+                    </span>
+                    <span className="text-gray-500">
+                      Code: {withdrawForm.destinationBankCode}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {banksLoading && (
                 <div className="flex items-center gap-2 text-sm text-gray-500">
