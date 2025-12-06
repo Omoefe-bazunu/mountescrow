@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react"; // ✅ Added useEffect import
 import {
   Card,
   CardContent,
@@ -71,32 +71,27 @@ export function MilestoneCard({
     }
   };
 
-  //check if countdown should be shown
+  // ✅ Check if countdown should be shown
   useEffect(() => {
-    if (milestone.status === "Submitted for Approval") {
-      setShowCountdown(true);
-    }
-  }, [milestone.status]);
+    const shouldShow =
+      milestone.status === "Submitted for Approval" &&
+      milestone.submission?.autoApprovalScheduled &&
+      !milestone.submission?.autoApprovalCancelled;
+    setShowCountdown(shouldShow);
+  }, [milestone.status, milestone.submission]);
 
   const formatDate = (dateInput) => {
     if (!dateInput) return "N/A";
 
     let date;
 
-    // Handle string (ISO format from Firestore)
     if (typeof dateInput === "string") {
       date = new Date(dateInput);
-    }
-    // Handle Firestore Timestamp object
-    else if (dateInput.toDate) {
+    } else if (dateInput.toDate) {
       date = dateInput.toDate();
-    }
-    // Handle { seconds, nanoseconds } object
-    else if (dateInput.seconds != null) {
+    } else if (dateInput.seconds != null) {
       date = new Date(dateInput.seconds * 1000);
-    }
-    // Handle already a Date
-    else if (dateInput instanceof Date) {
+    } else if (dateInput instanceof Date) {
       date = dateInput;
     }
 
@@ -174,18 +169,19 @@ export function MilestoneCard({
 
   return (
     <div className="mb-4">
-      {/* Add countdown timer for submitted milestones */}
-      {showCountdown && milestone.status === "Submitted for Approval" && (
+      {/* ✅ Show countdown only when conditions are met */}
+      {showCountdown && (
         <CountdownTimer
           dealId={dealId}
           milestoneIndex={milestoneIndex}
           isBuyer={isBuyer}
           onCancel={() => {
-            // Refresh data when countdown is cancelled
+            setShowCountdown(false);
             onUpdate();
           }}
         />
       )}
+
       <Card className="overflow-hidden bg-white">
         <h3 className="text-xl font-semibold font-headline m-4">Milestones</h3>
         <CardHeader className="flex flex-row items-start justify-between bg-muted/50 p-4">
@@ -217,7 +213,7 @@ export function MilestoneCard({
           </div>
           <Separator />
           {milestone.submission?.message && (
-            <div className=" bg-muted rounded-lg text-sm ">
+            <div className="bg-muted rounded-lg text-sm p-4">
               <p className="font-semibold mb-2">Seller's Submission:</p>
               <p className="text-muted-foreground">
                 {milestone.submission.message}
