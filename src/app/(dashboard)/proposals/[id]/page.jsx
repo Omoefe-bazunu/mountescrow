@@ -31,6 +31,7 @@ import {
   File,
   Image,
   ExternalLink,
+  Edit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -91,6 +92,11 @@ export default function ProposalDetailPage() {
       fetchProposal();
     }
   }, [id, user]);
+
+  //EDIT VARIABLE
+  const canEdit =
+    user?.email === proposal?.creatorEmail &&
+    ["Pending", "AwaitingBuyerAcceptance"].includes(proposal?.status);
 
   const handleAccept = async () => {
     if (!proposal) return;
@@ -331,12 +337,24 @@ export default function ProposalDetailPage() {
                   : "N/A"}
               </CardDescription>
             </div>
-            <Badge
-              variant={getStatusVariant(proposal.status)}
-              className="text-base px-4 py-2"
-            >
-              {proposal.status}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge
+                variant={getStatusVariant(proposal.status)}
+                className="text-base px-4 py-2"
+              >
+                {proposal.status}
+              </Badge>
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/proposals/${id}/edit`)}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>

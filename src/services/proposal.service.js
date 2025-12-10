@@ -105,6 +105,56 @@ export async function getProposalById(id) {
   }
 }
 
+export const updateProposal = async (proposalId, proposalData, files = []) => {
+  try {
+    const formData = new FormData();
+
+    // Add text fields
+    formData.append("projectTitle", proposalData.projectTitle);
+    formData.append("description", proposalData.description);
+    formData.append("milestones", JSON.stringify(proposalData.milestones));
+    formData.append("totalAmount", proposalData.totalAmount);
+    formData.append("escrowFee", proposalData.escrowFee);
+    formData.append("escrowFeePayer", proposalData.escrowFeePayer);
+
+    // Add removed files if any
+    if (proposalData.removedFiles && proposalData.removedFiles.length > 0) {
+      formData.append(
+        "removedFiles",
+        JSON.stringify(proposalData.removedFiles)
+      );
+    }
+
+    // Add new files
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
+
+    const response = await fetch(
+      `/api/proposals/${proposalId}`, // ← REMOVE the base URL, use relative path!
+      {
+        method: "PATCH",
+        headers: {
+          "X-CSRF-Token": getCsrfToken(),
+        },
+        credentials: "include",
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to update proposal");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Update proposal error:", error);
+    throw error;
+  }
+};
+
 export async function updateProposalStatus(
   proposalId,
   status,
