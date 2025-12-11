@@ -18,6 +18,7 @@ import { AlertTriangle, Wallet, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { MilestoneCard } from "./_components/milestone-card";
+import { CountdownBanner } from "./_components/countdown-banner";
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
@@ -271,18 +272,37 @@ export default function DealDetailPage() {
             </Badge>
           </div>
         </CardHeader>
-
         <CardContent>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">Progress</span>
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium px-4">
                 {completed} / {total} Completed
               </span>
             </div>
             <Progress value={progress} className="w-full" />
           </div>
         </CardContent>
+        {deal.milestones.some(
+          (m) => m.countdownActive || m.countdownCancelledAt
+        ) && (
+          <div className="space-y-4">
+            {deal.milestones.map(
+              (milestone, i) =>
+                (milestone.countdownActive ||
+                  milestone.countdownCancelledAt) && (
+                  <CountdownBanner
+                    key={i}
+                    milestone={milestone}
+                    dealId={deal.id}
+                    milestoneIndex={i}
+                    isBuyer={isBuyer}
+                    onUpdate={fetchDeal}
+                  />
+                )
+            )}
+          </div>
+        )}
 
         {isBuyer && deal.status === "Awaiting Funding" && (
           <CardFooter>

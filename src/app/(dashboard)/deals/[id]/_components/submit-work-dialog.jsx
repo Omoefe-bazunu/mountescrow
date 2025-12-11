@@ -1,4 +1,4 @@
-//(dashboard)/deals/[id]/submit-work-dialog/page.jsx
+// src/app/(dashboard)/deals/[id]/_components/submit-work-dialog.jsx
 
 "use client";
 
@@ -26,8 +26,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { submitMilestoneWork } from "@/services/deal.service";
 import { FileUpload } from "@/components/ui/file-upload";
+
+// Import the service function
+import { submitMilestoneWork } from "@/services/deal.service";
 
 const formSchema = z.object({
   message: z.string().min(1, "A submission message is required."),
@@ -56,26 +58,42 @@ export function SubmitWorkDialog({
   async function onSubmit(values) {
     setLoading(true);
     try {
-      await submitMilestoneWork(
+      // This will automatically handle submission AND countdown start
+      const result = await submitMilestoneWork(
         dealId,
         milestoneIndex,
         values.message,
         selectedFiles.length > 0 ? selectedFiles : null
       );
-      toast({
-        title: "Work Submitted!",
-        description: "The buyer has been notified to review your submission.",
-      });
-      onSuccess();
-      onClose();
-      form.reset();
-      setSelectedFiles([]);
+
+      if (result.success) {
+        if (result.countdownStarted) {
+          toast({
+            title: "✅ Work Submitted!",
+            description: "Countdown timer started automatically.",
+            className: "bg-white",
+          });
+        } else {
+          toast({
+            title: "⚠️ Work Submitted",
+            description:
+              "Countdown may not have started. Please check deal details to confirm.",
+            variant: "warning",
+            className: "bg-white",
+          });
+        }
+
+        onSuccess();
+        onClose();
+        form.reset();
+        setSelectedFiles([]);
+      }
     } catch (error) {
       console.error("Error submitting work:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to submit work.",
+        description: error.message || "Failed to submit work.",
       });
     } finally {
       setLoading(false);
@@ -97,7 +115,7 @@ export function SubmitWorkDialog({
           <DialogTitle>Submit Milestone for Approval</DialogTitle>
           <DialogDescription>
             Provide a message and upload any relevant files for the buyer to
-            review.
+            review. A countdown timer will start automatically.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -144,7 +162,7 @@ export function SubmitWorkDialog({
               </Button>
               <Button type="submit" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Submit for Approval
+                Submit & Start Countdown
               </Button>
             </DialogFooter>
           </form>
