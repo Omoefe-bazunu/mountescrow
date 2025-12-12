@@ -55,7 +55,7 @@ import { LandingHeader } from "@/components/landing-header";
 import { Footer } from "@/components/footer";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Separator } from "@/components/ui/separator";
-import { NotificationBell } from "@/components/notification-bell";
+// import { NotificationBell } from "@/components/notification-bell";
 
 const navItems = [
   { href: "/dashboard", icon: Home, label: "Dashboard" },
