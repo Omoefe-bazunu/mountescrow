@@ -65,7 +65,7 @@ const navItems = [
   { href: "/wallet", icon: Wallet, label: "Wallet" },
   { href: "/disputes", icon: Shield, label: "Disputes" },
   { href: "/kyc", icon: Verified, label: "KYC" },
-  { href: "/notifications", icon: BellIcon, label: "Notifications" },
+  // { href: "/notifications", icon: BellIcon, label: "Notifications" },
   { href: "/profile", icon: CircleUser, label: "Profile" },
 ];
 
@@ -278,7 +278,7 @@ export default function DashboardLayout({ children }) {
             </div>
 
             {/* Notification Bell */}
-            <NotificationBell />
+            {/* <NotificationBell /> */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
