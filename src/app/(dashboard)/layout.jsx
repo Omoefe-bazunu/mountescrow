@@ -20,6 +20,7 @@ import {
   PersonStanding,
   PersonStandingIcon,
   CircleUser,
+  BellIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,7 @@ import { LandingHeader } from "@/components/landing-header";
 import { Footer } from "@/components/footer";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Separator } from "@/components/ui/separator";
+import { NotificationBell } from "@/components/notification-bell";
 
 const navItems = [
   { href: "/dashboard", icon: Home, label: "Dashboard" },
@@ -63,6 +65,7 @@ const navItems = [
   { href: "/wallet", icon: Wallet, label: "Wallet" },
   { href: "/disputes", icon: Shield, label: "Disputes" },
   { href: "/kyc", icon: Verified, label: "KYC" },
+  { href: "/notifications", icon: BellIcon, label: "Notifications" },
   { href: "/profile", icon: CircleUser, label: "Profile" },
 ];
 
@@ -273,6 +276,9 @@ export default function DashboardLayout({ children }) {
             <div className="w-full flex-1">
               <h3 className="font-semibold text-primary-blue">DASHBOARD</h3>
             </div>
+
+            {/* Notification Bell */}
+            <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
