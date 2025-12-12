@@ -1,15 +1,18 @@
-// app/api/deals/[id]/milestones/[index]/auto-start-countdown/route.js
 import { NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
 
-export async function POST(request, { params }) {
+// 1. Mark the second argument destructing as 'props' or similar to access params properly
+export async function POST(request, props) {
   try {
     const cookie = request.headers.get("cookie") || "";
     const csrfToken = request.headers.get("x-csrf-token") || "";
 
+    // 2. AWAIT the params here
+    const params = await props.params;
     const { id, index } = params;
 
+    // Debug log to confirm ID is now captured
     console.log(
       `🚀 Forwarding auto-start-countdown for deal ${id}, milestone ${index}`
     );
@@ -26,7 +29,6 @@ export async function POST(request, { params }) {
         credentials: "include",
       }
     );
-
     const data = await res.json();
 
     if (!res.ok) {

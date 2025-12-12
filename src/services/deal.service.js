@@ -172,57 +172,6 @@ async function apiCall(endpoint, options = {}) {
   }
 }
 
-// Submit milestone work (this will trigger auto-start-countdown)
-export async function submitMilestoneWork(
-  dealId,
-  milestoneIndex,
-  message,
-  files
-) {
-  const formData = new FormData();
-  formData.append("message", message);
-  if (files && files.length > 0) {
-    files.forEach((file) => {
-      formData.append("files", file);
-    });
-  }
-
-  // Submit the milestone work
-  const result = await apiCall(
-    `/api/deals/${dealId}/milestones/${milestoneIndex}/submit`,
-    {
-      method: "POST",
-      body: formData,
-    }
-  );
-
-  // After successful submission, start the countdown
-  if (result.success) {
-    try {
-      // Wait 1 second to ensure submission is fully processed
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Start the countdown automatically
-      await apiCall(
-        `/api/deals/${dealId}/milestones/${milestoneIndex}/auto-start-countdown`,
-        {
-          method: "POST",
-        }
-      );
-
-      // Update the result to indicate countdown started
-      result.countdownStarted = true;
-    } catch (countdownError) {
-      console.warn("Countdown start failed:", countdownError);
-      // Continue with the result - countdown failure shouldn't break submission
-      result.countdownStarted = false;
-      result.countdownError = countdownError.message;
-    }
-  }
-
-  return result;
-}
-
 // Export other functions if needed
 export async function getDeals() {
   const result = await apiCall("/api/deals", { method: "GET" });
@@ -272,5 +221,57 @@ export async function requestMilestoneRevision(dealId, milestoneIndex, reason) {
       body: JSON.stringify({ reason }),
     }
   );
+  return result;
+}
+
+// In your deal.service.js, update the submitMilestoneWork function:
+export async function submitMilestoneWork(
+  dealId,
+  milestoneIndex,
+  message,
+  files
+) {
+  const formData = new FormData();
+  formData.append("message", message);
+  if (files && files.length > 0) {
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
+  }
+
+  // Submit the milestone work
+  const result = await apiCall(
+    `/api/deals/${dealId}/milestones/${milestoneIndex}/submit`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
+
+  // After successful submission, try to start the countdown
+  if (result.success) {
+    try {
+      // Wait 1 second to ensure submission is fully processed
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Try to start the countdown automatically
+      await apiCall(
+        `/api/deals/${dealId}/milestones/${milestoneIndex}/auto-start-countdown`,
+        {
+          method: "POST",
+        }
+      );
+
+      // Update the result to indicate countdown started
+      result.countdownStarted = true;
+    } catch (countdownError) {
+      console.warn("Countdown start failed:", countdownError);
+      // Don't throw error - just log it
+      result.countdownStarted = false;
+      result.countdownError = countdownError.message;
+      // Continue with the result - countdown failure shouldn't break submission
+    }
+  }
+
   return result;
 }
