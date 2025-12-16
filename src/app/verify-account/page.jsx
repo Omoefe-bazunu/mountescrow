@@ -10,6 +10,7 @@ export default function VerifyAccountPage() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false); // New state for resend button
   const router = useRouter();
   const { refresh } = useAuth();
   const { toast } = useToast();
@@ -62,6 +63,52 @@ export default function VerifyAccountPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // New function to handle resending code
+  const handleResend = async () => {
+    if (!email) {
+      toast({
+        variant: "destructive",
+        title: "Email Required",
+        description: "Please enter your email address first.",
+      });
+      return;
+    }
+
+    setResending(true);
+    try {
+      const res = await fetch("/api/auth/resend-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({
+          title: "Code Sent!",
+          description: "Please check your email inbox (and spam folder).",
+          className: "bg-green-50 border-green-200",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Failed to Resend",
+          description: data.error || "Could not send code.",
+        });
+      }
+    } catch (error) {
+      console.error("Resend error:", error);
+      toast({
+        variant: "destructive",
+        title: "Connection Error",
+        description: "Failed to connect to server.",
+      });
+    } finally {
+      setResending(false);
     }
   };
 
@@ -120,14 +167,21 @@ export default function VerifyAccountPage() {
           {loading ? "Verifying..." : "Verify Account"}
         </button>
 
-        <p className="text-center text-sm text-gray-600">
-          Didn't receive the code?{" "}
+        <p className="text-center text-sm text-gray-600 flex flex-col sm:flex-row items-center justify-center gap-1">
+          <span>Didn't receive the code?</span>
           <button
             type="button"
-            className="text-orange-500 hover:underline font-medium"
-            onClick={() => toast({ title: "Feature coming soon!" })}
+            onClick={handleResend}
+            disabled={resending} // Removed "!email" so the validation toast can trigger
+            className="text-orange-500 hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
           >
-            Resend Code
+            {resending ? (
+              <>
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" /> Sending...
+              </>
+            ) : (
+              "Resend Code"
+            )}
           </button>
         </p>
       </form>
