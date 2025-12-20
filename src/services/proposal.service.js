@@ -1,4 +1,4 @@
-// services/proposal.service.js - REVERT TO PROXY VERSION
+// services/proposal.service.js
 
 // Helper to get CSRF token from cookies
 function getCsrfToken() {

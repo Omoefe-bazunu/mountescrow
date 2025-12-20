@@ -1,5 +1,15 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { Bell, Check, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  getNotifications,
+  getNotificationCount,
+  markNotificationAsRead,
+  deleteNotification,
+  markAllNotificationsAsRead,
+} from "@/services/notification.service";
 
 export function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
@@ -7,26 +17,18 @@ export function NotificationBell() {
   const [loading, setLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [error, setError] = useState(null);
+  const router = useRouter();
 
   const loadNotifications = async () => {
     try {
-      console.log("🔄 Loading notifications...");
-      const response = await fetch("/api/notifications?page=1&limit=10", {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log("✅ Notifications loaded:", data);
-
+      setLoading(true);
+      // Using service instead of raw fetch [cite: 884, 954-955]
+      const data = await getNotifications(1, 10);
       setNotifications(data.notifications || []);
       setError(null);
-    } catch (error) {
-      console.error("❌ Error loading notifications:", error);
-      setError(error.message);
+    } catch (err) {
+      console.error("❌ Error loading notifications:", err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -34,29 +36,21 @@ export function NotificationBell() {
 
   const loadNotificationCount = async () => {
     try {
-      console.log("🔄 Loading notification count...");
-      const response = await fetch("/api/notifications/count", {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("✅ Notification count:", data);
-
+      // Using service instead of raw fetch [cite: 885, 960-961]
+      const data = await getNotificationCount();
       setUnreadCount(data.unreadCount || 0);
-    } catch (error) {
-      console.error("❌ Error loading notification count:", error);
+    } catch (err) {
+      console.error("❌ Error loading notification count:", err);
     }
   };
 
   useEffect(() => {
-    loadNotifications();
     loadNotificationCount();
+    if (dropdownOpen) {
+      loadNotifications();
+    }
 
-    // Refresh every 30 seconds
+    // Auto-refresh unread count every 30 seconds
     const interval = setInterval(() => {
       loadNotificationCount();
       if (dropdownOpen) {
@@ -70,60 +64,39 @@ export function NotificationBell() {
   const handleMarkAsRead = async (notificationId, e) => {
     e.stopPropagation();
     try {
-      const response = await fetch(`/api/notifications/${notificationId}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: {
-          "x-csrf-token": getCsrfToken(),
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to mark as read");
-
+      // Using service instead of raw fetch [cite: 886, 967]
+      await markNotificationAsRead(notificationId);
       setNotifications((prev) =>
         prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error("Mark as read error:", error);
+    } catch (err) {
+      console.error("Mark as read error:", err);
     }
   };
 
   const handleDelete = async (notificationId, e) => {
     e.stopPropagation();
     try {
-      const response = await fetch(`/api/notifications/${notificationId}`, {
-        method: "DELETE",
-        credentials: "include",
-        headers: {
-          "x-csrf-token": getCsrfToken(),
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to delete");
-
+      // Using service instead of raw fetch [cite: 888, 971]
+      await deleteNotification(notificationId);
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
-    } catch (error) {
-      console.error("Delete error:", error);
+      if (!notifications.find((n) => n.id === notificationId)?.read) {
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
     }
   };
 
   const handleMarkAllAsRead = async () => {
     try {
-      const response = await fetch("/api/notifications/mark-all-read", {
-        method: "PATCH",
-        credentials: "include",
-        headers: {
-          "x-csrf-token": getCsrfToken(),
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to mark all as read");
-
+      // Using service instead of raw fetch [cite: 887, 974]
+      await markAllNotificationsAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
-    } catch (error) {
-      console.error("Mark all as read error:", error);
+    } catch (err) {
+      console.error("Mark all as read error:", err);
     }
   };
 
@@ -138,12 +111,6 @@ export function NotificationBell() {
     };
     return icons[type] || "🔔";
   };
-
-  function getCsrfToken() {
-    const cookies = document.cookie.split("; ");
-    const csrfCookie = cookies.find((c) => c.startsWith("csrf-token="));
-    return csrfCookie ? csrfCookie.split("=")[1] : null;
-  }
 
   return (
     <div className="relative">
@@ -162,11 +129,11 @@ export function NotificationBell() {
       {dropdownOpen && (
         <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
           <div className="flex items-center justify-between p-4 border-b">
-            <span className="font-semibold">Notifications</span>
+            <span className="font-semibold text-gray-800">Notifications</span>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-xs text-blue-600 hover:text-blue-800"
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
               >
                 <Check className="h-3 w-3 inline mr-1" />
                 Mark all as read
@@ -175,7 +142,7 @@ export function NotificationBell() {
           </div>
 
           <div className="max-h-[400px] overflow-y-auto">
-            {loading ? (
+            {loading && notifications.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 Loading notifications...
               </div>
@@ -199,10 +166,13 @@ export function NotificationBell() {
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-3 hover:bg-gray-50 cursor-pointer ${
-                      !notification.read ? "bg-blue-50" : ""
+                    className={`p-3 hover:bg-gray-50 cursor-pointer transition-colors ${
+                      !notification.read ? "bg-blue-50/50" : ""
                     }`}
-                    onClick={() => (window.location.href = notification.link)}
+                    onClick={() => {
+                      router.push(notification.link || "/notifications");
+                      setDropdownOpen(false);
+                    }}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3 flex-1">
@@ -210,13 +180,13 @@ export function NotificationBell() {
                           {getNotificationIcon(notification.type)}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">
+                          <p className="font-medium text-sm text-gray-900">
                             {notification.title}
                           </p>
-                          <p className="text-xs text-gray-600 mt-1">
+                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">
                             {notification.message}
                           </p>
-                          <p className="text-xs text-gray-400 mt-2">
+                          <p className="text-[10px] text-gray-400 mt-2">
                             {new Date(
                               notification.createdAt
                             ).toLocaleDateString()}{" "}
@@ -230,13 +200,14 @@ export function NotificationBell() {
                           </p>
                         </div>
                       </div>
+
                       <div className="flex gap-1 ml-2">
                         {!notification.read && (
                           <button
                             onClick={(e) =>
                               handleMarkAsRead(notification.id, e)
                             }
-                            className="p-1 hover:bg-gray-200 rounded"
+                            className="p-1 hover:bg-blue-100 text-blue-600 rounded"
                             title="Mark as read"
                           >
                             <Check className="h-3 w-3" />
@@ -244,7 +215,7 @@ export function NotificationBell() {
                         )}
                         <button
                           onClick={(e) => handleDelete(notification.id, e)}
-                          className="p-1 hover:bg-gray-200 rounded"
+                          className="p-1 hover:bg-red-100 text-red-600 rounded"
                           title="Delete"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -258,23 +229,16 @@ export function NotificationBell() {
           </div>
 
           <div className="border-t p-3 text-center">
-            <a
-              href="/notifications"
-              className="text-sm text-blue-600 hover:text-blue-800"
+            <button
+              onClick={() => {
+                router.push("/notifications");
+                setDropdownOpen(false);
+              }}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
             >
               View all notifications
-            </a>
+            </button>
           </div>
-        </div>
-      )}
-
-      {/* Debug info - remove in production */}
-      {process.env.NODE_ENV === "development" && (
-        <div className="fixed bottom-4 right-4 bg-black text-white text-xs p-2 rounded max-w-xs">
-          <div>Unread: {unreadCount}</div>
-          <div>Total: {notifications.length}</div>
-          <div>Loading: {loading ? "Yes" : "No"}</div>
-          {error && <div className="text-red-400">Error: {error}</div>}
         </div>
       )}
     </div>

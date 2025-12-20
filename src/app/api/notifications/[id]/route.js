@@ -1,16 +1,23 @@
-// app/api/notifications/[id]/route.js
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
+
 export async function PATCH(request, { params }) {
   try {
-    const cookieStore = cookies();
+    // FIX: Await params and cookies in Next.js 15 [cite: 807, 834]
+    const { id } = await params;
+    const cookieStore = await cookies();
     const jwt = cookieStore.get("jwt")?.value;
     const csrfToken = cookieStore.get("csrf-token")?.value;
 
-    if (!jwt || !csrfToken) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (!jwt) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
-
+    // Forward the PATCH to the Express backend
+    // Note: Backend still expects /read in its route
     const response = await fetch(
       `${BACKEND_URL}/api/notifications/${id}/read`,
       {
@@ -24,16 +31,14 @@ export async function PATCH(request, { params }) {
     );
 
     const data = await response.json();
+    if (!response.ok)
+      return NextResponse.json(data, { status: response.status });
 
-    if (!response.ok) {
-      return Response.json(data, { status: response.status });
-    }
-
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("Mark as read API error:", error);
-    return Response.json(
-      { error: "Failed to mark notification as read" },
+    console.error("Mark as read proxy error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }
@@ -41,15 +46,15 @@ export async function PATCH(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    const cookieStore = cookies();
+    // FIX: Await params and cookies in Next.js 15 [cite: 814, 858]
+    const { id } = await params;
+    const cookieStore = await cookies();
     const jwt = cookieStore.get("jwt")?.value;
     const csrfToken = cookieStore.get("csrf-token")?.value;
 
-    if (!jwt || !csrfToken) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (!jwt) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const { id } = params;
 
     const response = await fetch(`${BACKEND_URL}/api/notifications/${id}`, {
       method: "DELETE",
@@ -61,16 +66,14 @@ export async function DELETE(request, { params }) {
     });
 
     const data = await response.json();
+    if (!response.ok)
+      return NextResponse.json(data, { status: response.status });
 
-    if (!response.ok) {
-      return Response.json(data, { status: response.status });
-    }
-
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("Delete notification API error:", error);
-    return Response.json(
-      { error: "Failed to delete notification" },
+    console.error("Delete notification proxy error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }

@@ -1,12 +1,18 @@
-// app/api/notifications/count/route.js
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
+
 export async function GET(request) {
   try {
-    const cookieStore = cookies();
+    // FIX: Add await here for Next.js 15
+    const cookieStore = await cookies();
     const jwt = cookieStore.get("jwt")?.value;
     const csrfToken = cookieStore.get("csrf-token")?.value;
 
     if (!jwt) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const response = await fetch(`${BACKEND_URL}/api/notifications/count`, {
@@ -18,15 +24,10 @@ export async function GET(request) {
     });
 
     const data = await response.json();
-
-    if (!response.ok) {
-      return Response.json(data, { status: response.status });
-    }
-
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error("Notification count API error:", error);
-    return Response.json(
+    return NextResponse.json(
       { error: "Failed to fetch notification count" },
       { status: 500 }
     );
