@@ -1,6 +1,6 @@
 // src/services/testimonials.service.js
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
 
 // Helper to get CSRF token from cookies
 function getCsrfToken() {

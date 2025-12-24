@@ -254,17 +254,30 @@ export default function TestimonialsSection() {
           >
             <div className="flex flex-col items-center">
               <div className="w-24 h-24 rounded-full overflow-hidden mb-6 border-4 border-primary-blue flex items-center justify-center bg-gray-50">
-                <img
-                  src={current.photoUrl || ""}
-                  alt={current.authorName}
-                  className="object-cover w-full h-full bg-slate-200"
-                  onError={(e) => {
-                    e.target.style.display = "none";
-                    e.target.nextSibling.style.display = "flex";
-                  }}
-                />
-                <div className="hidden w-full h-full bg-gray-200 items-center justify-center text-gray-500 text-2xl font-bold">
-                  {current.authorName?.charAt(0) || "U"}
+                {/* Only render Image if photoUrl exists */}
+                {current.photoUrl ? (
+                  <img
+                    src={current.photoUrl}
+                    alt={current.authorName}
+                    className="object-cover w-full h-full bg-slate-200"
+                    onError={(e) => {
+                      // If image fails to load (404), hide image and show initials
+                      e.currentTarget.style.display = "none";
+                      e.currentTarget.nextElementSibling.classList.remove(
+                        "hidden"
+                      );
+                      e.currentTarget.nextElementSibling.classList.add("flex");
+                    }}
+                  />
+                ) : null}
+
+                {/* Fallback Initials: Visible if no photo, or if photo hidden via JS */}
+                <div
+                  className={`${
+                    current.photoUrl ? "hidden" : "flex"
+                  } w-full h-full bg-gray-200 items-center justify-center text-gray-500 text-2xl font-bold`}
+                >
+                  {current.authorName?.charAt(0).toUpperCase() || "U"}
                 </div>
               </div>
               <p className="text-card-foreground italic mb-4 text-lg font-headline">
