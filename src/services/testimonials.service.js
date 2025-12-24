@@ -1,9 +1,10 @@
 // src/services/testimonials.service.js
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
-
 // Helper to get CSRF token from cookies
 function getCsrfToken() {
+  // Check if we're in browser environment
+  if (typeof document === "undefined") return null;
+
   const cookies = document.cookie.split("; ");
   const csrfCookie = cookies.find((c) => c.startsWith("csrf-token="));
   return csrfCookie ? csrfCookie.split("=")[1] : null;
@@ -12,7 +13,6 @@ function getCsrfToken() {
 // Helper for API calls with credentials
 async function apiCall(endpoint, options = {}) {
   const csrfToken = getCsrfToken();
-
   const headers = {
     ...options.headers,
   };
@@ -22,22 +22,26 @@ async function apiCall(endpoint, options = {}) {
     headers["x-csrf-token"] = csrfToken;
   }
 
-  // Only add Content-Type if not FormData
+  // Only add Content-Type if not FormData and if body exists
   if (!(options.body instanceof FormData) && options.body) {
     headers["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  // Use relative URLs (will go through Next.js proxy routes)
+  const response = await fetch(endpoint, {
     ...options,
     headers,
-    credentials: "include",
+    credentials: "include", // Important for cookies
   });
 
   if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ error: "Request failed" }));
-    throw new Error(error.error || `HTTP ${response.status}`);
+    let errorData;
+    try {
+      errorData = await response.json();
+    } catch {
+      errorData = { error: "Request failed" };
+    }
+    throw new Error(errorData.error || `HTTP ${response.status}`);
   }
 
   return response.json();
@@ -51,6 +55,7 @@ export async function getAllTestimonials() {
     const data = await apiCall("/api/testimonials", {
       method: "GET",
     });
+    // Return testimonials array directly
     return data.testimonials || [];
   } catch (error) {
     console.error("Get testimonials error:", error);
@@ -66,8 +71,13 @@ export async function getMyTestimonial() {
     const data = await apiCall("/api/testimonials/my", {
       method: "GET",
     });
-    return data.testimonial;
+    // Return testimonial object directly
+    return data.testimonial || null;
   } catch (error) {
+    // If it's a 404 (not found), return null instead of throwing
+    if (error.message.includes("404")) {
+      return null;
+    }
     console.error("Get my testimonial error:", error);
     throw error;
   }
@@ -79,11 +89,14 @@ export async function getMyTestimonial() {
 export async function createTestimonial(testimonialData) {
   try {
     const formData = new FormData();
+
+    // Append required fields
     formData.append("authorName", testimonialData.authorName);
     formData.append("authorTitle", testimonialData.authorTitle);
     formData.append("review", testimonialData.review);
     formData.append("rating", testimonialData.rating.toString());
 
+    // Append photo if provided
     if (testimonialData.photo) {
       formData.append("photo", testimonialData.photo);
     }
@@ -91,6 +104,7 @@ export async function createTestimonial(testimonialData) {
     const data = await apiCall("/api/testimonials", {
       method: "POST",
       body: formData,
+      // Note: No Content-Type header for FormData - browser sets it automatically
     });
 
     return data;
@@ -106,6 +120,7 @@ export async function createTestimonial(testimonialData) {
 export async function updateTestimonial(id, testimonialData) {
   try {
     const formData = new FormData();
+
     formData.append("authorName", testimonialData.authorName);
     formData.append("authorTitle", testimonialData.authorTitle);
     formData.append("review", testimonialData.review);
@@ -139,6 +154,21 @@ export async function deleteTestimonial(id) {
     return data;
   } catch (error) {
     console.error("Delete testimonial error:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get single testimonial by ID (if needed)
+ */
+export async function getTestimonialById(id) {
+  try {
+    const data = await apiCall(`/api/testimonials/${id}`, {
+      method: "GET",
+    });
+    return data.testimonial || null;
+  } catch (error) {
+    console.error("Get testimonial by ID error:", error);
     throw error;
   }
 }

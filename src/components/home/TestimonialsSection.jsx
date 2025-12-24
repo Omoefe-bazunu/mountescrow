@@ -35,6 +35,9 @@ export default function TestimonialsSection() {
   const [userTestimonial, setUserTestimonial] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSliding, setIsSliding] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingUserTestimonial, setIsLoadingUserTestimonial] =
+    useState(false);
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -49,26 +52,41 @@ export default function TestimonialsSection() {
 
   // Fetch testimonials
   const fetchTestimonials = async () => {
+    setIsLoading(true);
     try {
       const data = await getAllTestimonials();
-      setTestimonials(data);
+      setTestimonials(data || []);
     } catch (error) {
       console.error("Error fetching testimonials:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load testimonials. Please try again later.",
+      });
+      setTestimonials([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   // Fetch user's testimonial
   const fetchUserTestimonial = async () => {
+    if (!user) {
+      setUserTestimonial(null);
+      return;
+    }
+
+    setIsLoadingUserTestimonial(true);
     try {
       const data = await getMyTestimonial();
-      setUserTestimonial(data);
+      setUserTestimonial(data || null);
 
       if (data) {
         setFormData({
-          authorName: data.authorName,
-          authorTitle: data.authorTitle,
-          review: data.review,
-          rating: data.rating,
+          authorName: data.authorName || "",
+          authorTitle: data.authorTitle || "",
+          review: data.review || "",
+          rating: data.rating || 5,
           photo: null,
         });
       } else {
@@ -81,14 +99,40 @@ export default function TestimonialsSection() {
         });
       }
     } catch (error) {
-      console.error("Error fetching user testimonial:", error);
+      // Don't show error for 404 - just means user hasn't created a testimonial yet
+      if (
+        !error.message.includes("404") &&
+        !error.message.includes("Not Found")
+      ) {
+        console.error("Error fetching user testimonial:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load your testimonial.",
+        });
+      }
+      setUserTestimonial(null);
+    } finally {
+      setIsLoadingUserTestimonial(false);
     }
   };
 
   useEffect(() => {
     fetchTestimonials();
+  }, []);
+
+  useEffect(() => {
     if (user) {
       fetchUserTestimonial();
+    } else {
+      setUserTestimonial(null);
+      setFormData({
+        authorName: "",
+        authorTitle: "",
+        review: "",
+        rating: 5,
+        photo: null,
+      });
     }
   }, [user]);
 
@@ -113,6 +157,8 @@ export default function TestimonialsSection() {
 
   // Handle Delete
   const handleDelete = async () => {
+    if (!userTestimonial?.id) return;
+
     if (!confirm("Are you sure you want to delete this testimonial?")) return;
 
     setIsSubmitting(true);
@@ -127,7 +173,17 @@ export default function TestimonialsSection() {
       setUserTestimonial(null);
       await fetchTestimonials();
       setShowModal(false);
+
+      // Reset form
+      setFormData({
+        authorName: user?.displayName || "",
+        authorTitle: "",
+        review: "",
+        rating: 5,
+        photo: null,
+      });
     } catch (error) {
+      console.error("Delete error:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -149,10 +205,25 @@ export default function TestimonialsSection() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate form
+    if (
+      !formData.authorName.trim() ||
+      !formData.authorTitle.trim() ||
+      !formData.review.trim()
+    ) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Please fill in all required fields.",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      if (userTestimonial) {
+      if (userTestimonial?.id) {
         // Update existing testimonial
         await updateTestimonial(userTestimonial.id, formData);
         toast({
@@ -168,15 +239,16 @@ export default function TestimonialsSection() {
         });
       }
 
-      await fetchTestimonials();
-      await fetchUserTestimonial();
+      // Refresh data
+      await Promise.all([fetchTestimonials(), fetchUserTestimonial()]);
       setShowModal(false);
     } catch (err) {
       console.error("Submission error:", err);
       toast({
         variant: "destructive",
         title: "Error",
-        description: err.message || "Failed to submit testimonial",
+        description:
+          err.message || "Failed to submit testimonial. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -223,10 +295,19 @@ export default function TestimonialsSection() {
       {user ? (
         <button
           onClick={handleOpenModal}
-          className="flex items-center font-headline gap-2 mx-auto mb-10 bg-orange-500 hover:bg-highlight-blue text-white px-5 py-3 rounded-full transition-all"
+          disabled={isLoadingUserTestimonial}
+          className="flex items-center font-headline gap-2 mx-auto mb-10 bg-orange-500 hover:bg-highlight-blue text-white px-5 py-3 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <PlusCircle size={18} />
-          {userTestimonial ? "Update Your Testimonial" : "Add Your Testimonial"}
+          {isLoadingUserTestimonial ? (
+            <Loader2 className="animate-spin h-4 w-4" />
+          ) : (
+            <PlusCircle size={18} />
+          )}
+          {isLoadingUserTestimonial
+            ? "Loading..."
+            : userTestimonial
+              ? "Update Your Testimonial"
+              : "Add Your Testimonial"}
         </button>
       ) : (
         <a
@@ -238,10 +319,20 @@ export default function TestimonialsSection() {
       )}
 
       {/* Testimonial Display */}
-      {testimonials.length === 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center h-64 bg-white/70 rounded-2xl shadow-lg mx-auto w-[80%] md:w-[50%]">
+          <Loader2 className="animate-spin h-8 w-8 text-primary-blue mb-4" />
+          <p className="text-gray-600 text-lg font-medium">
+            Loading testimonials...
+          </p>
+        </div>
+      ) : testimonials.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 bg-white/70 rounded-2xl shadow-lg mx-auto w-[80%] md:w-[50%]">
           <p className="text-gray-600 text-lg font-medium mb-2">
             No reviews yet.
+          </p>
+          <p className="text-gray-500 text-sm">
+            Be the first to share your experience!
           </p>
         </div>
       ) : (
@@ -255,7 +346,7 @@ export default function TestimonialsSection() {
             <div className="flex flex-col items-center">
               <div className="w-24 h-24 rounded-full overflow-hidden mb-6 border-4 border-primary-blue flex items-center justify-center bg-gray-50">
                 {/* Only render Image if photoUrl exists */}
-                {current.photoUrl ? (
+                {current?.photoUrl ? (
                   <img
                     src={current.photoUrl}
                     alt={current.authorName}
@@ -271,27 +362,27 @@ export default function TestimonialsSection() {
                   />
                 ) : null}
 
-                {/* Fallback Initials: Visible if no photo, or if photo hidden via JS */}
+                {/* Fallback Initials */}
                 <div
                   className={`${
-                    current.photoUrl ? "hidden" : "flex"
+                    current?.photoUrl ? "hidden" : "flex"
                   } w-full h-full bg-gray-200 items-center justify-center text-gray-500 text-2xl font-bold`}
                 >
-                  {current.authorName?.charAt(0).toUpperCase() || "U"}
+                  {current?.authorName?.charAt(0).toUpperCase() || "U"}
                 </div>
               </div>
               <p className="text-card-foreground italic mb-4 text-lg font-headline">
-                "{current.review}"
+                "{current?.review}"
               </p>
               <div className="flex flex-col items-center">
                 <div className="flex justify-center mb-2">
-                  {renderStars(current.rating)}
+                  {renderStars(current?.rating || 0)}
                 </div>
                 <p className="text-primary font-semibold text-lg">
-                  {current.authorName}
+                  {current?.authorName}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {current.authorTitle}
+                  {current?.authorTitle}
                 </p>
               </div>
             </div>
@@ -307,7 +398,7 @@ export default function TestimonialsSection() {
               <div className="flex flex-col items-center">
                 <div className="w-16 h-16 rounded-full overflow-hidden mb-2 border-2 border-primary-blue flex items-center justify-center bg-gray-50">
                   <img
-                    src={next.photoUrl || ""}
+                    src={next?.photoUrl || ""}
                     alt={next.authorName}
                     className="object-cover w-full h-full"
                     onError={(e) => {
@@ -315,12 +406,12 @@ export default function TestimonialsSection() {
                       e.target.nextSibling.style.display = "flex";
                     }}
                   />
-                  <div className="hidden w-full h-full bg-gray-200 items-center justify-center text-gray-500">
-                    {next.authorName?.charAt(0) || "U"}
+                  <div className="hidden w-full h-full bg-gray-200 items-center justify-center text-gray-500 text-lg">
+                    {next?.authorName?.charAt(0) || "U"}
                   </div>
                 </div>
                 <p className="text-xs italic text-gray-600 line-clamp-2">
-                  "{next.review}"
+                  "{next?.review}"
                 </p>
               </div>
             </div>
@@ -334,7 +425,8 @@ export default function TestimonialsSection() {
           <div className="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md relative">
             <button
               onClick={() => setShowModal(false)}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+              disabled={isSubmitting}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 disabled:opacity-50"
             >
               <X size={20} />
             </button>
@@ -347,25 +439,28 @@ export default function TestimonialsSection() {
                 name="authorName"
                 value={formData.authorName}
                 onChange={handleInputChange}
-                placeholder="Your Name"
+                placeholder="Your Name *"
                 required
-                className="border rounded-lg p-2"
+                disabled={isSubmitting}
+                className="border rounded-lg p-2 disabled:opacity-50"
               />
               <input
                 name="authorTitle"
                 value={formData.authorTitle}
                 onChange={handleInputChange}
-                placeholder="Your Title (e.g. Buyer, Freelancer)"
+                placeholder="Your Title (e.g. Buyer, Freelancer) *"
                 required
-                className="border rounded-lg p-2"
+                disabled={isSubmitting}
+                className="border rounded-lg p-2 disabled:opacity-50"
               />
               <textarea
                 name="review"
                 value={formData.review}
                 onChange={handleInputChange}
-                placeholder="Your Review"
+                placeholder="Your Review *"
                 required
-                className="border rounded-lg p-2 h-24 resize-none"
+                disabled={isSubmitting}
+                className="border rounded-lg p-2 h-24 resize-none disabled:opacity-50"
               />
               <div className="flex items-center gap-2">
                 <label className="text-sm">Rating:</label>
@@ -373,7 +468,8 @@ export default function TestimonialsSection() {
                   name="rating"
                   value={formData.rating}
                   onChange={handleInputChange}
-                  className="border rounded-lg p-2"
+                  disabled={isSubmitting}
+                  className="border rounded-lg p-2 flex-1 disabled:opacity-50"
                 >
                   {[1, 2, 3, 4, 5].map((num) => (
                     <option key={num} value={num}>
@@ -385,36 +481,47 @@ export default function TestimonialsSection() {
 
               <div className="border rounded-lg p-2">
                 <label className="text-xs text-gray-500 mb-1 block">
-                  {userTestimonial ? "Update Photo (Optional)" : "Upload Photo"}
+                  {userTestimonial
+                    ? "Update Photo (Optional)"
+                    : "Upload Photo (Optional)"}
                 </label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleInputChange}
-                  className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+                  disabled={isSubmitting}
+                  className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 disabled:opacity-50"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Supported: JPG, PNG, GIF. Max size: 5MB
+                </p>
               </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-primary-blue text-white rounded-lg py-2 hover:bg-primary/80 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {isSubmitting && <Loader2 className="animate-spin h-4 w-4" />}
-                {userTestimonial ? "Update" : "Submit"}
-              </button>
-
-              {userTestimonial && (
+              <div className="flex gap-2">
                 <button
-                  type="button"
-                  onClick={handleDelete}
+                  type="submit"
                   disabled={isSubmitting}
-                  className="bg-red-500 text-white rounded-lg py-2 hover:bg-red-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="bg-primary-blue text-white rounded-lg py-2 hover:bg-primary/80 transition-all disabled:opacity-50 flex-1 flex items-center justify-center gap-2"
                 >
-                  <Trash2 size={16} />
-                  Delete Testimonial
+                  {isSubmitting && <Loader2 className="animate-spin h-4 w-4" />}
+                  {userTestimonial ? "Update" : "Submit"}
                 </button>
-              )}
+
+                {userTestimonial && (
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={isSubmitting}
+                    className="bg-red-500 text-white rounded-lg py-2 hover:bg-red-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2 px-4"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+
+              <p className="text-xs text-gray-500 text-center mt-2">
+                Fields marked with * are required
+              </p>
             </form>
           </div>
         </div>
