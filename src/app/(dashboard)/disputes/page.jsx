@@ -183,7 +183,7 @@ export default function DisputesPage() {
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <CardTitle className="text-xl">
+                      <CardTitle className="text-xl font-bold">
                         {dispute.projectTitle}
                       </CardTitle>
                       <CardDescription>
@@ -196,17 +196,17 @@ export default function DisputesPage() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="font-medium">Disputed Milestone:</span>{" "}
+                      <span className="font-bold">Disputed Milestone:</span>{" "}
                       {milestone}
                     </div>
                     <div>
-                      <span className="font-medium">Deal ID:</span>{" "}
+                      <span className="font-bold">Deal ID:</span>{" "}
                       {dispute.dealId}
                     </div>
                   </div>
 
                   <div>
-                    <p className="font-medium mb-1">Reason:</p>
+                    <p className="font-bold mb-1">Reason:</p>
                     <p className="text-muted-foreground whitespace-pre-wrap">
                       {dispute.reason}
                     </p>
@@ -214,7 +214,7 @@ export default function DisputesPage() {
 
                   {dispute.files?.length > 0 && (
                     <div>
-                      <p className="font-medium mb-2">Attached Proof:</p>
+                      <p className="font-bold mb-2">Attached Proof:</p>
                       <div className="flex flex-wrap gap-2">
                         {dispute.files.map((url, i) => (
                           <a

@@ -774,7 +774,9 @@ export default function WalletPage() {
               </div>
               <div className="flex items-center justify-between p-3 bg-background rounded-md">
                 <span className="text-secondary-blue text-sm">Bank Name</span>
-                <strong className="font-mono">{virtualAccount.bankName}</strong>
+                <strong className="font-mono">
+                  {virtualAccount.bankName} MFB
+                </strong>
               </div>
               <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-700">
                 <p>

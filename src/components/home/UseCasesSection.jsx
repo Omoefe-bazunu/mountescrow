@@ -76,7 +76,7 @@ export default function UseCasesSection() {
                 className="w-full h-full"
               >
                 <Image
-                  src="https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2FGemini_Generated_Image_smij1dsmij1dsmij%20(1).png?alt=media&token=7557047c-7a80-4c45-aa06-cad965f8f95e"
+                  src="https://firebasestorage.googleapis.com/v0/b/penned-aae02.appspot.com/o/General%2Fapi.png?alt=media&token=3c637d56-c151-4c19-869c-577437d42cdb"
                   alt="A visual representation of API integration session"
                   width={800}
                   height={600}

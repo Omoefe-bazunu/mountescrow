@@ -1,50 +1,42 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Star, PlusCircle, X } from "lucide-react";
+import { Star, PlusCircle, X, Loader2, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import {
+  getAllTestimonials,
+  getMyTestimonial,
+  createTestimonial,
+  updateTestimonial,
+  deleteTestimonial,
+} from "@/services/testimonials.service";
 
 const styles = `
   @keyframes slideIn {
     0% { opacity: 0; transform: translateX(100%); }
     100% { opacity: 1; transform: translateX(0); }
   }
-
   @keyframes slideOut {
     0% { opacity: 1; transform: translateX(0); }
     100% { opacity: 0; transform: translateX(-100%); }
   }
-
-  .slide-enter {
-    animation: slideIn 0.8s ease forwards;
-  }
-
-  .slide-exit {
-    animation: slideOut 0.8s ease forwards;
-  }
-
-  .half-visible {
-    transform: scale(0.9);
-    opacity: 0.6;
-    filter: blur(1px);
-  }
-
-  .animate-fadeIn {
-    animation: fadeIn 1s ease-in-out forwards;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0 }
-    to { opacity: 1 }
-  }
+  .slide-enter { animation: slideIn 0.8s ease forwards; }
+  .slide-exit { animation: slideOut 0.8s ease forwards; }
+  .half-visible { transform: scale(0.9); opacity: 0.6; filter: blur(1px); }
+  .animate-fadeIn { animation: fadeIn 1s ease-in-out forwards; }
+  @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
 `;
 
 export default function TestimonialsSection() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [testimonials, setTestimonials] = useState([]);
+  const [userTestimonial, setUserTestimonial] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSliding, setIsSliding] = useState(false);
 
+  // Modal State
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     authorName: "",
@@ -55,29 +47,54 @@ export default function TestimonialsSection() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch testimonials from server
-  useEffect(() => {
-    const fetchTestimonials = async () => {
-      try {
-        const response = await fetch("/api/testimonials");
-        if (response.ok) {
-          const data = await response.json();
-          setTestimonials(data.testimonials || []);
-          setCurrentIndex(0);
-        } else {
-          console.error("Failed to fetch testimonials");
-        }
-      } catch (error) {
-        console.error("Error fetching testimonials:", error);
-      }
-    };
+  // Fetch testimonials
+  const fetchTestimonials = async () => {
+    try {
+      const data = await getAllTestimonials();
+      setTestimonials(data);
+    } catch (error) {
+      console.error("Error fetching testimonials:", error);
+    }
+  };
 
+  // Fetch user's testimonial
+  const fetchUserTestimonial = async () => {
+    try {
+      const data = await getMyTestimonial();
+      setUserTestimonial(data);
+
+      if (data) {
+        setFormData({
+          authorName: data.authorName,
+          authorTitle: data.authorTitle,
+          review: data.review,
+          rating: data.rating,
+          photo: null,
+        });
+      } else {
+        setFormData({
+          authorName: user?.displayName || "",
+          authorTitle: "",
+          review: "",
+          rating: 5,
+          photo: null,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching user testimonial:", error);
+    }
+  };
+
+  useEffect(() => {
     fetchTestimonials();
-  }, []);
+    if (user) {
+      fetchUserTestimonial();
+    }
+  }, [user]);
 
   // Auto-slide carousel
   useEffect(() => {
-    if (testimonials.length > 1) {
+    if (testimonials.length > 1 && !showModal) {
       const timer = setTimeout(() => {
         setIsSliding(true);
         setTimeout(() => {
@@ -87,7 +104,39 @@ export default function TestimonialsSection() {
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [currentIndex, testimonials]);
+  }, [currentIndex, testimonials, showModal]);
+
+  // Open Modal
+  const handleOpenModal = () => {
+    setShowModal(true);
+  };
+
+  // Handle Delete
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this testimonial?")) return;
+
+    setIsSubmitting(true);
+    try {
+      await deleteTestimonial(userTestimonial.id);
+
+      toast({
+        title: "Success",
+        description: "Testimonial deleted successfully.",
+      });
+
+      setUserTestimonial(null);
+      await fetchTestimonials();
+      setShowModal(false);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to delete testimonial",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value, files } = e.target;
@@ -103,47 +152,32 @@ export default function TestimonialsSection() {
     setIsSubmitting(true);
 
     try {
-      // Create FormData for file upload
-      const submitData = new FormData();
-      submitData.append("authorName", formData.authorName);
-      submitData.append("authorTitle", formData.authorTitle);
-      submitData.append("review", formData.review);
-      submitData.append("rating", formData.rating.toString());
-
-      if (formData.photo) {
-        submitData.append("photo", formData.photo);
+      if (userTestimonial) {
+        // Update existing testimonial
+        await updateTestimonial(userTestimonial.id, formData);
+        toast({
+          title: "Success",
+          description: "Testimonial updated successfully!",
+        });
+      } else {
+        // Create new testimonial
+        await createTestimonial(formData);
+        toast({
+          title: "Success",
+          description: "Testimonial submitted successfully!",
+        });
       }
 
-      const response = await fetch("/api/testimonials", {
-        method: "POST",
-        body: submitData,
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to submit testimonial");
-      }
-
-      // Refresh testimonials
-      const testimonialsResponse = await fetch("/api/testimonials");
-      if (testimonialsResponse.ok) {
-        const data = await testimonialsResponse.json();
-        setTestimonials(data.testimonials || []);
-      }
-
-      // Reset form and close modal
-      setFormData({
-        authorName: "",
-        authorTitle: "",
-        review: "",
-        rating: 5,
-        photo: null,
-      });
+      await fetchTestimonials();
+      await fetchUserTestimonial();
       setShowModal(false);
     } catch (err) {
-      console.error("Error adding testimonial:", err);
-      alert(err.message || "Failed to submit testimonial");
+      console.error("Submission error:", err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: err.message || "Failed to submit testimonial",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -158,17 +192,11 @@ export default function TestimonialsSection() {
       />
     ));
 
-  // Handle image error safely
-  const handleImageError = (e) => {
-    e.target.style.display = "none";
-    const fallback = e.target.nextSibling;
-    if (fallback && fallback.style) {
-      fallback.style.display = "flex";
-    }
-  };
-
   const current = testimonials[currentIndex];
-  const next = testimonials[(currentIndex + 1) % testimonials.length];
+  const next =
+    testimonials.length > 0
+      ? testimonials[(currentIndex + 1) % testimonials.length]
+      : null;
 
   return (
     <div
@@ -186,10 +214,7 @@ export default function TestimonialsSection() {
       <h2 className="text-primary-blue font-semibold font-headline text-3xl md:text-4xl mb-6 animate-fadeIn">
         HEAR FROM OUR USERS
       </h2>
-      <p
-        className="text-muted-foreground max-w-3xl mx-auto mb-12 font-headline animate-fadeIn"
-        style={{ animationDelay: "0.2s" }}
-      >
+      <p className="text-muted-foreground max-w-3xl mx-auto mb-12 font-headline animate-fadeIn">
         Hear from those who already use Mountescrow to power safe and secure
         payments.
       </p>
@@ -197,11 +222,11 @@ export default function TestimonialsSection() {
       {/* CTA */}
       {user ? (
         <button
-          onClick={() => setShowModal(true)}
+          onClick={handleOpenModal}
           className="flex items-center font-headline gap-2 mx-auto mb-10 bg-orange-500 hover:bg-highlight-blue text-white px-5 py-3 rounded-full transition-all"
         >
           <PlusCircle size={18} />
-          Add Your Testimonial
+          {userTestimonial ? "Update Your Testimonial" : "Add Your Testimonial"}
         </button>
       ) : (
         <a
@@ -212,33 +237,33 @@ export default function TestimonialsSection() {
         </a>
       )}
 
-      {/* Fallback if no testimonials */}
+      {/* Testimonial Display */}
       {testimonials.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 bg-white/70 rounded-2xl shadow-lg mx-auto w-[80%] md:w-[50%]">
           <p className="text-gray-600 text-lg font-medium mb-2">
             No reviews yet.
           </p>
-          <p className="text-sm text-gray-500">
-            Be the first to share your experience with Mountescrow!
-          </p>
         </div>
       ) : (
-        <div className="relative flex justify-center items-center overflow-hidden h-[400px]">
+        <div className="relative flex justify-center items-center overflow-hidden h-[450px]">
           {/* Active Card */}
           <div
             className={`absolute transition-all duration-700 ease-in-out ${
               isSliding ? "slide-exit" : "z-20"
-            } w-[80%] md:w-[50%] bg-white p-8 rounded-2xl shadow-xl mx-auto`}
+            } w-[90%] md:w-[50%] bg-white p-8 rounded-2xl shadow-xl mx-auto`}
           >
             <div className="flex flex-col items-center">
               <div className="w-24 h-24 rounded-full overflow-hidden mb-6 border-4 border-primary-blue flex items-center justify-center bg-gray-50">
                 <img
-                  src={current.photoUrl}
+                  src={current.photoUrl || ""}
                   alt={current.authorName}
-                  className="object-cover w-full h-full bg-slate-600"
-                  onError={handleImageError}
+                  className="object-cover w-full h-full bg-slate-200"
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                    e.target.nextSibling.style.display = "flex";
+                  }}
                 />
-                <div className="hidden w-full h-full bg-gray-200 items-center justify-center text-gray-500">
+                <div className="hidden w-full h-full bg-gray-200 items-center justify-center text-gray-500 text-2xl font-bold">
                   {current.authorName?.charAt(0) || "U"}
                 </div>
               </div>
@@ -259,26 +284,29 @@ export default function TestimonialsSection() {
             </div>
           </div>
 
-          {/* Next Card */}
+          {/* Next Card Preview */}
           {next && (
             <div
               className={`absolute right-0 transition-transform duration-700 ${
                 isSliding ? "slide-enter" : "half-visible"
-              } w-[60%] md:w-[40%] bg-white p-6 rounded-2xl shadow-lg translate-x-[25%]`}
+              } w-[60%] md:w-[40%] bg-white p-6 rounded-2xl shadow-lg translate-x-[35%] opacity-50`}
             >
-              <div className="flex flex-col items-center opacity-80">
-                <div className="w-20 h-20 rounded-full overflow-hidden mb-4 border-2 border-primary-blue flex items-center justify-center bg-gray-50">
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full overflow-hidden mb-2 border-2 border-primary-blue flex items-center justify-center bg-gray-50">
                   <img
-                    src={next.photoUrl}
+                    src={next.photoUrl || ""}
                     alt={next.authorName}
                     className="object-cover w-full h-full"
-                    onError={handleImageError}
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                      e.target.nextSibling.style.display = "flex";
+                    }}
                   />
-                  <div className="hidden w-full h-full bg-gray-200 items-center justify-center text-gray-500 text-sm">
+                  <div className="hidden w-full h-full bg-gray-200 items-center justify-center text-gray-500">
                     {next.authorName?.charAt(0) || "U"}
                   </div>
                 </div>
-                <p className="text-sm italic text-gray-600 line-clamp-3">
+                <p className="text-xs italic text-gray-600 line-clamp-2">
                   "{next.review}"
                 </p>
               </div>
@@ -289,8 +317,8 @@ export default function TestimonialsSection() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-2xl shadow-lg w-[90%] md:w-[450px] relative">
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+          <div className="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md relative">
             <button
               onClick={() => setShowModal(false)}
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
@@ -298,7 +326,7 @@ export default function TestimonialsSection() {
               <X size={20} />
             </button>
             <h3 className="text-xl font-semibold mb-4 text-primary">
-              Add Testimonial
+              {userTestimonial ? "Update Testimonial" : "Add Testimonial"}
             </h3>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
@@ -341,19 +369,39 @@ export default function TestimonialsSection() {
                   ))}
                 </select>
               </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleInputChange}
-                className="border rounded-lg p-2"
-              />
+
+              <div className="border rounded-lg p-2">
+                <label className="text-xs text-gray-500 mb-1 block">
+                  {userTestimonial ? "Update Photo (Optional)" : "Upload Photo"}
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleInputChange}
+                  className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+                />
+              </div>
+
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-primary-blue text-white rounded-lg py-2 hover:bg-primary/80 transition-all disabled:opacity-50"
+                className="bg-primary-blue text-white rounded-lg py-2 hover:bg-primary/80 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isSubmitting ? "Submitting..." : "Submit Testimonial"}
+                {isSubmitting && <Loader2 className="animate-spin h-4 w-4" />}
+                {userTestimonial ? "Update" : "Submit"}
               </button>
+
+              {userTestimonial && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isSubmitting}
+                  className="bg-red-500 text-white rounded-lg py-2 hover:bg-red-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Trash2 size={16} />
+                  Delete Testimonial
+                </button>
+              )}
             </form>
           </div>
         </div>

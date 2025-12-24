@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Bell, Check, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns"; // Ensure this is imported
 import {
   getNotifications,
   getNotificationCount,
@@ -22,7 +23,6 @@ export function NotificationBell() {
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      // Using service instead of raw fetch [cite: 884, 954-955]
       const data = await getNotifications(1, 10);
       setNotifications(data.notifications || []);
       setError(null);
@@ -36,7 +36,6 @@ export function NotificationBell() {
 
   const loadNotificationCount = async () => {
     try {
-      // Using service instead of raw fetch [cite: 885, 960-961]
       const data = await getNotificationCount();
       setUnreadCount(data.unreadCount || 0);
     } catch (err) {
@@ -46,10 +45,6 @@ export function NotificationBell() {
 
   useEffect(() => {
     loadNotificationCount();
-    if (dropdownOpen) {
-      loadNotifications();
-    }
-
     // Auto-refresh unread count every 30 seconds
     const interval = setInterval(() => {
       loadNotificationCount();
@@ -61,10 +56,16 @@ export function NotificationBell() {
     return () => clearInterval(interval);
   }, [dropdownOpen]);
 
+  // Load notifications list when dropdown opens
+  useEffect(() => {
+    if (dropdownOpen) {
+      loadNotifications();
+    }
+  }, [dropdownOpen]);
+
   const handleMarkAsRead = async (notificationId, e) => {
     e.stopPropagation();
     try {
-      // Using service instead of raw fetch [cite: 886, 967]
       await markNotificationAsRead(notificationId);
       setNotifications((prev) =>
         prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
@@ -78,7 +79,6 @@ export function NotificationBell() {
   const handleDelete = async (notificationId, e) => {
     e.stopPropagation();
     try {
-      // Using service instead of raw fetch [cite: 888, 971]
       await deleteNotification(notificationId);
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
       if (!notifications.find((n) => n.id === notificationId)?.read) {
@@ -91,13 +91,30 @@ export function NotificationBell() {
 
   const handleMarkAllAsRead = async () => {
     try {
-      // Using service instead of raw fetch [cite: 887, 974]
       await markAllNotificationsAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (err) {
       console.error("Mark all as read error:", err);
     }
+  };
+
+  const formatDate = (timestamp) => {
+    if (!timestamp) return "N/A";
+
+    let date;
+    if (timestamp._seconds) {
+      date = new Date(timestamp._seconds * 1000);
+    } else if (timestamp.seconds) {
+      date = new Date(timestamp.seconds * 1000);
+    } else if (timestamp.toDate) {
+      date = timestamp.toDate();
+    } else {
+      date = new Date(timestamp);
+    }
+
+    // Using "MMM dd, p" for shorter format in dropdowns (e.g. "Oct 24, 2:30 PM")
+    return date && !isNaN(date) ? format(date, "MMM dd, p") : "N/A";
   };
 
   const getNotificationIcon = (type) => {
@@ -133,7 +150,7 @@ export function NotificationBell() {
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center"
               >
                 <Check className="h-3 w-3 inline mr-1" />
                 Mark all as read
@@ -186,17 +203,9 @@ export function NotificationBell() {
                           <p className="text-xs text-gray-600 mt-1 line-clamp-2">
                             {notification.message}
                           </p>
+                          {/* FIXED: changed createAt to createdAt */}
                           <p className="text-[10px] text-gray-400 mt-2">
-                            {new Date(
-                              notification.createdAt
-                            ).toLocaleDateString()}{" "}
-                            •{" "}
-                            {new Date(
-                              notification.createdAt
-                            ).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                            {formatDate(notification.createdAt)}
                           </p>
                         </div>
                       </div>

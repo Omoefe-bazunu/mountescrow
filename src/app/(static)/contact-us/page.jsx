@@ -108,7 +108,7 @@ export default function ContactUsPage() {
             </p>
             <div className="space-y-6 flex flex-col items-center justify-center font-headline">
               {[
-                { Icon: Phone, text: "+234 - 904 - 3970 - 401" },
+                { Icon: Phone, text: "+2348087480502" },
                 { Icon: Mail, text: "support@mountescrow.com" },
                 {
                   Icon: MapPin,
@@ -158,7 +158,7 @@ export default function ContactUsPage() {
               <Input
                 id="name"
                 type="text"
-                placeholder="E.g. Omoofe Bazunu"
+                placeholder="E.g. John Doe"
                 className="bg-muted"
                 value={formData.name}
                 onChange={handleChange}
@@ -170,7 +170,7 @@ export default function ContactUsPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="E.g. raniem57@gmail.com"
+                placeholder="E.g. johndoe@gmail.com"
                 className="bg-muted"
                 value={formData.email}
                 onChange={handleChange}
@@ -182,7 +182,7 @@ export default function ContactUsPage() {
               <Input
                 id="phone"
                 type="tel"
-                placeholder="E.g. +2349043970401"
+                placeholder="E.g. +23491288726639"
                 className="bg-muted"
                 value={formData.phone}
                 onChange={handleChange}
