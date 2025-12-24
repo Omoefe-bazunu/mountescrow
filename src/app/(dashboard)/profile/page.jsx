@@ -409,7 +409,7 @@ export default function UserProfile() {
               <CreditCard className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Bank Name</p>
-                <p className="font-medium">{userData.bankName}</p>
+                <p className="font-medium">{userData.bankName} MFB</p>
               </div>
             </div>
           </CardContent>
