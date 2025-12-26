@@ -31,24 +31,17 @@ export default function DisputesPage() {
 
     setLoading(true);
     try {
-      console.log("🔄 Fetching disputes for:", user.email);
-
       const res = await fetch("/api/disputes/my", {
         credentials: "include",
       });
 
       if (!res.ok) {
-        const errorText = await res.text();
-        console.error("❌ API Error:", res.status, errorText);
         throw new Error(`Failed to fetch disputes: ${res.status}`);
       }
 
       const data = await res.json();
-      console.log("📦 Disputes data received:", data);
-
       setDisputes(data.disputes || []);
     } catch (err) {
-      console.error("❌ Fetch disputes error:", err);
       toast({
         variant: "destructive",
         title: "Error",
@@ -70,31 +63,24 @@ export default function DisputesPage() {
   const handleMarkResolved = async (disputeId) => {
     setResolvingId(disputeId);
     try {
-      console.log(`🔄 Resolving dispute: ${disputeId}`);
-
       const res = await fetch(`/api/disputes/${disputeId}/resolve`, {
         method: "POST",
         credentials: "include",
       });
 
       if (!res.ok) {
-        const errorText = await res.text();
         throw new Error(`Failed to resolve: ${res.status}`);
       }
-
-      const result = await res.json();
 
       toast({
         title: "Dispute Resolved",
         description: "Marked as resolved.",
       });
 
-      // Update local state
       setDisputes((prev) =>
         prev.map((d) => (d.id === disputeId ? { ...d, status: "resolved" } : d))
       );
     } catch (err) {
-      console.error("❌ Resolve error:", err);
       toast({
         variant: "destructive",
         title: "Failed",
@@ -107,7 +93,6 @@ export default function DisputesPage() {
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "N/A";
-
     let date;
     if (timestamp._seconds) {
       date = new Date(timestamp._seconds * 1000);
@@ -118,7 +103,6 @@ export default function DisputesPage() {
     } else {
       date = new Date(timestamp);
     }
-
     return date && !isNaN(date) ? format(date, "PPP") : "N/A";
   };
 
@@ -154,7 +138,7 @@ export default function DisputesPage() {
         <div>
           <h1 className="text-3xl font-bold">My Disputes</h1>
           <p className="text-muted-foreground mt-1">
-            View and manage disputes you've raised
+            View and manage disputes related to your transactions
           </p>
         </div>
       </div>
@@ -164,14 +148,12 @@ export default function DisputesPage() {
           <CardContent className="text-center py-12">
             <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-lg text-muted-foreground">No disputes found</p>
-            <p className="text-sm mt-2">
-              When you raise a dispute, it will appear here.
-            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-6">
           {disputes.map((dispute) => {
+            const isRaisedByMe = dispute.raisedByEmail === user?.email;
             const milestone =
               dispute.milestoneIndex !== undefined &&
               dispute.milestoneIndex !== null
@@ -183,6 +165,18 @@ export default function DisputesPage() {
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
+                      <div className="flex gap-2 mb-2">
+                        <Badge
+                          variant={isRaisedByMe ? "outline" : "destructive"}
+                          className={
+                            isRaisedByMe ? "border-primary text-primary" : ""
+                          }
+                        >
+                          {isRaisedByMe
+                            ? "Raised by You"
+                            : "Raised by Counterparty"}
+                        </Badge>
+                      </div>
                       <CardTitle className="text-xl font-bold">
                         {dispute.projectTitle}
                       </CardTitle>
@@ -193,10 +187,11 @@ export default function DisputesPage() {
                     {getStatusBadge(dispute.status)}
                   </div>
                 </CardHeader>
+
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="font-bold">Disputed Milestone:</span>{" "}
+                      <span className="font-bold">Disputed Target:</span>{" "}
                       {milestone}
                     </div>
                     <div>
@@ -231,7 +226,7 @@ export default function DisputesPage() {
                     </div>
                   )}
 
-                  {dispute.status !== "resolved" && (
+                  {isRaisedByMe && dispute.status !== "resolved" && (
                     <div className="pt-4 border-t">
                       <Button
                         onClick={() => handleMarkResolved(dispute.id)}

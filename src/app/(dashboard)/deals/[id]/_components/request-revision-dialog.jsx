@@ -53,21 +53,43 @@ export function RequestRevisionDialog({
   async function onSubmit(values) {
     setLoading(true);
     try {
+      // 1. Submit the milestone revision request [cite: 1827]
       await requestMilestoneRevision(dealId, milestoneIndex, values.message);
+
+      // 2. Automatically stop the countdown [cite: 1848, 1850]
+      const csrfToken = document.cookie
+        .split("; ")
+        .find((c) => c.startsWith("csrf-token="))
+        ?.split("=")[1];
+
+      await fetch(
+        `/api/deals/${dealId}/milestones/${milestoneIndex}/cancel-countdown`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-csrf-token": csrfToken || "",
+          },
+          credentials: "include",
+        }
+      );
+
       toast({
-        title: "Revision Requested",
+        title: "Revision Requested & Countdown Stopped",
         className: "bg-white",
-        description: "The seller has been notified to revise their work.",
+        description:
+          "The seller has been notified and the auto-approval timer has been paused.",
       });
+
       onSuccess();
       onClose();
     } catch (error) {
-      console.error("Error requesting revision:", error);
+      console.error("Error during revision request:", error);
       toast({
         variant: "destructive",
         className: "bg-white",
         title: "Error",
-        description: "Failed to request revision.",
+        description: "Failed to process the revision request.",
       });
     } finally {
       setLoading(false);
@@ -81,7 +103,7 @@ export function RequestRevisionDialog({
           <DialogTitle>Request Revision</DialogTitle>
           <DialogDescription>
             Explain what changes are needed for this milestone. This will be
-            sent to the seller.
+            sent to the seller and stop the auto-approval timer.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
