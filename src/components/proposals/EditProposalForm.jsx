@@ -1,5 +1,3 @@
-// components/proposals/EditProposalForm.jsx
-
 "use client";
 
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
@@ -17,8 +15,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useMemo, useCallback } from "react";
-import { CalendarIcon, Loader2, PlusCircle, Trash2, X } from "lucide-react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import {
+  CalendarIcon,
+  Loader2,
+  PlusCircle,
+  Trash2,
+  X,
+  ShieldAlert,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -39,6 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/contexts/AuthContext";
 
 const formatNumber = (num) => {
   return new Intl.NumberFormat("en-NG", {
@@ -78,8 +84,30 @@ export function EditProposalForm({ proposal, proposalId }) {
   const [existingFiles, setExistingFiles] = useState(proposal.files || []);
   const [removedFiles, setRemovedFiles] = useState([]);
   const [uploadError, setUploadError] = useState(null);
+  const [isSpecialClient, setIsSpecialClient] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
+
   const { toast } = useToast();
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Fraud Control Limit: 100 Million Naira
+  const PROJECT_VALUE_LIMIT = 100000000;
+
+  useEffect(() => {
+    const checkClientStatus = async () => {
+      try {
+        const res = await fetch("/api/special-client");
+        const data = await res.json();
+        setIsSpecialClient(data.isSpecialClient || false);
+      } catch (err) {
+        console.error("Failed to fetch client status");
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+    if (user) checkClientStatus();
+  }, [user]);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -124,6 +152,10 @@ export function EditProposalForm({ proposal, proposalId }) {
       escrowFeeWithVAT: totalFee,
     };
   }, [watchedMilestones]);
+
+  const limitExceeded = useMemo(() => {
+    return totalAmount > PROJECT_VALUE_LIMIT && !isSpecialClient;
+  }, [totalAmount, isSpecialClient]);
 
   const buyerEscrowFeePortion = useMemo(() => {
     return escrowFeeWithVAT * (Number(watchedEscrowFeePayer) / 100);
@@ -186,6 +218,7 @@ export function EditProposalForm({ proposal, proposalId }) {
   }, [existingFiles, newFiles]);
 
   async function onSubmit(values) {
+    if (limitExceeded) return;
     if (!validateFiles()) return;
 
     setLoading(true);
@@ -271,8 +304,8 @@ export function EditProposalForm({ proposal, proposalId }) {
             )}
           />
 
-          <div>
-            <FormLabel className="block mb-2">Counterparty Email</FormLabel>
+          <div className="space-y-2">
+            <FormLabel className="block">Counterparty Email</FormLabel>
             <Input
               value={
                 proposal.creatorRole === "buyer"
@@ -566,26 +599,49 @@ export function EditProposalForm({ proposal, proposalId }) {
           </CardContent>
         </Card>
 
-        <div className="flex gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            className="flex-1"
-            onClick={() => router.back()}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" className="flex-1" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating...
-              </>
-            ) : (
-              "Update Proposal"
-            )}
-          </Button>
+        <div className="space-y-4">
+          {limitExceeded && (
+            <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+              <ShieldAlert className="h-5 w-5" />
+              <p className="text-sm font-medium">
+                High-value projects exceed standard limits. Please{" "}
+                <a
+                  href="mailto:admin@mountescrow.com"
+                  className="underline font-bold"
+                >
+                  Contact Admin (admin@mountescrow.com)
+                </a>
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={() => router.back()}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="flex-1"
+              disabled={loading || limitExceeded || checkingStatus}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : limitExceeded ? (
+                "Limit Exceeded"
+              ) : (
+                "Update Proposal"
+              )}
+            </Button>
+          </div>
         </div>
       </form>
     </Form>

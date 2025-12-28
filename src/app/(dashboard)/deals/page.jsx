@@ -17,9 +17,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ShieldAlert, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -33,6 +39,7 @@ const formatNumber = (num) => {
 export default function DealsPage() {
   const { user, loading: authLoading } = useAuth();
   const [deals, setDeals] = useState([]);
+  const [flaggedIds, setFlaggedIds] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,14 +53,25 @@ export default function DealsPage() {
   const fetchDeals = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/deals", {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to fetch deals");
-      const data = await res.json();
-      setDeals(data.deals || []);
+      // Fetch both deals and the list of flagged IDs
+      const [dealsRes, flaggedRes] = await Promise.all([
+        fetch("/api/deals", { credentials: "include" }),
+        fetch("/api/deals/flagged-ids", { credentials: "include" }).catch(
+          () => null
+        ),
+      ]);
+
+      if (!dealsRes.ok) throw new Error("Failed to fetch deals");
+
+      const dealsData = await dealsRes.json();
+      const flaggedData = flaggedRes
+        ? await flaggedRes.json()
+        : { flaggedIds: [] };
+
+      setDeals(dealsData.deals || []);
+      setFlaggedIds(flaggedData.flaggedIds || []);
     } catch (error) {
-      console.error("Error fetching deals:", error);
+      console.error("Error fetching deals data:", error);
     } finally {
       setLoading(false);
     }
@@ -115,29 +133,67 @@ export default function DealsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {deals.map((deal) => (
-                <TableRow key={deal.id}>
-                  <TableCell className="font-medium">
-                    {deal.projectTitle}
-                  </TableCell>
-                  <TableCell>{isBuyer(deal) ? "Buyer" : "Seller"}</TableCell>
-                  <TableCell className="text-right">
-                    ₦{formatNumber(deal.totalAmount + deal.escrowFee)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant={getStatusVariant(deal.status)}>
-                      {deal.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" asChild>
-                      <Link href={`/deals/${deal.id}`}>
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {deals.map((deal) => {
+                const isSuspended = flaggedIds.includes(deal.id);
+
+                return (
+                  <TableRow
+                    key={deal.id}
+                    className={isSuspended ? "opacity-70 bg-slate-50/50" : ""}
+                  >
+                    <TableCell className="font-medium">
+                      {deal.projectTitle}
+                    </TableCell>
+                    <TableCell>{isBuyer(deal) ? "Buyer" : "Seller"}</TableCell>
+                    <TableCell className="text-right">
+                      ₦{formatNumber(deal.totalAmount + (deal.escrowFee || 0))}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {isSuspended ? (
+                        <Badge variant="destructive" className="gap-1">
+                          <ShieldAlert className="h-3 w-3" /> Suspended
+                        </Badge>
+                      ) : (
+                        <Badge variant={getStatusVariant(deal.status)}>
+                          {deal.status}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {isSuspended ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive cursor-help"
+                              >
+                                <Info className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="left"
+                              className="bg-white border-destructive text-destructive font-bold"
+                            >
+                              <p>
+                                Transaction locked for review. Contact
+                                admin@mountescrow.com
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <Button variant="ghost" size="icon" asChild>
+                          <Link href={`/deals/${deal.id}`}>
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         ) : (
