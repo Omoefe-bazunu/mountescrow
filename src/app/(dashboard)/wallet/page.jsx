@@ -1237,12 +1237,19 @@ export default function WalletPage() {
     }
   };
 
-  // OTP HANDLERS (Kept from Current Wallet)
+  // CORRECTED OTP HANDLERS: Passing CSRF tokens to resolve 403 error
   const handleSendOTP = async () => {
     setOtpLoading(true);
+    const csrfToken = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("csrf-token="))
+      ?.split("=")[1];
+
     try {
       const res = await fetch("/api/wallet/withdraw/send-otp", {
         method: "POST",
+        headers: { "x-csrf-token": csrfToken },
+        credentials: "include",
       });
       if (res.ok) {
         setOtpSent(true);
@@ -1251,7 +1258,7 @@ export default function WalletPage() {
           description: "Verification code sent to your email.",
         });
       } else {
-        throw new Error("Failed to send verification code");
+        throw new Error("Failed to send code");
       }
     } catch (err) {
       toast({ variant: "destructive", description: err.message });
@@ -1262,21 +1269,30 @@ export default function WalletPage() {
 
   const handleVerifyOTP = async () => {
     setOtpLoading(true);
+    const csrfToken = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("csrf-token="))
+      ?.split("=")[1];
+
     try {
       const res = await fetch("/api/wallet/withdraw/verify-otp", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": csrfToken,
+        },
+        credentials: "include",
         body: JSON.stringify({ otp }),
       });
       if (res.ok) {
         setWithdrawStep(2);
         toast({
           title: "Identity Verified",
-          description: "You can now fill the withdrawal form.",
+          description: "Proceed to fill the form.",
         });
       } else {
         const data = await res.json();
-        throw new Error(data.error || "Invalid verification code");
+        throw new Error(data.error || "Invalid code");
       }
     } catch (err) {
       toast({ variant: "destructive", description: err.message });
