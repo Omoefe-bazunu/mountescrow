@@ -1154,8 +1154,8 @@ export default function WalletPage() {
   });
   const [banksLoading, setBanksLoading] = useState(false);
 
-  // OTP STATES
-  const [withdrawStep, setWithdrawStep] = useState(1); // 1: Verify Identity, 2: Withdrawal Form
+  // OTP STATES (Kept from Current Wallet)
+  const [withdrawStep, setWithdrawStep] = useState(1); // 1: Verify Identity, 2: Withdrawal Form [cite: 477]
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
@@ -1163,6 +1163,7 @@ export default function WalletPage() {
   const { toast } = useToast();
   const router = useRouter();
 
+  // Load user data from backend (Restored Original Logic)
   useEffect(() => {
     if (!user) {
       if (!authLoading) router.push("/login");
@@ -1175,6 +1176,8 @@ export default function WalletPage() {
         if (res.ok) {
           const data = await res.json();
           setUserData(data);
+
+          // ALWAYS check user data first - this comes from Firestore [cite: 22]
           if (data.accountNumber) {
             setVirtualAccount({
               virtualAccountNumber: data.accountNumber,
@@ -1183,6 +1186,7 @@ export default function WalletPage() {
             setLoading(false);
             return;
           } else {
+            // Only then check the FCMB API [cite: 24]
             await checkVirtualAccount();
           }
         }
@@ -1233,7 +1237,7 @@ export default function WalletPage() {
     }
   };
 
-  // OTP HANDLERS
+  // OTP HANDLERS (Kept from Current Wallet)
   const handleSendOTP = async () => {
     setOtpLoading(true);
     try {
@@ -1378,21 +1382,38 @@ export default function WalletPage() {
     setIsRefreshing(false);
   };
 
+  // Restored checkVirtualAccount (Original Logic)
   const checkVirtualAccount = async () => {
     try {
       const res = await fetch("/api/virtual-account/check");
       const data = await res.json();
-      if (data.virtualAccount?.virtualAccountId) {
+      if (data.virtualAccount) {
+        const fcmbAccount = data.virtualAccount;
+        if (fcmbAccount.virtualAccountId) {
+          setVirtualAccount({
+            virtualAccountNumber: fcmbAccount.virtualAccountId,
+            bankName: fcmbAccount.bankName || "FCMB",
+          });
+        }
+      } else if (userData?.accountNumber) {
+        // Fallback to Firestore data [cite: 81]
         setVirtualAccount({
-          virtualAccountNumber: data.virtualAccount.virtualAccountId,
-          bankName: data.virtualAccount.bankName || "FCMB",
+          virtualAccountNumber: userData.accountNumber,
+          bankName: userData.bankName || "FCMB",
         });
       }
     } catch (err) {
-      console.error("Check account failed", err);
+      console.error("Failed to check virtual account:", err);
+      if (userData?.accountNumber) {
+        setVirtualAccount({
+          virtualAccountNumber: userData.accountNumber,
+          bankName: userData.bankName || "FCMB",
+        });
+      }
     }
   };
 
+  // Restored handleCreateAccount (Original Logic)
   const handleCreateAccount = async (e) => {
     e.preventDefault();
     setIsCreatingAccount(true);
@@ -1403,6 +1424,7 @@ export default function WalletPage() {
         body: JSON.stringify(formData),
       });
       const data = await res.json();
+
       if (res.ok && data.success) {
         await refresh();
         const updatedUserRes = await fetch("/api/users/me");
@@ -1420,7 +1442,9 @@ export default function WalletPage() {
         setShowCreateAccountModal(false);
         setShowFundModal(true);
       } else {
-        throw new Error(data.error || "Failed to create virtual account");
+        throw new Error(
+          data.error || data.message || "Failed to create virtual account"
+        );
       }
     } catch (err) {
       setCreateAccountStatus("failed");
@@ -1443,6 +1467,12 @@ export default function WalletPage() {
         description: "Account number copied.",
       });
     });
+  };
+
+  const handleFundClick = async () => {
+    // Always check virtual account status before showing fund modal [cite: 108]
+    await checkVirtualAccount();
+    setShowFundModal(true);
   };
 
   if (authLoading || loading) {
@@ -1479,7 +1509,6 @@ export default function WalletPage() {
 
   return (
     <div className="space-y-6 font-headline">
-      {/* Wallet Summary */}
       <Card className="my-0 bg-white p-4 border-b-4 border-b-primary-blue">
         <CardHeader>
           <div className="flex flex-col md:flex-row justify-between items-start gap-4">
@@ -1502,9 +1531,9 @@ export default function WalletPage() {
                 disabled={isRefreshing}
               >
                 {isRefreshing ? (
-                  <Loader2 className=" h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <RefreshCw className=" text-center h-4 w-4" />
+                  <RefreshCw className="h-4 w-4" />
                 )}{" "}
                 Refresh
               </Button>
@@ -1539,7 +1568,7 @@ export default function WalletPage() {
               <Button
                 variant="secondary"
                 className="flex-1"
-                onClick={() => setShowFundModal(true)}
+                onClick={handleFundClick}
               >
                 <ArrowDown className="mr-2 h-4 w-4" /> Fund
               </Button>
@@ -1552,9 +1581,13 @@ export default function WalletPage() {
             </div>
           </div>
 
-          {virtualAccount?.virtualAccountNumber ? (
+          {/* Virtual Account Display (Restored Original) */}
+          {virtualAccount && virtualAccount.virtualAccountNumber ? (
             <div className="bg-muted p-6 rounded-lg">
               <h3 className="font-semibold mb-4">Your Funding Account</h3>
+              <p className="text-sm text-secondary-blue mb-2">
+                To deposit funds, transfer money to this account:
+              </p>
               <div className="space-y-2">
                 <div className="flex items-center justify-between p-3 bg-background rounded-md">
                   <span className="text-secondary-blue text-sm">
@@ -1586,15 +1619,22 @@ export default function WalletPage() {
             </div>
           ) : (
             <div className="bg-muted p-6 rounded-lg flex items-center justify-center">
-              <Button onClick={() => setShowCreateAccountModal(true)} size="sm">
-                Create Virtual Account
-              </Button>
+              <div className="text-center">
+                <p className="text-sm text-secondary-blue mb-2">
+                  No virtual account found
+                </p>
+                <Button
+                  onClick={() => setShowCreateAccountModal(true)}
+                  size="sm"
+                >
+                  Create Virtual Account
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Transaction History Section */}
       <Card className="p-0 py-4 md:p-4 bg-white">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Transaction History</CardTitle>
@@ -1624,7 +1664,6 @@ export default function WalletPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* Limited to the first 5 transactions */}
                 {transactions.slice(0, 5).map((tx, idx) => (
                   <TableRow key={tx.id || idx}>
                     <TableCell>
@@ -1651,7 +1690,7 @@ export default function WalletPage() {
                             : "secondary"
                         }
                       >
-                        {tx.status?.toLowerCase()}
+                        {tx.status?.toLowerCase() || "pending"}
                       </Badge>
                     </TableCell>
                   </TableRow>
@@ -1664,7 +1703,168 @@ export default function WalletPage() {
         </CardContent>
       </Card>
 
-      {/* Withdrawal Modal with OTP Flow */}
+      {/* Fund Wallet Modal (Restored Original) */}
+      <Dialog open={showFundModal} onOpenChange={setShowFundModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Fund Your Wallet</DialogTitle>
+            <DialogDescription>
+              {virtualAccount && virtualAccount.virtualAccountNumber
+                ? "Transfer money to this account to fund your wallet. Funds will be automatically credited."
+                : "You need a virtual account to fund your wallet."}
+            </DialogDescription>
+          </DialogHeader>
+          {virtualAccount && virtualAccount.virtualAccountNumber ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-background rounded-md">
+                <span className="text-secondary-blue text-sm">
+                  Account Number
+                </span>
+                <div className="flex items-center gap-2">
+                  <strong className="font-mono">
+                    {virtualAccount.virtualAccountNumber}
+                  </strong>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={() =>
+                      copyToClipboard(virtualAccount.virtualAccountNumber)
+                    }
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-background rounded-md">
+                <span className="text-secondary-blue text-sm">Bank Name</span>
+                <strong className="font-mono">
+                  {virtualAccount.bankName} MFB
+                </strong>
+              </div>
+              <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-700">
+                <p>
+                  💡 <strong>Note:</strong> Transfers may take a few minutes to
+                  reflect in your balance.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <DialogFooter>
+              <Button onClick={() => setShowCreateAccountModal(true)}>
+                Create Virtual Account
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Virtual Account Modal (Restored Original) */}
+      <Dialog
+        open={showCreateAccountModal}
+        onOpenChange={setShowCreateAccountModal}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Virtual Account</DialogTitle>
+            <DialogDescription>
+              Create a virtual account with FCMB to fund your wallet.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateAccount} className="space-y-4">
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                required
+                disabled={isCreatingAccount}
+              />
+            </div>
+            <div>
+              <Label htmlFor="firstName">First Name</Label>
+              <Input
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) =>
+                  setFormData({ ...formData, firstName: e.target.value })
+                }
+                required
+                disabled={isCreatingAccount}
+              />
+            </div>
+            <div>
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) =>
+                  setFormData({ ...formData, lastName: e.target.value })
+                }
+                required
+                disabled={isCreatingAccount}
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
+                required
+                disabled={isCreatingAccount}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={isCreatingAccount}>
+                {isCreatingAccount && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {isCreatingAccount ? "Creating..." : "Create Account"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Account Creation Status Modal (Restored Original) */}
+      <Dialog
+        open={createAccountStatus !== null}
+        onOpenChange={() => setCreateAccountStatus(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {createAccountStatus === "success"
+                ? "Virtual Account Created"
+                : "Failed to Create Account"}
+            </DialogTitle>
+            <DialogDescription>
+              {createAccountStatus === "success"
+                ? "Your account has been successfully created."
+                : "There was an error. Please try again."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setCreateAccountStatus(null);
+                if (createAccountStatus === "success") setShowFundModal(true);
+              }}
+            >
+              {createAccountStatus === "success" ? "View Account" : "Close"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Withdrawal Modal (Kept current OTP logic) */}
       <Dialog
         open={showWithdrawModal}
         onOpenChange={(open) => !open && closeWithdrawModal()}
@@ -1678,7 +1878,6 @@ export default function WalletPage() {
                 : "Transfer money to any bank account in Nigeria."}
             </DialogDescription>
           </DialogHeader>
-
           {withdrawStep === 1 ? (
             <div className="py-6 space-y-6 text-center">
               <div className="flex justify-center">
@@ -1686,22 +1885,20 @@ export default function WalletPage() {
                   <ShieldCheck className="w-12 h-12 text-primary-blue" />
                 </div>
               </div>
-
               {!otpSent ? (
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground px-6">
                     To protect your funds, we need to verify your identity. A
-                    verification code will be sent to{" "}
-                    <strong>{user.email}</strong>.
+                    code will be sent to <strong>{user.email}</strong>.
                   </p>
                   <Button
                     className="w-full"
                     onClick={handleSendOTP}
                     disabled={otpLoading}
                   >
-                    {otpLoading ? (
+                    {otpLoading && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
+                    )}{" "}
                     Send Verification Code
                   </Button>
                 </div>
@@ -1711,7 +1908,7 @@ export default function WalletPage() {
                     <Label htmlFor="otp">Verification Code</Label>
                     <Input
                       id="otp"
-                      placeholder="Enter 6-digit code"
+                      placeholder="Enter code"
                       maxLength={6}
                       className="text-center text-2xl tracking-[8px] font-bold h-12"
                       value={otp}
@@ -1723,9 +1920,9 @@ export default function WalletPage() {
                     onClick={handleVerifyOTP}
                     disabled={otp.length < 6 || otpLoading}
                   >
-                    {otpLoading ? (
+                    {otpLoading && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
+                    )}{" "}
                     Verify & Continue
                   </Button>
                   <Button variant="ghost" size="sm" onClick={handleSendOTP}>
