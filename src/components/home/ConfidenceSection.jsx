@@ -106,7 +106,7 @@ export default function ConfidenceSection() {
         </p>
 
         {/* Button */}
-        <Button
+        {/* <Button
           size="lg"
           asChild
           className={`bg-orange-500 hover:bg-highlight-blue text-white px-5 py-2.5 text-lg rounded-md transition-transform duration-300 hover:scale-105 shadow-lg flex items-center gap-2 ${
@@ -115,7 +115,7 @@ export default function ConfidenceSection() {
           style={{ animationDelay: "0.4s" }}
         >
           <a href="/dashboard">Get Started</a>
-        </Button>
+        </Button> */}
 
         {/* Cards */}
         <div
