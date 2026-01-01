@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 
 export default function HeroSection() {
-  const youtubeVideoId = "DaRXece2ItE";
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -70,20 +69,6 @@ export default function HeroSection() {
             <button className="bg-orange-500 hover:bg-highlight-blue text-white px-5 py-2.5 text-lg rounded-md transition-transform duration-300 hover:scale-105 shadow-lg flex items-center gap-2">
               <a href="/dashboard">Get Started</a>
             </button>
-          </div>
-        </div>
-
-        {/* Video */}
-        <div className="w-full max-w-4xl mt-2 md:mt-4 mb-0">
-          <div className="relative aspect-video rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border-4 md:border-8 border-white">
-            <iframe
-              className="absolute inset-0 w-full h-full"
-              src={`https://www.youtube.com/embed/${youtubeVideoId}`}
-              title="YouTube video player"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
           </div>
         </div>
       </section>
