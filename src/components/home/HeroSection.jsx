@@ -55,7 +55,7 @@ export default function HeroSection() {
       >
         {/* Headline */}
         <div className="max-w-4xl flex flex-col items-center text-center">
-          <h1 className="text-white font-bold text-5xl sm:text-4xl md:text-6xl lg:text-7xl mb-8 leading-tight">
+          <h1 className="text-white text-nowrap font-bold text-4xl sm:text-4xl md:text-6xl lg:text-7xl mb-8 leading-tight">
             Every Transaction
             <span className="text-orange-500">
               <br />
