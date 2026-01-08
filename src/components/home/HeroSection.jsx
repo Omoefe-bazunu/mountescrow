@@ -51,7 +51,7 @@ export default function HeroSection() {
       <section
         className={`relative flex flex-col items-center justify-center gap-8 md:gap-12 max-w-7xl mx-auto px-4 md:px-8 transition-all duration-1000
         ${visible ? "animate-on-render" : "opacity-0 translate-y-8"}
-        py-36 md:py-32`}
+        py-44 md:py-32`}
       >
         {/* Headline */}
         <div className="max-w-4xl flex flex-col items-center text-center">

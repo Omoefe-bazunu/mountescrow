@@ -86,7 +86,9 @@ export default function ProposalsPage() {
   };
 
   const getRoleForProposal = (proposal) => {
-    if (user?.uid === proposal.buyerId) return "Buyer";
+    // Check if user is the buyer by ID or by Email
+    if (user?.uid === proposal.buyerId || user?.email === proposal.buyerEmail)
+      return "Buyer";
     if (user?.email === proposal.sellerEmail) return "Seller";
     return "N/A";
   };
@@ -143,46 +145,54 @@ export default function ProposalsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {proposals.map((proposal) => (
-                  <TableRow key={proposal.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex flex-col">
-                        <span>{proposal.projectTitle}</span>
-                        <span className="sm:hidden text-sm text-muted-foreground">
-                          {user?.uid === proposal.buyerId
-                            ? proposal.sellerEmail
-                            : proposal.buyerEmail}
-                        </span>
-                        <span className="md:hidden sm:hidden text-sm text-muted-foreground">
-                          {getRoleForProposal(proposal)}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      {user?.uid === proposal.buyerId
-                        ? proposal.sellerEmail
-                        : proposal.buyerEmail}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {getRoleForProposal(proposal)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ₦{formatNumber(proposal.totalAmount + proposal.escrowFee)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={getStatusVariant(proposal.status)}>
-                        {proposal.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" asChild>
-                        <Link href={`/proposals/${proposal.id}`}>
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {proposals.map((proposal) => {
+                  const isUserBuyer =
+                    user?.uid === proposal.buyerId ||
+                    user?.email === proposal.buyerEmail;
+                  return (
+                    <TableRow key={proposal.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex flex-col">
+                          <span>{proposal.projectTitle}</span>
+                          <span className="sm:hidden text-sm text-muted-foreground">
+                            {isUserBuyer
+                              ? proposal.sellerEmail
+                              : proposal.buyerEmail}
+                          </span>
+                          <span className="md:hidden sm:hidden text-sm text-muted-foreground">
+                            {getRoleForProposal(proposal)}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        {isUserBuyer
+                          ? proposal.sellerEmail
+                          : proposal.buyerEmail}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {getRoleForProposal(proposal)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ₦
+                        {formatNumber(
+                          proposal.totalAmount + proposal.escrowFee
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={getStatusVariant(proposal.status)}>
+                          {proposal.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" asChild>
+                          <Link href={`/proposals/${proposal.id}`}>
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

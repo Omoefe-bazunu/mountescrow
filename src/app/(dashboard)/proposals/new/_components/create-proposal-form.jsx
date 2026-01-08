@@ -15,8 +15,14 @@
 // import { Input } from "@/components/ui/input";
 // import { Textarea } from "@/components/ui/textarea";
 // import { useToast } from "@/hooks/use-toast";
-// import { useState, useMemo, useCallback } from "react";
-// import { CalendarIcon, Loader2, PlusCircle, Trash2 } from "lucide-react";
+// import { useState, useMemo, useCallback, useEffect } from "react";
+// import {
+//   CalendarIcon,
+//   Loader2,
+//   PlusCircle,
+//   Trash2,
+//   ShieldAlert,
+// } from "lucide-react";
 // import { useRouter } from "next/navigation";
 // import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 // import {
@@ -69,21 +75,42 @@
 // });
 
 // function getEscrowFeePercentage(amount) {
-//   if (amount <= 1_000_000) return 0.1; // 10% total (5% buyer + 5% seller)
-//   if (amount <= 5_000_000) return 0.05; // 5% total (2.5% + 2.5%)
-//   if (amount <= 50_000_000) return 0.04; // 4% total (2% + 2%)
-//   if (amount <= 200_000_000) return 0.03; // 3% total (1.5% + 1.5%)
-//   if (amount <= 1_000_000_000) return 0.02; // 2% total (1% + 1%)
-//   return 0.01; // 1% total (0.5% + 0.5%)
+//   if (amount <= 1_000_000) return 0.1;
+//   if (amount <= 5_000_000) return 0.05;
+//   if (amount <= 50_000_000) return 0.04;
+//   if (amount <= 200_000_000) return 0.03;
+//   if (amount <= 1_000_000_000) return 0.02;
+//   return 0.01;
 // }
 
 // export function CreateProposalForm() {
 //   const [loading, setLoading] = useState(false);
 //   const [projectFiles, setProjectFiles] = useState([]);
 //   const [uploadError, setUploadError] = useState(null);
+//   const [isSpecialClient, setIsSpecialClient] = useState(false);
+//   const [checkingStatus, setCheckingStatus] = useState(true);
+
 //   const { toast } = useToast();
 //   const router = useRouter();
 //   const { user, loading: authLoading } = useAuth();
+
+//   // Fraud Control Limit: 100 Million Naira
+//   const PROJECT_VALUE_LIMIT = 100000000;
+
+//   useEffect(() => {
+//     const checkClientStatus = async () => {
+//       try {
+//         const res = await fetch("/api/special-client");
+//         const data = await res.json();
+//         setIsSpecialClient(data.isSpecialClient || false);
+//       } catch (err) {
+//         console.error("Failed to fetch client status");
+//       } finally {
+//         setCheckingStatus(false);
+//       }
+//     };
+//     if (user) checkClientStatus();
+//   }, [user]);
 
 //   const form = useForm({
 //     resolver: zodResolver(formSchema),
@@ -128,7 +155,7 @@
 //       0
 //     );
 //     const baseFee = total * getEscrowFeePercentage(total);
-//     const vat = baseFee * 0.075; // 7.5% VAT
+//     const vat = baseFee * 0.075;
 //     const totalFee = baseFee + vat;
 
 //     return {
@@ -137,6 +164,10 @@
 //       escrowFeeWithVAT: totalFee,
 //     };
 //   }, [watchedMilestones]);
+
+//   const limitExceeded = useMemo(() => {
+//     return totalAmount > PROJECT_VALUE_LIMIT && !isSpecialClient;
+//   }, [totalAmount, isSpecialClient]);
 
 //   const buyerEscrowFeePortion = useMemo(() => {
 //     return escrowFeeWithVAT * (Number(watchedEscrowFeePayer) / 100);
@@ -176,6 +207,7 @@
 //   }, [projectFiles]);
 
 //   async function onSubmit(values) {
+//     if (limitExceeded) return;
 //     if (!validateFiles()) return;
 
 //     setLoading(true);
@@ -189,7 +221,6 @@
 //         dueDate: milestone.dueDate,
 //       }));
 
-//       // Create proposal - backend handles everything including email
 //       const { proposalId } = await createProposal({
 //         projectTitle: values.projectTitle,
 //         description: values.description,
@@ -228,7 +259,7 @@
 //     }
 //   }
 
-//   if (authLoading) {
+//   if (authLoading || checkingStatus) {
 //     return (
 //       <div className="space-y-4">
 //         <Skeleton className="h-10 w-full" />
@@ -592,16 +623,40 @@
 //           </CardContent>
 //         </Card>
 
-//         <Button type="submit" className="w-full" size="lg" disabled={loading}>
-//           {loading ? (
-//             <>
-//               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-//               Creating Proposal...
-//             </>
-//           ) : (
-//             "Create Proposal"
+//         <div className="space-y-4">
+//           {limitExceeded && (
+//             <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+//               <ShieldAlert className="h-5 w-5" />
+//               <p className="text-sm font-medium">
+//                 High-value projects exceed standard limits. Please{" "}
+//                 <a
+//                   href="mailto:admin@mountescrow.com"
+//                   className="underline font-bold"
+//                 >
+//                   Contact Admin (admin@mountescrow.com)
+//                 </a>
+//               </p>
+//             </div>
 //           )}
-//         </Button>
+
+//           <Button
+//             type="submit"
+//             className="w-full"
+//             size="lg"
+//             disabled={loading || limitExceeded}
+//           >
+//             {loading ? (
+//               <>
+//                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+//                 Creating Proposal...
+//               </>
+//             ) : limitExceeded ? (
+//               "Limit Exceeded"
+//             ) : (
+//               "Create Proposal"
+//             )}
+//           </Button>
+//         </div>
 //       </form>
 //     </Form>
 //   );
@@ -763,7 +818,19 @@ export function CreateProposalForm() {
       (sum, m) => sum + (Number(m?.amount) || 0),
       0
     );
-    const baseFee = total * getEscrowFeePercentage(total);
+
+    // Fee Logic with Capping for first two ranges
+    const percentage = getEscrowFeePercentage(total);
+    let baseFee = total * percentage;
+
+    if (total <= 1000000) {
+      // Range 1 capped at 10,000
+      if (baseFee > 10000) baseFee = 10000;
+    } else if (total <= 5000000) {
+      // Range 2 capped at 50,000
+      if (baseFee > 50000) baseFee = 50000;
+    }
+
     const vat = baseFee * 0.075;
     const totalFee = baseFee + vat;
 
