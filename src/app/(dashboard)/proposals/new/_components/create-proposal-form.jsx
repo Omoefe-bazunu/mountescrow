@@ -1073,6 +1073,7 @@ export function CreateProposalForm() {
                     <SelectItem value="25">
                       Buyer pays 25%, Seller pays 75%
                     </SelectItem>
+                    <SelectItem value="0">Seller pays 100%</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
