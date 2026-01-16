@@ -141,7 +141,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setCsrfToken(null);
       console.log("✅ Logged out successfully");
-      router.push("/login");
+      router.push("/");
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -180,7 +180,7 @@ export const AuthProvider = ({ children }) => {
 
       // If the error was specifically because of the missing tab flag, ensure we force logout
       if (err.message === "Session expired (Tab closed)") {
-        await logout();
+        await logout("/");
         return;
       }
 

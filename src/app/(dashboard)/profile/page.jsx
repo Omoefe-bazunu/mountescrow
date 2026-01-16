@@ -29,6 +29,7 @@ import {
   X,
   Check,
   Key,
+  Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import ChangePasswordModal from "@/components/ChangePasswordModal";
@@ -57,6 +58,19 @@ export default function UserProfile() {
 
     fetchUserData();
   }, [user, authLoading, router]);
+
+  const handleDeleteDataRequest = () => {
+    const GOOGLE_FORM_URL = "https://forms.gle/NVdaxvxb8GGG5GRy8";
+
+    // Optional: You can add a confirmation dialog before redirecting
+    if (
+      confirm(
+        "You are about to be redirected to a data deletion request form. Do you wish to proceed?"
+      )
+    ) {
+      window.open(GOOGLE_FORM_URL, "_blank");
+    }
+  };
 
   const fetchUserData = async () => {
     try {
@@ -488,6 +502,24 @@ export default function UserProfile() {
           open={showChangePassword}
           onOpenChange={setShowChangePassword}
         />
+      </div>
+      {/* Data Privacy Section */}
+      <div className="mt-4 p-6 border border-red-100 bg-red-50/30 rounded-lg">
+        <h3 className="text-lg font-semibold mb-4 text-red-900">
+          Data Privacy
+        </h3>
+        <Button
+          onClick={handleDeleteDataRequest}
+          variant="destructive"
+          className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
+        >
+          <Trash2 className="h-4 w-4" />
+          Request Data Deletion
+        </Button>
+        <p className="text-sm text-red-700/70 mt-2">
+          Request the permanent removal of your personal data from our systems.
+          This process is handled via our official privacy request form.
+        </p>
       </div>
     </div>
   );
