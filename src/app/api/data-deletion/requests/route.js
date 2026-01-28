@@ -2,23 +2,24 @@ import { NextResponse } from "next/server";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
 
-// GET all deletion requests (Admin only)
 export async function GET(request) {
   try {
-    const cookies = request.cookies;
-    const token = cookies.get("token")?.value;
+    const token = request.cookies.get("jwt")?.value; // ✅ Changed from "token" to "jwt"
 
-    // Get query parameters
+    if (!token) {
+      return NextResponse.json(
+        { success: false, message: "Not authenticated" },
+        { status: 401 },
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
 
     const headers = {
       "Content-Type": "application/json",
+      Cookie: `jwt=${token}`, // ✅ Changed from "token" to "jwt"
     };
-
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
 
     let url = `${BACKEND}/api/data-deletion/requests`;
     if (status) {

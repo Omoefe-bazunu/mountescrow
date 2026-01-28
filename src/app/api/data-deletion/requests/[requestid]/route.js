@@ -2,21 +2,23 @@ import { NextResponse } from "next/server";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
 
-// PATCH - Update deletion request status (Admin only)
 export async function PATCH(request, { params }) {
   try {
     const { requestId } = params;
     const body = await request.json();
-    const cookies = request.cookies;
-    const token = cookies.get("token")?.value;
+    const token = request.cookies.get("jwt")?.value; // ✅ Changed from "token" to "jwt"
+
+    if (!token) {
+      return NextResponse.json(
+        { success: false, message: "Not authenticated" },
+        { status: 401 },
+      );
+    }
 
     const headers = {
       "Content-Type": "application/json",
+      Cookie: `jwt=${token}`, // ✅ Changed from "token" to "jwt"
     };
-
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
 
     const res = await fetch(
       `${BACKEND}/api/data-deletion/requests/${requestId}`,
