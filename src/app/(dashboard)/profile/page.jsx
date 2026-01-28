@@ -18,6 +18,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import {
   User,
   Mail,
   Phone,
@@ -30,9 +39,11 @@ import {
   Check,
   Key,
   Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { format } from "date-fns";
 import ChangePasswordModal from "@/components/ChangePasswordModal";
+import { submitDeletionRequest } from "@/services/dataDeletion.service"; // ✅ Import service
 
 export default function UserProfile() {
   const { user, loading: authLoading, refresh } = useAuth();
@@ -41,6 +52,9 @@ export default function UserProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showDeletionModal, setShowDeletionModal] = useState(false);
+  const [deletionReason, setDeletionReason] = useState("");
+  const [submittingDeletion, setSubmittingDeletion] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -59,16 +73,42 @@ export default function UserProfile() {
     fetchUserData();
   }, [user, authLoading, router]);
 
-  const handleDeleteDataRequest = () => {
-    const GOOGLE_FORM_URL = "https://forms.gle/NVdaxvxb8GGG5GRy8";
+  const handleDeleteDataPress = () => {
+    setShowDeletionModal(true);
+  };
 
-    // Optional: You can add a confirmation dialog before redirecting
-    if (
-      confirm(
-        "You are about to be redirected to a data deletion request form. Do you wish to proceed?"
-      )
-    ) {
-      window.open(GOOGLE_FORM_URL, "_blank");
+  const handleSubmitDeletionRequest = async () => {
+    if (!deletionReason.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Required",
+        description: "Please provide a reason for deletion.",
+      });
+      return;
+    }
+
+    setSubmittingDeletion(true);
+    try {
+      // ✅ Use service instead of direct fetch
+      const data = await submitDeletionRequest(deletionReason);
+
+      toast({
+        title: "Request Submitted",
+        description:
+          data.message ||
+          "Your data deletion request has been submitted. Our team will review it shortly.",
+      });
+
+      setShowDeletionModal(false);
+      setDeletionReason("");
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to submit deletion request.",
+      });
+    } finally {
+      setSubmittingDeletion(false);
     }
   };
 
@@ -482,45 +522,128 @@ export default function UserProfile() {
           </CardContent>
         </Card>
       )}
+
       {/* Password Reset */}
-      <div className="mt-8 p-6 border bg-white rounded-lg">
-        <h3 className="text-lg font-semibold mb-4">Security</h3>
-        <Button
-          onClick={() => setShowChangePassword(true)}
-          variant="outline"
-          className="flex items-center gap-2"
-        >
-          <Key className="h-4 w-4" />
-          Change Password
-        </Button>
-        <p className="text-sm text-gray-500 mt-2">
-          Update your password regularly to keep your account secure.
-        </p>
-      </div>
-      <div>
-        <ChangePasswordModal
-          open={showChangePassword}
-          onOpenChange={setShowChangePassword}
-        />
-      </div>
+      <Card className="bg-white">
+        <CardHeader>
+          <CardTitle className="font-headline text-xl">Security</CardTitle>
+          <CardDescription>
+            Update your password regularly to keep your account secure
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            onClick={() => setShowChangePassword(true)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Key className="h-4 w-4" />
+            Change Password
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Data Privacy Section */}
-      <div className="mt-4 p-6 border border-red-100 bg-red-50/30 rounded-lg">
-        <h3 className="text-lg font-semibold mb-4 text-red-900">
-          Data Privacy
-        </h3>
-        <Button
-          onClick={handleDeleteDataRequest}
-          variant="destructive"
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
-        >
-          <Trash2 className="h-4 w-4" />
-          Request Data Deletion
-        </Button>
-        <p className="text-sm text-red-700/70 mt-2">
-          Request the permanent removal of your personal data from our systems.
-          This process is handled via our official privacy request form.
-        </p>
-      </div>
+      <Card className="bg-white border-red-200">
+        <CardHeader>
+          <CardTitle className="font-headline text-xl text-red-900 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            Data Privacy
+          </CardTitle>
+          <CardDescription className="text-red-700/70">
+            Request the permanent removal of your personal data from our
+            systems. This action cannot be undone.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            onClick={handleDeleteDataPress}
+            variant="destructive"
+            className="flex items-center gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            Request Data Deletion
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Data Deletion Request Dialog */}
+      <Dialog open={showDeletionModal} onOpenChange={setShowDeletionModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              Request Data Deletion
+            </DialogTitle>
+            <DialogDescription>
+              Please provide a reason for requesting deletion of your data. This
+              action cannot be undone once approved by our team.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reason">
+                Reason for Deletion <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="reason"
+                placeholder="Please explain why you want to delete your data..."
+                value={deletionReason}
+                onChange={(e) => setDeletionReason(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="text-sm text-amber-800">
+                <strong>Important:</strong> Once your deletion request is
+                approved and processed, all your personal data, transaction
+                history, and account information will be permanently removed
+                from our systems.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowDeletionModal(false);
+                setDeletionReason("");
+              }}
+              disabled={submittingDeletion}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleSubmitDeletionRequest}
+              disabled={submittingDeletion || !deletionReason.trim()}
+            >
+              {submittingDeletion ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Submit Request
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ChangePasswordModal
+        open={showChangePassword}
+        onOpenChange={setShowChangePassword}
+      />
     </div>
   );
 }
