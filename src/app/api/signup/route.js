@@ -7,7 +7,8 @@ export async function POST(request) {
   const body = await request.text();
   const cookie = request.headers.get("cookie") ?? "";
 
-  const res = await fetch(`${BACKEND_URL}/api/signup`, {
+  // Note: Ensure the path is /api/auth/signup to match your modular routes
+  const res = await fetch(`${BACKEND_URL}/api/auth/signup`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -18,11 +19,19 @@ export async function POST(request) {
   });
 
   const data = await res.text();
-
   const response = new NextResponse(data, { status: res.status });
 
-  const setCookie = res.headers.get("set-cookie");
-  if (setCookie) response.headers.set("set-cookie", setCookie);
+  const setCookies = res.headers.getSetCookie
+    ? res.headers.getSetCookie()
+    : res.headers.get("set-cookie");
+
+  if (setCookies) {
+    if (Array.isArray(setCookies)) {
+      setCookies.forEach((c) => response.headers.append("set-cookie", c));
+    } else {
+      response.headers.set("set-cookie", setCookies);
+    }
+  }
 
   return response;
 }

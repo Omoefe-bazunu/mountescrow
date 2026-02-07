@@ -13,11 +13,20 @@ export async function GET(request) {
   });
 
   const data = await res.text();
-
   const response = new NextResponse(data, { status: res.status });
 
-  const setCookie = res.headers.get("set-cookie");
-  if (setCookie) response.headers.set("set-cookie", setCookie);
+  // FIXED: Handles multiple cookies correctly so the browser sees both JWT and CSRF
+  const setCookies = res.headers.getSetCookie
+    ? res.headers.getSetCookie()
+    : res.headers.get("set-cookie");
+
+  if (setCookies) {
+    if (Array.isArray(setCookies)) {
+      setCookies.forEach((c) => response.headers.append("set-cookie", c));
+    } else {
+      response.headers.set("set-cookie", setCookies);
+    }
+  }
 
   return response;
 }

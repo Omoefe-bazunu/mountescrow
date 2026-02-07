@@ -1,284 +1,241 @@
 "use client";
 
+import React, { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useEffect, useState } from "react";
-import { FilePlus2, Trash2 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
-import { useAuth } from "@/contexts/AuthContext";
+import { Scale, ShieldCheck, RefreshCcw, FileText } from "lucide-react";
 
-const ADMIN_EMAILS = ["raniem57@gmail.com", "mountescrow@gmail.com"];
+const POLICIES_DATA = {
+  "Privacy Policy": {
+    icon: <ShieldCheck className="h-6 w-6" />,
+    content: `Effective Date: February 6th, 2026
+
+Mountescrow is committed to protecting your privacy and safeguarding your financial data. This Privacy Policy explains how we collect, use, disclose, and protect your information.
+
+1. INFORMATION WE COLLECT
+A. Personal Information: Full name, Email address, Phone number, Date of birth, Government-issued ID (for KYC verification), Selfie or biometric verification (where required).
+B. Financial Information: Bank account details, Payment card details (processed securely via licensed payment providers), Transaction history, Wallet balances.
+C. Device & Technical Information: IP address, Device type, Operating system, App version, Log data.
+D. Usage Information: Transaction activity, Support inquiries, In-app interactions.
+
+2. HOW WE USE YOUR INFORMATION
+We use your information to: verify your identity (KYC/AML compliance), process escrow transactions, facilitate payments and withdrawals, prevent fraud and unauthorized access, provide customer support, improve platform performance, and comply with legal and regulatory obligations. We do not sell your personal information.
+
+3. LEGAL BASIS FOR PROCESSING
+We process your data based on contractual necessity, legal obligations (financial compliance, AML laws), legitimate business interests (fraud prevention, platform improvement), and user consent where required.
+
+4. DATA SHARING & DISCLOSURE
+We may share your data with licensed payment processors, banking partners, identity verification providers, regulatory authorities when legally required, and fraud prevention services. All third-party partners are contractually required to protect your data. We do not sell or rent your personal data to advertisers.
+
+5. DATA STORAGE & SECURITY
+Mountescrow implements industry-standard security measures including end-to-end encryption, secure servers, role-based internal access controls, and regular security audits. Financial data is processed via PCI-DSS compliant providers.
+
+6. DATA RETENTION
+We retain user information only as long as necessary to provide services, comply with legal obligations, resolve disputes, and prevent fraud. When no longer required, data is securely deleted or anonymized.
+
+7. YOUR RIGHTS
+You have the right to: access your personal data, correct inaccurate data, request deletion, restrict processing, withdraw consent, or request a copy of your data. To exercise these rights, contact: support@mountescrow.com.
+
+8. CHILDREN’S PRIVACY
+Mountescrow is not intended for individuals under 18 years old. We do not knowingly collect data from minors.
+
+9. INTERNATIONAL TRANSFERS
+If data is transferred outside your country, we ensure appropriate safeguards are in place to protect your information.
+
+10. CHANGES TO THIS POLICY
+We may update this Privacy Policy periodically. Changes will be posted within the app and on our website.
+
+11. CONTACT US
+Mountescrow\nEmail: support@mountescrow.com\nWebsite: https://www.mountescrow.com\nAddress: House A2, Basic Estate, Lokogoma, Abuja, Nigeria`,
+  },
+  "Terms of Service": {
+    icon: <Scale className="h-6 w-6" />,
+    content: `Effective Date: February 6th, 2026
+Company: Mountescrow Limited
+Jurisdiction: Federal Republic of Nigeria
+
+1. INTRODUCTION
+Welcome to Mountescrow. These Terms of Service (“Terms”) govern your access to and use of the Mountescrow website, mobile application, APIs, and related services (collectively, the “Platform”). By registering, accessing, or using Mountescrow, you agree to be bound by these Terms. If you do not agree, you must not use the Platform. Mountescrow Technologies Limited (“Mountescrow”, “we”, “us”, or “our”) is a fintech company incorporated under the laws of the Federal Republic of Nigeria. Mountescrow provides secure digital escrow services designed to safeguard transactions between parties. Mountescrow is not a bank and does not provide lending, investment, or financial advisory services. Payment processing is facilitated through licensed financial institutions and regulated payment service providers.
+
+2. OUR ROLE
+Mountescrow acts solely as a neutral third-party escrow facilitator. 
+We:
+• Hold funds in segregated trust or For-Benefit-Of (FBO) accounts
+• Release funds when agreed conditions are met
+• Provide structured internal dispute facilitation
+• Maintain transaction security and compliance systems
+
+We do not:
+• Guarantee performance of any buyer or seller
+• Act as a party to your contract
+• Determine the legality of your underlying agreement
+• Provide legal advice
+• Guarantee transaction outcomes
+
+The parties to a transaction remain fully responsible for their contractual obligations.
+
+3. ELIGIBILITY
+To use Mountescrow, you must:
+• Be at least 18 years old
+• Have legal capacity to enter binding contracts
+• Provide accurate and truthful information
+• Complete identity verification (KYC/KYB) requirements
+• Comply with applicable laws and regulations
+We reserve the right to deny, suspend, or terminate access if eligibility requirements are not met.
+
+4. WHO MAY INITIATE AN ESCROW
+Any verified user may initiate an escrow transaction. An escrow may be initiated by a buyer, seller, service provider, client, business entity, or authorized representative. The initiating party must clearly define:
+• The escrow amount
+• The deliverables or milestones
+• The release conditions
+• Any relevant timelines
+All counterparties must review and accept the escrow terms within the Platform before funds are locked. Mountescrow does not draft, modify, or validate transaction terms and is not responsible for the substance or enforceability of user-created agreements.
+
+5. HOW ESCROW WORKS
+5.1 Funding: The Buyer deposits funds into a secure escrow account.
+5.2 Holding: Funds are held in segregated accounts managed through licensed financial partners. Escrow funds are not commingled with Mountescrow’s operational funds.
+5.3 Release Triggers: Funds are released when one of the following occurs: Buyer approval of deliverables, milestone confirmation, mutual written consent, outcome of dispute resolution, or a valid arbitration award.
+
+6. SIX (6) HOUR TRANSACTION EFFICIENCY COUNTDOWN
+6.1 Submission of Deliverables: When a Seller or Service Provider submits a deliverable or milestone through the Platform, an automated six (6) hour review countdown is activated.
+6.2 Purpose of the Policy: The six-hour review window is implemented to promote transaction efficiency, reduce unnecessary capital lock-up, encourage timely review and communication, and prevent indefinite escrow delays.
+6.3 Buyer Review Window: During the six-hour period, the Buyer may approve the submission, triggering immediate release, or formally raise a dispute within the Platform to pause release.
+6.4 Automatic Release: If no dispute is raised within the six-hour window, funds are automatically released to the Seller. Each milestone submission activates a new six-hour review window. Users acknowledge that monitoring transaction timelines is their responsibility. Mountescrow is not liable for releases resulting from user inaction within the review window.
+
+7. FEES
+Mountescrow may charge escrow service fees (typically 1%–3%), withdrawal or disbursement fees, currency conversion fees, and administrative or dispute handling fees (where applicable). Fees are disclosed prior to transaction confirmation and are generally non-refundable.
+
+8. PROHIBITED ACTIVITIES
+You may not use Mountescrow for fraud or misrepresentation, money laundering or terrorism financing, illegal goods or services, Ponzi or pyramid schemes, unlicensed financial services, sanctioned entities or jurisdictions, or abuse of escrow mechanics. Accounts involved in prohibited activities may be suspended immediately and reported to authorities.
+
+9. SECURITY & COMPLIANCE
+Mountescrow maintains robust security measures including: encryption of data in transit and at rest, two-factor authentication, transaction monitoring systems, and AML and fraud detection processes. Users are responsible for safeguarding account credentials and reporting suspicious activity.
+
+10. DISPUTE RESOLUTION FRAMEWORK
+10.1 Internal Resolution: If a dispute arises, either party may initiate a dispute within the Platform. Escrow funds may be temporarily withheld. Mountescrow may facilitate structured mediation in good faith but does not make judicial determinations.
+10.2 Escalation to Independent Mediation & Arbitration: If internal resolution fails, the dispute shall be referred to an independent, reputable mediation and arbitration firm. Proceedings shall be conducted under Nigerian law. Arbitration shall be confidential and binding. The arbitral award shall be final. No party shall initiate court litigation regarding escrow transaction disputes, except for enforcement of an arbitral award.
+10.3 Independent Third-Party Verification: Where factual verification is required, an independent expert (licensed professionals, certified auditors, industry-recognized assessors, or subject-matter specialists) may be appointed to assess evidence. Mountescrow is not responsible for the independent conclusions of third-party experts.
+
+11. TERMINATION
+Mountescrow may suspend or terminate accounts if these Terms are violated, fraud or illegal activity is suspected, regulatory directives require action, or risk thresholds are exceeded. Termination does not relieve users of outstanding obligations.
+
+12. DATA PROTECTION & PRIVACY
+Mountescrow processes data in accordance with Nigerian data protection laws, AML regulations, and applicable international standards. We do not sell user data.
+
+13. LIMITATION OF LIABILITY
+Mountescrow’s total liability is limited to the fees paid for the relevant transaction. We are not liable for indirect, incidental, or consequential losses. Services are provided “as is” and “as available.”
+
+14. GOVERNING LAW
+These Terms are governed by the laws of the Federal Republic of Nigeria. Arbitration proceedings shall be seated in Lagos, Nigeria.
+
+15. AMENDMENTS
+We may update these Terms periodically. Material changes will be communicated via email, in-app notification, or website notice. Continued use of the Platform constitutes acceptance of updated Terms.
+
+16. CONTACT INFORMATION
+Mountescrow Limited\nWebsite: https://www.mountescrow.com\nSupport: support@mountescrow.com`,
+  },
+  "Refund Policy": {
+    icon: <RefreshCcw className="h-6 w-6" />,
+    content: `Effective Date: February 6th, 2026
+
+Mountescrow operates as a neutral third-party escrow platform. Funds are handled strictly according to transaction agreements between buyers and sellers.
+
+1. WHEN REFUNDS APPLY
+Refunds may be issued when:
+• A transaction is canceled by mutual agreement
+• The seller fails to deliver agreed goods/services
+• A dispute is resolved in favor of the buyer
+• Fraudulent activity is confirmed
+
+2. DISPUTE RESOLUTION PROCESS
+If a dispute arises, either party may initiate a dispute within the app. Mountescrow reviews submitted evidence from both parties and a decision is made based on transaction terms and provided documentation. Mountescrow acts as a neutral mediator.
+
+3. PROCESSING TIME
+Approved refunds are processed within 3–7 business days (bank transfers), subject to payment provider timelines.
+
+4. NON-REFUNDABLE SITUATIONS
+Refunds will not be granted when:
+• Transaction terms were fulfilled
+• Evidence supports seller delivery
+• The dispute window has expired
+
+5. FEES
+Certain transaction or processing fees may be non-refundable depending on payment provider policies.
+
+6. CONTACT
+For refund inquiries: support@mountescrow.com`,
+  },
+};
 
 export default function DisputeResolutionPage() {
-  const [policyData, setPolicyData] = useState({});
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const { user, csrfToken } = useAuth();
-
-  useEffect(() => {
-    // Check if user is admin using JWT token data
-    if (user && user.email) {
-      setIsAdmin(ADMIN_EMAILS.includes(user.email));
-    } else {
-      setIsAdmin(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    fetchPolicies();
-  }, []);
-
-  const fetchPolicies = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch("/api/policies", {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch policies");
-      }
-
-      const data = await response.json();
-      setPolicyData(data.policies);
-    } catch (error) {
-      console.error("Failed to fetch policies:", error);
-      setError("Failed to load policies. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFileUpload = async (policyName, file) => {
-    if (!file) return;
-
-    if (!file.type.includes("pdf")) {
-      setError("Only PDF files are allowed");
-      setTimeout(() => setError(null), 3000);
-      return;
-    }
-
-    try {
-      setUploading(true);
-      setError(null);
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("policyName", policyName);
-
-      const response = await fetch("/api/policies/upload", {
-        method: "POST",
-        headers: {
-          "X-CSRF-Token": csrfToken,
-        },
-        credentials: "include",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to upload PDF");
-      }
-
-      const data = await response.json();
-
-      // Refresh policies to get the new URL
-      await fetchPolicies();
-
-      setError(null);
-    } catch (error) {
-      console.error("Failed to upload PDF:", error);
-      setError(error.message || "Failed to upload PDF. Please try again.");
-      setTimeout(() => setError(null), 5000);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleDeletePdf = async (policyName) => {
-    if (!confirm("Are you sure you want to delete this policy PDF?")) {
-      return;
-    }
-
-    try {
-      setUploading(true);
-      setError(null);
-
-      const response = await fetch(
-        `/api/policies/${encodeURIComponent(policyName)}`,
-        {
-          method: "DELETE",
-          headers: {
-            "X-CSRF-Token": csrfToken,
-          },
-          credentials: "include",
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete PDF");
-      }
-
-      // Refresh policies
-      await fetchPolicies();
-
-      setError(null);
-    } catch (error) {
-      console.error("Failed to delete PDF:", error);
-      setError(error.message || "Failed to delete PDF. Please try again.");
-      setTimeout(() => setError(null), 5000);
-    } finally {
-      setUploading(false);
-    }
-  };
-
   return (
-    <div className="container py-12 md:py-20">
+    <div className="container py-12 md:py-20 bg-gray-50/30 min-h-screen">
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7 }}
-        className="max-w-4xl mx-auto px-4 text-center"
+        className="max-w-5xl mx-auto px-4"
       >
-        <h1 className="font-headline font-semibold text-4xl md:text-5xl mb-4 text-primary-blue">
-          Policies & Terms
-        </h1>
-        <p className="lead mb-8 text-secondary-blue">
-          Our policies and terms of use are designed to be fair, transparent,
-          and efficient.
-        </p>
+        <div className="text-center mb-12">
+          <h1 className="font-headline font-semibold text-4xl md:text-5xl mb-4 text-primary-blue">
+            Legal & Compliance
+          </h1>
+          <p className="text-xl text-secondary-blue max-w-2xl mx-auto">
+            Please review the official terms, privacy practices, and refund
+            procedures governing our platform.
+          </p>
+        </div>
 
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-md">
-            {error}
-          </div>
-        )}
+        <Tabs defaultValue="Privacy Policy" className="w-full">
+          <TabsList className="flex flex-wrap h-auto p-1 font-headline bg-blue-50/50 rounded-xl mb-8 gap-1 justify-center">
+            {Object.keys(POLICIES_DATA).map((key) => (
+              <TabsTrigger
+                key={key}
+                value={key}
+                className="px-8 py-3 rounded-lg font-semibold data-[state=active]:bg-primary-blue data-[state=active]:text-white transition-all"
+              >
+                {key}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        {uploading && (
-          <div className="mb-4 p-4 bg-blue-100 text-blue-700 rounded-md">
-            Processing... Please wait.
-          </div>
-        )}
-
-        {loading ? (
-          <div className="space-y-6">
-            <Skeleton className="h-10 w-2/3 mx-auto" />
-            <Skeleton className="h-6 w-1/2 mx-auto" />
-            <div className="grid gap-6 mt-8">
-              <Skeleton className="h-40 w-full" />
-              <Skeleton className="h-40 w-full" />
-            </div>
-          </div>
-        ) : (
-          <Tabs
-            defaultValue={Object.keys(policyData)[0] || ""}
-            className="w-full text-left"
-          >
-            <TabsList className="flex flex-col bg-accent-blue h-fit lg:flex-row gap-2 lg:gap-4 justify-center items-center lg:items-stretch">
-              {Object.keys(policyData).map((key, idx) => (
+          <div className="mt-4">
+            {Object.entries(POLICIES_DATA).map(([key, { content, icon }]) => (
+              <TabsContent key={key} value={key}>
                 <motion.div
-                  key={key}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: idx * 0.1 }}
-                  viewport={{ once: true }}
-                  className="w-full lg:w-auto"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4 }}
                 >
-                  <TabsTrigger
-                    value={key}
-                    className="w-full bg-accent-blue text-white font-semibold text-center"
-                  >
-                    {key}
-                  </TabsTrigger>
+                  <Card className="border-none shadow-xl shadow-blue-900/5 overflow-hidden">
+                    <CardHeader className="bg-white border-b border-gray-100 py-8 px-8 md:px-12">
+                      <div className="flex items-center gap-4 text-primary-blue">
+                        <div className="p-3 bg-blue-50 rounded-lg">{icon}</div>
+                        <CardTitle className="font-headline font-bold text-3xl">
+                          {key}
+                        </CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-8 md:p-12 bg-white">
+                      <div className="whitespace-pre-line text-gray-700 leading-relaxed text-lg font-headline text-justify">
+                        {content}
+                      </div>
+                      <div className="mt-12 pt-8 border-t border-gray-100 flex items-center justify-between text-sm text-gray-400">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          <span>
+                            Official Document • Mountescrow Technologies Ltd
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </motion.div>
-              ))}
-            </TabsList>
-
-            <div className="mt-8 bg-white">
-              {Object.entries(policyData).map(
-                ([key, { summary, pdfUrl }], idx) => (
-                  <TabsContent key={key} value={key}>
-                    <motion.div
-                      initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: idx * 0.2 }}
-                      viewport={{ once: true }}
-                    >
-                      <Card>
-                        <CardHeader>
-                          <div className="flex justify-between items-center">
-                            <CardTitle className="font-headline font-semibold text-2xl text-primary-blue">
-                              {key}
-                            </CardTitle>
-                            {isAdmin && (
-                              <div className="flex gap-2">
-                                <label
-                                  htmlFor={`file-upload-${key}`}
-                                  className="cursor-pointer"
-                                >
-                                  <FilePlus2 className="h-5 w-5 text-primary-blue hover:text-primary-blue/80" />
-                                  <input
-                                    id={`file-upload-${key}`}
-                                    type="file"
-                                    accept=".pdf"
-                                    className="hidden"
-                                    disabled={uploading}
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) {
-                                        handleFileUpload(key, file);
-                                      }
-                                      // Reset input
-                                      e.target.value = "";
-                                    }}
-                                  />
-                                </label>
-                                {pdfUrl && (
-                                  <button
-                                    onClick={() => handleDeletePdf(key)}
-                                    disabled={uploading}
-                                  >
-                                    <Trash2 className="h-5 w-5 text-destructive hover:text-destructive/80" />
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </CardHeader>
-                        <CardContent className="prose max-w-none">
-                          <div>{summary}</div>
-                          {pdfUrl ? (
-                            <div className="mt-6">
-                              <a
-                                href={pdfUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-highlight-blue transition-colors"
-                              >
-                                View Full {key} PDF
-                              </a>
-                            </div>
-                          ) : (
-                            <div className="mt-4 text-gray-500">
-                              {isAdmin
-                                ? "No PDF uploaded yet. Click the + icon to upload."
-                                : "PDF currently unavailable"}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  </TabsContent>
-                )
-              )}
-            </div>
-          </Tabs>
-        )}
+              </TabsContent>
+            ))}
+          </div>
+        </Tabs>
       </motion.div>
     </div>
   );

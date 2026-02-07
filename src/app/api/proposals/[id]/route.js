@@ -136,7 +136,7 @@ export async function GET(request, { params }) {
 
     if (seconds != null) {
       return new Date(
-        seconds * 1000 + Math.round(nanoseconds / 1000000)
+        seconds * 1000 + Math.round(nanoseconds / 1000000),
       ).toISOString();
     }
 
@@ -164,36 +164,58 @@ export async function PATCH(request, { params }) {
     const { id } = await params;
     const formData = await request.formData();
 
-    // Get cookies and CSRF token from the request
-    const cookieHeader = request.headers.get("cookie");
-    const csrfToken = request.headers.get("X-CSRF-Token");
+    // Approach mirrored from Proposal Create (POST):
+    const cookieHeader = request.headers.get("cookie") ?? "";
+    const csrfToken = request.headers.get("x-csrf-token") ?? ""; // Standardized to lowercase
 
-    // Forward the request to your backend
-    const response = await fetch(`${BACKEND_URL}/api/proposals/${id}`, {
+    // Forward the request to your modular backend
+    const res = await fetch(`${BACKEND_URL}/api/proposals/${id}`, {
       method: "PATCH",
       headers: {
-        Cookie: cookieHeader || "",
-        "X-CSRF-Token": csrfToken || "",
+        Cookie: cookieHeader,
+        "x-csrf-token": csrfToken, // Forwarded security token
       },
-      credentials: "include",
       body: formData,
+      credentials: "include",
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: data.error || "Failed to update proposal" },
-        { status: response.status }
-      );
+    // Handle non-JSON or error responses gracefully
+    if (!res.ok) {
+      const errorText = await res.text();
+      try {
+        const errorJson = JSON.parse(errorText);
+        return NextResponse.json(errorJson, { status: res.status });
+      } catch {
+        return NextResponse.json(
+          { error: "Failed to update proposal" },
+          { status: res.status },
+        );
+      }
     }
 
-    return NextResponse.json(data, { status: 200 });
+    const data = await res.json();
+    const response = NextResponse.json(data, { status: 200 });
+
+    // Handle multiple cookies correctly (Mirrored from Create approach)
+    // This prevents the browser from merging JWT and CSRF into a broken string
+    const setCookies = res.headers.getSetCookie
+      ? res.headers.getSetCookie()
+      : res.headers.get("set-cookie");
+
+    if (setCookies) {
+      if (Array.isArray(setCookies)) {
+        setCookies.forEach((c) => response.headers.append("set-cookie", c));
+      } else {
+        response.headers.set("set-cookie", setCookies);
+      }
+    }
+
+    return response;
   } catch (error) {
     console.error("Proposal update proxy error:", error);
     return NextResponse.json(
       { error: "Failed to update proposal" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
