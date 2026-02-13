@@ -37,7 +37,7 @@ We retain user information only as long as necessary to provide services, comply
 7. YOUR RIGHTS
 You have the right to: access your personal data, correct inaccurate data, request deletion, restrict processing, withdraw consent, or request a copy of your data. To exercise these rights, contact: support@mountescrow.com.
 
-8. CHILDREN’S PRIVACY
+8. CHILDREN'S PRIVACY
 Mountescrow is not intended for individuals under 18 years old. We do not knowingly collect data from minors.
 
 9. INTERNATIONAL TRANSFERS
@@ -56,7 +56,7 @@ Company: Mountescrow Limited
 Jurisdiction: Federal Republic of Nigeria
 
 1. INTRODUCTION
-Welcome to Mountescrow. These Terms of Service (“Terms”) govern your access to and use of the Mountescrow website, mobile application, APIs, and related services (collectively, the “Platform”). By registering, accessing, or using Mountescrow, you agree to be bound by these Terms. If you do not agree, you must not use the Platform. Mountescrow Technologies Limited (“Mountescrow”, “we”, “us”, or “our”) is a fintech company incorporated under the laws of the Federal Republic of Nigeria. Mountescrow provides secure digital escrow services designed to safeguard transactions between parties. Mountescrow is not a bank and does not provide lending, investment, or financial advisory services. Payment processing is facilitated through licensed financial institutions and regulated payment service providers.
+Welcome to Mountescrow. These Terms of Service ("Terms") govern your access to and use of the Mountescrow website, mobile application, APIs, and related services (collectively, the "Platform"). By registering, accessing, or using Mountescrow, you agree to be bound by these Terms. If you do not agree, you must not use the Platform. Mountescrow Ltd ("Mountescrow", "we", "us", or "our") is a fintech company incorporated under the laws of the Federal Republic of Nigeria. Mountescrow provides secure digital escrow services designed to safeguard transactions between parties. Mountescrow is not a bank and does not provide lending, investment, or financial advisory services. Payment processing is facilitated through licensed financial institutions and regulated payment service providers.
 
 2. OUR ROLE
 Mountescrow acts solely as a neutral third-party escrow facilitator. 
@@ -94,7 +94,7 @@ All counterparties must review and accept the escrow terms within the Platform b
 
 5. HOW ESCROW WORKS
 5.1 Funding: The Buyer deposits funds into a secure escrow account.
-5.2 Holding: Funds are held in segregated accounts managed through licensed financial partners. Escrow funds are not commingled with Mountescrow’s operational funds.
+5.2 Holding: Funds are held in segregated accounts managed through licensed financial partners. Escrow funds are not commingled with Mountescrow's operational funds.
 5.3 Release Triggers: Funds are released when one of the following occurs: Buyer approval of deliverables, milestone confirmation, mutual written consent, outcome of dispute resolution, or a valid arbitration award.
 
 6. SIX (6) HOUR TRANSACTION EFFICIENCY COUNTDOWN
@@ -124,7 +124,7 @@ Mountescrow may suspend or terminate accounts if these Terms are violated, fraud
 Mountescrow processes data in accordance with Nigerian data protection laws, AML regulations, and applicable international standards. We do not sell user data.
 
 13. LIMITATION OF LIABILITY
-Mountescrow’s total liability is limited to the fees paid for the relevant transaction. We are not liable for indirect, incidental, or consequential losses. Services are provided “as is” and “as available.”
+Mountescrow's total liability is limited to the fees paid for the relevant transaction. We are not liable for indirect, incidental, or consequential losses. Services are provided "as is" and "as available."
 
 14. GOVERNING LAW
 These Terms are governed by the laws of the Federal Republic of Nigeria. Arbitration proceedings shall be seated in Lagos, Nigeria.
@@ -168,6 +168,89 @@ For refund inquiries: support@mountescrow.com`,
   },
 };
 
+// Matches "1. HEADING" or "10. HEADING" (top-level)
+const TOP_LEVEL_RE = /^(\d+)\.\s+(.+)$/;
+// Matches "5.1 Label:" or "5.1 Label" (sub-level)
+const SUB_LEVEL_RE = /^(\d+\.\d+)\s+(.+)$/;
+// Matches "A. Label:" or "B. Label" (lettered sub-items)
+const LETTER_RE = /^([A-Z])\.\s+(.+)$/;
+
+function PolicyText({ content }) {
+  const lines = content.split("\n");
+
+  return (
+    <div className="whitespace-pre-line text-gray-700 leading-relaxed text-lg font-headline text-justify">
+      {lines.map((line, index) => {
+        const topMatch = line.match(TOP_LEVEL_RE);
+        const subMatch = !topMatch && line.match(SUB_LEVEL_RE);
+        const letterMatch = !topMatch && !subMatch && line.match(LETTER_RE);
+
+        if (topMatch) {
+          return (
+            <span key={index} className="block">
+              <span className="font-bold">
+                {topMatch[1]}. {topMatch[2]}
+              </span>
+            </span>
+          );
+        }
+
+        if (subMatch) {
+          const colonIdx = subMatch[2].indexOf(":");
+          if (colonIdx !== -1) {
+            const boldPart = subMatch[2].substring(0, colonIdx + 1);
+            const normalPart = subMatch[2].substring(colonIdx + 1);
+            return (
+              <span key={index} className="block">
+                <span className="font-bold">
+                  {subMatch[1]} {boldPart}
+                </span>
+                {normalPart}
+              </span>
+            );
+          }
+          return (
+            <span key={index} className="block">
+              <span className="font-bold">
+                {subMatch[1]} {subMatch[2]}
+              </span>
+            </span>
+          );
+        }
+
+        if (letterMatch) {
+          const colonIdx = letterMatch[2].indexOf(":");
+          if (colonIdx !== -1) {
+            const boldPart = letterMatch[2].substring(0, colonIdx + 1);
+            const normalPart = letterMatch[2].substring(colonIdx + 1);
+            return (
+              <span key={index} className="block">
+                <span className="font-bold">
+                  {letterMatch[1]}. {boldPart}
+                </span>
+                {normalPart}
+              </span>
+            );
+          }
+          return (
+            <span key={index} className="block">
+              <span className="font-bold">
+                {letterMatch[1]}. {letterMatch[2]}
+              </span>
+            </span>
+          );
+        }
+
+        return (
+          <span key={index} className="block">
+            {line}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function DisputeResolutionPage() {
   return (
     <div className="container py-12 md:py-20 bg-gray-50/30 min-h-screen">
@@ -193,7 +276,7 @@ export default function DisputeResolutionPage() {
               <TabsTrigger
                 key={key}
                 value={key}
-                className="px-8 py-3 rounded-lg font-semibold data-[state=active]:bg-primary-blue data-[state=active]:text-white transition-all"
+                className="px-8 py-3 rounded-lg font-semibold data-[state=active]:bg-orange-400 data-[state=active]:text-white transition-all"
               >
                 {key}
               </TabsTrigger>
@@ -218,15 +301,11 @@ export default function DisputeResolutionPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="p-8 md:p-12 bg-white">
-                      <div className="whitespace-pre-line text-gray-700 leading-relaxed text-lg font-headline text-justify">
-                        {content}
-                      </div>
+                      <PolicyText content={content} />
                       <div className="mt-12 pt-8 border-t border-gray-100 flex items-center justify-between text-sm text-gray-400">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4" />
-                          <span>
-                            Official Document • Mountescrow Technologies Ltd
-                          </span>
+                          <span>Official Document • Mountescrow Ltd</span>
                         </div>
                       </div>
                     </CardContent>
