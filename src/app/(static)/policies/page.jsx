@@ -265,11 +265,11 @@ export default function DisputeResolutionPage() {
         transition={{ duration: 0.7 }}
         className="max-w-5xl mx-auto px-4"
       >
-        <div className="text-center mb-12">
-          <h1 className="font-headline font-semibold text-4xl md:text-5xl mb-4 text-primary-blue">
+        <div className="text-center mb-12 bg-primary-blue rounded-2xl py-14 px-6">
+          <h1 className="font-headline font-semibold text-4xl md:text-5xl mb-4 text-white">
             Legal & Compliance
           </h1>
-          <p className="text-xl text-secondary-blue max-w-2xl mx-auto">
+          <p className="text-xl text-blue-100 max-w-2xl mx-auto">
             Please review the official terms, privacy practices, and refund
             procedures governing our platform.
           </p>
@@ -281,7 +281,7 @@ export default function DisputeResolutionPage() {
               <TabsTrigger
                 key={key}
                 value={key}
-                className="px-8 py-3 rounded-lg font-semibold data-[state=active]:bg-orange-400 data-[state=active]:text-white transition-all"
+                className="px-8 py-3 rounded-lg font-semibold data-[state=active]:bg-orange-500 data-[state=active]:text-white transition-all"
               >
                 {key}
               </TabsTrigger>
