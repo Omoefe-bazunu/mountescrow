@@ -15,11 +15,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useAuth } from "@/contexts/AuthContext"; // Your JWT context
+import { useAuth } from "@/contexts/AuthContext";
 
 export function LandingHeader() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -27,7 +32,7 @@ export function LandingHeader() {
   };
 
   const AuthButtons = () => {
-    if (loading) {
+    if (!mounted || loading) {
       return (
         <div className="flex items-center gap-2">
           <Skeleton className="h-9 w-20" />

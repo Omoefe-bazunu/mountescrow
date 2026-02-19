@@ -187,8 +187,8 @@ function PolicyText({ content }) {
 
         if (topMatch) {
           return (
-            <span key={index} className="block">
-              <span className="font-bold">
+            <span key={index} className="block mt-8 mb-2">
+              <span className="font-bold text-gray-900">
                 {topMatch[1]}. {topMatch[2]}
               </span>
             </span>
@@ -201,7 +201,7 @@ function PolicyText({ content }) {
             const boldPart = subMatch[2].substring(0, colonIdx + 1);
             const normalPart = subMatch[2].substring(colonIdx + 1);
             return (
-              <span key={index} className="block">
+              <span key={index} className="block mt-4 mb-1">
                 <span className="font-bold">
                   {subMatch[1]} {boldPart}
                 </span>
@@ -210,7 +210,7 @@ function PolicyText({ content }) {
             );
           }
           return (
-            <span key={index} className="block">
+            <span key={index} className="block mt-4 mb-1">
               <span className="font-bold">
                 {subMatch[1]} {subMatch[2]}
               </span>
@@ -224,7 +224,7 @@ function PolicyText({ content }) {
             const boldPart = letterMatch[2].substring(0, colonIdx + 1);
             const normalPart = letterMatch[2].substring(colonIdx + 1);
             return (
-              <span key={index} className="block">
+              <span key={index} className="block mt-3">
                 <span className="font-bold">
                   {letterMatch[1]}. {boldPart}
                 </span>
@@ -233,7 +233,7 @@ function PolicyText({ content }) {
             );
           }
           return (
-            <span key={index} className="block">
+            <span key={index} className="block mt-3">
               <span className="font-bold">
                 {letterMatch[1]}. {letterMatch[2]}
               </span>
@@ -241,8 +241,13 @@ function PolicyText({ content }) {
           );
         }
 
+        // Empty lines get a small gap; regular lines render normally
+        if (line.trim() === "") {
+          return <span key={index} className="block mt-2" />;
+        }
+
         return (
-          <span key={index} className="block">
+          <span key={index} className="block mt-1">
             {line}
           </span>
         );

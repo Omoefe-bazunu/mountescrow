@@ -6,6 +6,15 @@ const BACKEND_URL =
 export async function POST(request) {
   try {
     const cookie = request.headers.get("cookie") ?? "";
+
+    // Read csrf-token from the cookie string directly
+    const csrfToken =
+      cookie
+        .split(";")
+        .map((c) => c.trim())
+        .find((c) => c.startsWith("csrf-token="))
+        ?.split("=")[1] ?? "";
+
     const body = await request.json();
 
     const res = await fetch(`${BACKEND_URL}/api/bvn-verification`, {
@@ -13,34 +22,18 @@ export async function POST(request) {
       headers: {
         "Content-Type": "application/json",
         Cookie: cookie,
+        "x-csrf-token": csrfToken,
       },
-      credentials: "include",
       body: JSON.stringify(body),
     });
 
     const data = await res.json();
-
-    if (!res.ok) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: data.message || "BVN verification failed",
-          errors: data.errors,
-          details: data.details,
-        },
-        { status: res.status }
-      );
-    }
-
-    return NextResponse.json(data);
+    return NextResponse.json(data, { status: res.status });
   } catch (error) {
-    console.error("BVN verification proxy error:", error);
+    console.error("BVN proxy error:", error);
     return NextResponse.json(
-      {
-        success: false,
-        message: "Internal server error",
-      },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

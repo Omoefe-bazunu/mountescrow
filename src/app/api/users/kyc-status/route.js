@@ -6,6 +6,14 @@ const BACKEND_URL =
 export async function PATCH(request) {
   try {
     const cookie = request.headers.get("cookie") ?? "";
+
+    const csrfToken =
+      cookie
+        .split(";")
+        .map((c) => c.trim())
+        .find((c) => c.startsWith("csrf-token="))
+        ?.split("=")[1] ?? "";
+
     const body = await request.json();
 
     const res = await fetch(`${BACKEND_URL}/api/users/kyc-status`, {
@@ -13,26 +21,18 @@ export async function PATCH(request) {
       headers: {
         "Content-Type": "application/json",
         Cookie: cookie,
+        "x-csrf-token": csrfToken,
       },
-      credentials: "include",
       body: JSON.stringify(body),
     });
 
     const data = await res.json();
-
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: data.error || "Failed to update KYC status" },
-        { status: res.status }
-      );
-    }
-
-    return NextResponse.json(data);
+    return NextResponse.json(data, { status: res.status });
   } catch (error) {
-    console.error("KYC status update proxy error:", error);
+    console.error("KYC status proxy error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

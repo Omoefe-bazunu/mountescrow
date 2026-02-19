@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -46,8 +46,28 @@ const kycFormSchema = z.object({
     .regex(/^(\+234|0)?[789]\d{9}$/, "Invalid Nigerian phone number"),
   dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
   bvn: z.string().length(11, "BVN must be 11 digits"),
-  gender: z.enum(["M", "F"]),
+  gender: z.enum(["M", "F"], { required_error: "Please select a gender" }),
 });
+
+// Helper: reads the csrf-token cookie on the client side
+function getCsrfToken() {
+  if (typeof document === "undefined") return "";
+  const match = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
+// Thin fetch wrapper that automatically attaches the CSRF header
+async function apiFetch(url, options = {}) {
+  const csrfToken = getCsrfToken();
+  return fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(csrfToken ? { "x-csrf-token": csrfToken } : {}),
+      ...(options.headers || {}),
+    },
+  });
+}
 
 export default function KycPage() {
   const { user, loading: authLoading, refresh } = useAuth();
@@ -57,7 +77,12 @@ export default function KycPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const form = useForm({
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm({
     resolver: zodResolver(kycFormSchema),
     defaultValues: {
       firstName: "",
@@ -70,24 +95,20 @@ export default function KycPage() {
     },
   });
 
-  // Fetch user data from your API
   const fetchUserData = async () => {
     try {
-      const response = await fetch("/api/users/me");
+      const response = await apiFetch("/api/users/me");
       if (response.ok) {
         const data = await response.json();
         setUserData(data);
 
-        // Pre-fill form with existing user data
         if (data?.displayName) {
-          const parts = data.displayName.split(" ");
-          form.setValue("firstName", parts[0] || "");
-          form.setValue("middleName", parts.length > 2 ? parts[1] : "");
-          form.setValue("lastName", parts[parts.length - 1] || "");
+          const parts = data.displayName.trim().split(" ");
+          setValue("firstName", parts[0] || "");
+          setValue("middleName", parts.length > 2 ? parts[1] : "");
+          setValue("lastName", parts[parts.length - 1] || "");
         }
-        if (data?.phone) {
-          form.setValue("phone", data.phone);
-        }
+        if (data?.phone) setValue("phone", data.phone);
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -97,57 +118,39 @@ export default function KycPage() {
   };
 
   useEffect(() => {
-    if (!user && !authLoading) {
+    if (!authLoading && !user) {
       router.push("/login");
       return;
     }
-
-    if (user) {
-      fetchUserData();
-    }
-  }, [user, authLoading, router]);
+    if (user) fetchUserData();
+  }, [user, authLoading]);
 
   const onSubmit = async (data) => {
-    if (!user) return;
-
     setSubmitting(true);
     try {
-      // Format phone for API call
       let formattedPhone = data.phone.replace(/[\s\-\(\)]/g, "");
-      if (formattedPhone.startsWith("+234")) {
+      if (formattedPhone.startsWith("+234"))
         formattedPhone = formattedPhone.substring(4);
-      } else if (formattedPhone.startsWith("0")) {
+      else if (formattedPhone.startsWith("0"))
         formattedPhone = formattedPhone.substring(1);
-      }
 
-      console.log("🚀 Submitting KYC with BVN:", data.bvn.slice(-4));
-
-      // Call Express server BVN verification API via proxy
-      const response = await fetch("/api/bvn-verification", {
+      const response = await apiFetch("/api/bvn-verification", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           bvn: data.bvn,
           firstName: data.firstName,
           lastName: data.lastName,
-          middleName: data.middleName,
+          middleName: data.middleName || "",
           phone: formattedPhone,
+          dob: data.dob,
           gender: data.gender,
         }),
       });
 
       const result = await response.json();
-      console.log("📨 API Response:", result);
 
       if (response.ok && result.success) {
-        console.log("✅ BVN verified and validated");
-
-        // Refresh auth context to get updated user data
         await refresh();
-
-        // Refresh local user data
         await fetchUserData();
 
         toast({
@@ -156,25 +159,17 @@ export default function KycPage() {
           className: "bg-white border border-primary-blue",
         });
 
-        // Redirect to wallet
-        setTimeout(() => {
-          router.push("/wallet");
-        }, 1000);
+        setTimeout(() => router.push("/wallet"), 1000);
       } else {
-        console.error("❌ Verification failed:", result.message);
-
-        // Update KYC status to rejected via proxy
+        // Mark as rejected on the backend
         try {
-          await fetch("/api/users/kyc-status", {
+          await apiFetch("/api/users/kyc-status", {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               kycStatus: "rejected",
-              rejectionReason: result.message || "BVN verification failed",
+              rejectionReason: result.error || "BVN verification failed",
             }),
           });
-
-          // Refresh data after status update
           await refresh();
           await fetchUserData();
         } catch (statusError) {
@@ -184,15 +179,13 @@ export default function KycPage() {
         toast({
           variant: "destructive",
           title: "Verification Failed",
-          description: result.errors
-            ? result.errors.join(". ")
-            : result.message ||
-              "Unable to verify your BVN. Please check your details.",
+          description:
+            result.error ||
+            "Unable to verify your BVN. Please check your details.",
         });
       }
     } catch (error) {
-      console.error("❌ Submission error:", error);
-
+      console.error("Submission error:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -203,6 +196,7 @@ export default function KycPage() {
     }
   };
 
+  // ── Loading state ──────────────────────────────────────────────────────────
   if (authLoading || loading) {
     return (
       <div className="space-y-6 max-w-2xl mx-auto">
@@ -216,7 +210,7 @@ export default function KycPage() {
 
   const status = userData?.kycStatus || "pending";
 
-  const getIcon = () => {
+  const StatusIcon = () => {
     if (status === "approved")
       return <CheckCircle className="h-5 w-5 text-green-600" />;
     if (status === "rejected")
@@ -224,20 +218,17 @@ export default function KycPage() {
     return <Clock className="h-5 w-5 text-yellow-600" />;
   };
 
-  const getStatusMessage = () => {
-    switch (status) {
-      case "approved":
-        return "Your KYC has been approved and your wallet is ready to use.";
-      case "rejected":
-        return userData?.rejectionReason
-          ? `Your KYC was rejected: ${userData.rejectionReason}`
-          : "Your KYC was rejected. Please review your information and submit again.";
-      case "pending":
-      default:
-        return "Please complete your KYC verification to access wallet features.";
-    }
-  };
+  const statusMessage =
+    {
+      approved: "Your KYC has been approved and your wallet is ready to use.",
+      rejected: userData?.rejectionReason
+        ? `Your KYC was rejected: ${userData.rejectionReason}`
+        : "Your KYC was rejected. Please review your information and try again.",
+      pending:
+        "Please complete your KYC verification to access wallet features.",
+    }[status] ?? "";
 
+  // ── Approved state ─────────────────────────────────────────────────────────
   if (status === "approved") {
     return (
       <div className="space-y-6 max-w-2xl mx-auto font-headline">
@@ -246,10 +237,10 @@ export default function KycPage() {
             <div className="flex items-center justify-between">
               <CardTitle>KYC Verification</CardTitle>
               <Badge className="flex items-center gap-2 bg-green-100 text-green-800">
-                {getIcon()} Approved
+                <StatusIcon /> Approved
               </Badge>
             </div>
-            <CardDescription>{getStatusMessage()}</CardDescription>
+            <CardDescription>{statusMessage}</CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -274,6 +265,7 @@ export default function KycPage() {
     );
   }
 
+  // ── Main form ──────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6 max-w-2xl mx-auto font-headline">
       <Card className="bg-white">
@@ -284,11 +276,13 @@ export default function KycPage() {
               variant={status === "rejected" ? "destructive" : "secondary"}
               className="flex items-center gap-2"
             >
-              {getIcon()} {status.charAt(0).toUpperCase() + status.slice(1)}
+              <StatusIcon />
+              {status.charAt(0).toUpperCase() + status.slice(1)}
             </Badge>
           </div>
-          <CardDescription>{getStatusMessage()}</CardDescription>
+          <CardDescription>{statusMessage}</CardDescription>
         </CardHeader>
+
         <CardContent>
           {status === "rejected" && userData?.rejectionReason && (
             <Alert className="mb-4 border-red-200 bg-red-50">
@@ -299,115 +293,159 @@ export default function KycPage() {
             </Alert>
           )}
 
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* First Name + Last Name */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-1">
                 <Label htmlFor="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  {...form.register("firstName")}
-                  disabled={submitting}
-                  placeholder="Enter your first name"
+                <Controller
+                  control={control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="firstName"
+                      disabled={submitting}
+                      placeholder="John"
+                    />
+                  )}
                 />
-                {form.formState.errors.firstName && (
-                  <p className="text-red-600 text-sm mt-1">
-                    {form.formState.errors.firstName.message}
+                {errors.firstName && (
+                  <p className="text-red-600 text-sm">
+                    {errors.firstName.message}
                   </p>
                 )}
               </div>
-              <div>
+
+              <div className="space-y-1">
                 <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  {...form.register("lastName")}
-                  disabled={submitting}
-                  placeholder="Enter your last name"
+                <Controller
+                  control={control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="lastName"
+                      disabled={submitting}
+                      placeholder="Doe"
+                    />
+                  )}
                 />
-                {form.formState.errors.lastName && (
-                  <p className="text-red-600 text-sm mt-1">
-                    {form.formState.errors.lastName.message}
+                {errors.lastName && (
+                  <p className="text-red-600 text-sm">
+                    {errors.lastName.message}
                   </p>
                 )}
               </div>
             </div>
 
-            <div>
+            {/* Middle Name */}
+            <div className="space-y-1">
               <Label htmlFor="middleName">Middle Name (Optional)</Label>
-              <Input
-                id="middleName"
-                {...form.register("middleName")}
-                disabled={submitting}
-                placeholder="Enter your middle name"
+              <Controller
+                control={control}
+                name="middleName"
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    id="middleName"
+                    disabled={submitting}
+                    placeholder="Optional"
+                  />
+                )}
               />
             </div>
 
-            <div>
+            {/* Phone */}
+            <div className="space-y-1">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                {...form.register("phone")}
-                placeholder="+2348012345678 or 08012345678"
-                disabled={submitting}
+              <Controller
+                control={control}
+                name="phone"
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    id="phone"
+                    type="tel"
+                    disabled={submitting}
+                    placeholder="+2348012345678 or 08012345678"
+                  />
+                )}
               />
-              {form.formState.errors.phone && (
-                <p className="text-red-600 text-sm mt-1">
-                  {form.formState.errors.phone.message}
-                </p>
+              {errors.phone && (
+                <p className="text-red-600 text-sm">{errors.phone.message}</p>
               )}
             </div>
 
-            <div>
+            {/* Date of Birth */}
+            <div className="space-y-1">
               <Label htmlFor="dob">Date of Birth</Label>
-              <Input
-                id="dob"
-                type="date"
-                {...form.register("dob")}
-                disabled={submitting}
+              <Controller
+                control={control}
+                name="dob"
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    id="dob"
+                    type="date"
+                    disabled={submitting}
+                  />
+                )}
               />
-              {form.formState.errors.dob && (
-                <p className="text-red-600 text-sm mt-1">
-                  {form.formState.errors.dob.message}
-                </p>
+              {errors.dob && (
+                <p className="text-red-600 text-sm">{errors.dob.message}</p>
               )}
             </div>
 
-            <div>
+            {/* BVN */}
+            <div className="space-y-1">
               <Label htmlFor="bvn">BVN (11 digits)</Label>
-              <Input
-                id="bvn"
-                {...form.register("bvn")}
-                maxLength={11}
-                disabled={submitting}
-                placeholder="Enter your 11-digit BVN"
+              <Controller
+                control={control}
+                name="bvn"
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    id="bvn"
+                    inputMode="numeric"
+                    maxLength={11}
+                    disabled={submitting}
+                    placeholder="Enter your 11-digit BVN"
+                  />
+                )}
               />
-              {form.formState.errors.bvn && (
-                <p className="text-red-600 text-sm mt-1">
-                  {form.formState.errors.bvn.message}
-                </p>
+              {errors.bvn && (
+                <p className="text-red-600 text-sm">{errors.bvn.message}</p>
               )}
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground">
                 Your BVN is used for identity verification and is kept secure.
               </p>
             </div>
 
-            <div>
+            {/* Gender */}
+            <div className="space-y-1">
               <Label htmlFor="gender">Gender</Label>
-              <Select
-                onValueChange={(v) => form.setValue("gender", v)}
-                disabled={submitting}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select gender" />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  <SelectItem value="M">Male</SelectItem>
-                  <SelectItem value="F">Female</SelectItem>
-                </SelectContent>
-              </Select>
-              {form.formState.errors.gender && (
-                <p className="text-red-600 text-sm mt-1">
-                  {form.formState.errors.gender.message}
-                </p>
+              <Controller
+                control={control}
+                name="gender"
+                render={({ field }) => (
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={submitting}
+                  >
+                    <SelectTrigger id="gender">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      <SelectItem value="M">Male</SelectItem>
+                      <SelectItem value="F">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.gender && (
+                <p className="text-red-600 text-sm">{errors.gender.message}</p>
               )}
             </div>
 
@@ -430,7 +468,7 @@ export default function KycPage() {
         </CardContent>
       </Card>
 
-      {/* Information Card */}
+      {/* Info card */}
       <Card className="bg-white">
         <CardHeader>
           <CardTitle className="text-lg">
@@ -439,20 +477,20 @@ export default function KycPage() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
-            • <strong>Identity Verification:</strong> We verify your identity to
-            comply with financial regulations
+            <strong>Identity Verification:</strong> We verify your identity to
+            comply with financial regulations.
           </p>
           <p>
-            • <strong>Security:</strong> KYC helps protect your account and
-            prevent fraud
+            <strong>Security:</strong> KYC helps protect your account and
+            prevent fraud.
           </p>
           <p>
-            • <strong>Wallet Creation:</strong> A verified identity is required
-            to create your secure wallet
+            <strong>Wallet Creation:</strong> A verified identity is required to
+            create your secure wallet.
           </p>
           <p>
-            • <strong>Compliance:</strong> We follow banking regulations to
-            ensure safe transactions
+            <strong>Compliance:</strong> We follow banking regulations to ensure
+            safe transactions.
           </p>
         </CardContent>
       </Card>
